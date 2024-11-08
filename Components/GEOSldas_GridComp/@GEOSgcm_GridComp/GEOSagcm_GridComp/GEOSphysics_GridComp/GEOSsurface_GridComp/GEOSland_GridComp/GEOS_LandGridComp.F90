@@ -30,7 +30,7 @@ module GEOS_LandGridCompMod
   use GEOS_VegdynGridCompMod,  only : VegdynSetServices   => SetServices
   use GEOS_CatchGridCompMod,   only : CatchSetServices    => SetServices
   use GEOS_CatchCNGridCompMod, only : CatchCNSetServices  => SetServices
-!  use GEOS_RouteGridCompMod,   only : RouteSetServices    => SetServices
+  use GEOS_RouteGridCompMod,   only : RouteSetServices    => SetServices
 
   implicit none
   private
@@ -192,17 +192,17 @@ contains
     END SELECT
 
 !    IF(RUN_ROUTE == 1) THEN
-!       if (NUM_CATCH == 1) then
-!          ROUTE(1) = MAPL_AddChild(GC, NAME='ROUTE', SS=RouteSetServices, RC=STATUS)
-!          VERIFY_(STATUS)
-!       else
-!          do I = 1, NUM_CATCH
-!             WRITE(TMP,'(I3.3)') I
-!             GCName  = 'ens' // trim(TMP) // ':ROUTE'
-!             ROUTE(I) = MAPL_AddChild(GC, NAME=GCName, SS=RouteSetServices, RC=STATUS)
-!             VERIFY_(STATUS)
-!          end do
-!       end if
+       if (NUM_CATCH == 1) then
+          ROUTE(1) = MAPL_AddChild(GC, NAME='ROUTE', SS=RouteSetServices, RC=STATUS)
+          VERIFY_(STATUS)
+       else
+          do I = 1, NUM_CATCH
+             WRITE(TMP,'(I3.3)') I
+             GCName  = 'ens' // trim(TMP) // ':ROUTE'
+             ROUTE(I) = MAPL_AddChild(GC, NAME=GCName, SS=RouteSetServices, RC=STATUS)
+             VERIFY_(STATUS)
+          end do
+       end if
 !    ENDIF
     
 !BOS
