@@ -1,7 +1,7 @@
 esma_set_this ()
 
 set (srcs
-   #GEOS_RouteGridComp.F90
+   GEOS_RouteGridComp.F90
    routing_model.F90
   )
 

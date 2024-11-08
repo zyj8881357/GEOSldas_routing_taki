@@ -410,7 +410,7 @@ contains
     call MAPL_Get(MAPL, LocStream = locstream, RC=status)
     VERIFY_(STATUS)
     ! extract Pfaf (TILEI on the "other" grid)
-    call MAPL_LocStreamGet(locstream, tilei=pfaf, OnAttachedGrid=.false., &
+    call MAPL_LocStreamGet(locstream, GRIDIM=pfaf, &
          tileGrid=tilegrid, nt_global=nt_global, RC=status)
     VERIFY_(STATUS)
     
