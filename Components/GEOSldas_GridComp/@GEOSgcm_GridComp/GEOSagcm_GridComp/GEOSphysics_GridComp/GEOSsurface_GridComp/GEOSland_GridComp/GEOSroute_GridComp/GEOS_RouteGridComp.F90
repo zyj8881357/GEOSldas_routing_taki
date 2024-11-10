@@ -23,7 +23,7 @@ module GEOS_RouteGridCompMod
   use MAPL_ConstantsMod
   use ROUTING_MODEL,          ONLY:     &
        river_routing, RRM_TIMESTEP
-  USE catch_constants, ONLY: N_CatG => N_Pfaf_Catchs
+!  USE catch_constants, ONLY: N_CatG => N_Pfaf_Catchs
   USE MAPL_MinMaxMod
   implicit none
 
@@ -56,6 +56,7 @@ module GEOS_RouteGridCompMod
   character(len=ESMF_MAXSTR)        :: TILFILE
   integer                           :: RUN_DT, RRM_DT
   REAL                              :: DT
+  integer  :: N_CatG=291284 
   
   include "mpif.h"
 
