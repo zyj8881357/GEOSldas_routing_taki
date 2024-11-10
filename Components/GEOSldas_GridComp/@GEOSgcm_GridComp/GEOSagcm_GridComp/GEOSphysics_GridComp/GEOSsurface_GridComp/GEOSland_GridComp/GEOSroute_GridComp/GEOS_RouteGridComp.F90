@@ -404,6 +404,7 @@ contains
     route%mype = mype
 
     write (*,*) "debug 4"    
+    allocate(ims(1:ndes))
     ! define minCatch, maxCatch
     call MAPL_DecomposeDim ( n_catg,ims,ndes ) ! ims(mype+1) gives the size of my partition
     ! myPE is 0-based!
