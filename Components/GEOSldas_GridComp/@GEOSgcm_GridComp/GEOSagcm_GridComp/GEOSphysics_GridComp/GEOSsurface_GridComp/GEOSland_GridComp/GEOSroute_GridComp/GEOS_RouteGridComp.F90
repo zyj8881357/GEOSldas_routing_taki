@@ -377,11 +377,14 @@ contains
 
     ! ------------------
     ! begin
+
+    write (*,*) "debug 1"
     
     call ESMF_UserCompGetInternalState ( GC, 'RiverRoute_state',wrap,status )
     VERIFY_(STATUS)
 
     route => wrap%ptr
+    write (*,*) "debug 2"
 
     ! get vm
     ! extract comm
@@ -392,20 +395,23 @@ contains
     call ESMF_VMGet       (VM, localpet=MYPE, petcount=nDEs,  RC=STATUS)
     VERIFY_(STATUS)
 
+    write (*,*) "debug 3"
     call MAPL_GetObjectFromGC ( GC, MAPL, RC=STATUS)
     VERIFY_(STATUS)
 
     route%comm = comm
     route%ndes = ndes
     route%mype = mype
-    
+
+    write (*,*) "debug 4"    
     ! define minCatch, maxCatch
     call MAPL_DecomposeDim ( n_catg,ims,ndes ) ! ims(mype+1) gives the size of my partition
     ! myPE is 0-based!
     beforeMe = sum(ims(1:mype))
     minCatch = beforeMe + 1
     maxCatch = beforeMe + ims(myPe+1)
-    
+
+    write (*,*) "debug 5"    
     ! get LocStream
     call MAPL_Get(MAPL, LocStream = locstream, RC=status)
     VERIFY_(STATUS)
