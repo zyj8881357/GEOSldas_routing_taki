@@ -416,11 +416,12 @@ contains
     ! get LocStream
     call MAPL_Get(MAPL, LocStream = locstream, RC=status)
     VERIFY_(STATUS)
+    write (*,*) "debug 6"   
     ! extract Pfaf (TILEI on the "other" grid)
     call MAPL_LocStreamGet(locstream, GRIDIM=pfaf, &
          tileGrid=tilegrid, nt_global=nt_global, RC=status)
     VERIFY_(STATUS)
-    
+    write (*,*) "debug 7"   
     ! exchange Pfaf across PEs
 
     ntiles = 0
@@ -433,13 +434,13 @@ contains
           arbSeq(ntiles) = i
        end if
     end do ! global tile loop
-
+    write (*,*) "debug 8"   
     distgrid = ESMF_DistGridCreate(arbSeqIndexList=arbSeq, rc=status)
     VERIFY_(STATUS)
 
     newTileGRID = ESMF_GridEmptyCreate(rc=status)
     VERIFY_(STATUS)
-         
+    write (*,*) "debug 9"        
     allocate(arbIndex(nTiles,1), stat=status)
     VERIFY_(STATUS)
 
@@ -459,16 +460,17 @@ contains
     VERIFY_(STATUS)
 
     deallocate(arbIndex)
+    write (*,*) "debug 10"   
 
     call ESMF_GridCommit(newTileGrid, rc=status)
     VERIFY_(STATUS)
-
+    write (*,*) "debug 11"   
 
     ! now create a "catch" grid to be the "native" grid for this component
     distgrid = ESMF_DistGridCreate(arbSeqIndexList=(/minCatch:maxCatch/), &
          rc=status)
     VERIFY_(STATUS)
-
+    write (*,*) "debug 12"   
     catchGRID = ESMF_GridEmptyCreate(rc=status)
     VERIFY_(STATUS)
 
@@ -491,36 +493,37 @@ contains
     VERIFY_(STATUS)
 
     deallocate(arbIndex)
-
+    write (*,*) "debug 13"   
     call ESMF_GridCommit(catchGrid, rc=status)
     VERIFY_(STATUS)
-
+    write (*,*) "debug 14"   
     call ESMF_GridCompSet(gc, grid=catchGrid, RC=status)
     VERIFY_(STATUS)
-
+    write (*,*) "debug 15"   
     call MAPL_LocStreamGet(locstream, TILEAREA = tile_area_src, RC=status)
     VERIFY_(STATUS)
-
+    write (*,*) "debug 16"   
     field0 = ESMF_FieldCreate(grid=tilegrid, datacopyflag=ESMF_DATACOPY_VALUE, &
          farrayPtr=tile_area_src, name='TILE_AREA_SRC', RC=STATUS)
     VERIFY_(STATUS)
     ! create field on the "new" tile grid
     allocate(tile_area(ntiles), stat=status)
     VERIFY_(STATUS)
+    write (*,*) "debug 17"   
     field = ESMF_FieldCreate(grid=newtilegrid, datacopyflag=ESMF_DATACOPY_VALUE, &
          farrayPtr=tile_area, name='TILE_AREA', RC=STATUS)
     VERIFY_(STATUS)
-
+    write (*,*) "debug 18"   
     ! create routehandle
     call ESMF_FieldRedistStore(srcField=field0, dstField=field, &
                 routehandle=route%routehandle, rc=status)
     VERIFY_(STATUS)
- 
+    write (*,*) "debug 19"    
     ! redist tile_area
     call ESMF_FieldRedist(srcField=FIELD0, dstField=FIELD, &
          routehandle=route%routehandle, rc=status)
     VERIFY_(STATUS)
-
+    write (*,*) "debug 20"   
     call ESMF_FieldDestroy(field, rc=status)
     VERIFY_(STATUS)
     call ESMF_FieldDestroy(field0, rc=status)
@@ -532,18 +535,19 @@ contains
     route%ntiles = ntiles
     route%minCatch = minCatch
     route%maxCatch = maxCatch
-
+    write (*,*) "debug 21"   
     allocate(ptr2(ntiles), stat=status)
     VERIFY_(STATUS)
     route%field = ESMF_FieldCreate(grid=newtilegrid, datacopyflag=ESMF_DATACOPY_VALUE, &
          farrayPtr=ptr2, name='RUNOFF', RC=STATUS)
     VERIFY_(STATUS)
-    
+    write (*,*) "debug 22"       
     deallocate(ims)
     call MAPL_GenericInitialize ( GC, import, export, clock, rc=status )
     VERIFY_(STATUS)
 
     RETURN_(ESMF_SUCCESS)
+    write (*,*) "debug 23"       
   end subroutine INITIALIZE
   
 ! -----------------------------------------------------------
