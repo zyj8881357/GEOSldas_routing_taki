@@ -191,6 +191,9 @@ contains
        
     END SELECT
 
+
+       allocate (ROUTE(NUM_CATCH), stat=status)
+       VERIFY_(STATUS)
 !    IF(RUN_ROUTE == 1) THEN
        if (NUM_CATCH == 1) then
           ROUTE(1) = MAPL_AddChild(GC, NAME='ROUTE', SS=RouteSetServices, RC=STATUS)
