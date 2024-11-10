@@ -411,6 +411,7 @@ contains
     beforeMe = sum(ims(1:mype))
     minCatch = beforeMe + 1
     maxCatch = beforeMe + ims(myPe+1)
+    write(*,*) "my PE is:",mype,", minCatch is:",minCatch,", maxCatch is:",maxCatch
 
     write (*,*) "debug 5"    
     ! get LocStream
