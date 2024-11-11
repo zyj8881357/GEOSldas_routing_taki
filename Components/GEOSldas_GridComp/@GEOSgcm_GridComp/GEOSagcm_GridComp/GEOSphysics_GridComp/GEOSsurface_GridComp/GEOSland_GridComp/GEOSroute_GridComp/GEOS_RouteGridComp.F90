@@ -422,7 +422,7 @@ contains
     !call MAPL_LocStreamGet(locstream, &
     !     tileGrid=tilegrid, nt_global=nt_global, RC=status)
     write (*,*) "debug 6.1"       
-    allocate(pfaf(nt_global))
+    !allocate(pfaf(nt_global))
     call MAPL_LocStreamGet(locstream, GRIDIM=pfaf, &
          tileGrid=tilegrid, nt_global=nt_global, RC=status) 
     print *,"nt_global=",nt_global            
