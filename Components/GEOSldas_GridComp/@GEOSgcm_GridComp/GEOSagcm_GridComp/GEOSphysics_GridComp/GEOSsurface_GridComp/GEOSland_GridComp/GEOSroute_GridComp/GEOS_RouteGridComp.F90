@@ -418,10 +418,15 @@ contains
     call MAPL_Get(MAPL, LocStream = locstream, RC=status)
     VERIFY_(STATUS)
     write (*,*) "debug 6"   
-    ! extract Pfaf (TILEI on the "other" grid)
-    call MAPL_LocStreamGet(locstream, GRIDIM=pfaf, &
+    ! extract Pfaf (TILEI on the "other" grid)    
+    call MAPL_LocStreamGet(locstream, &
          tileGrid=tilegrid, nt_global=nt_global, RC=status)
-    VERIFY_(STATUS)
+    print *,"nt_global=",nt_global
+    write (*,*) "debug 6.1"       
+    allocate(pfaf(nt_global))
+    call MAPL_LocStreamGet(locstream, GRIDIM=pfaf, &
+         tileGrid=tilegrid, nt_global=nt_global, RC=status)    
+    !VERIFY_(STATUS)
     write (*,*) "debug 7"   
     ! exchange Pfaf across PEs
 
