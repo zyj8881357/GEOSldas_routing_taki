@@ -425,7 +425,8 @@ contains
     if (mapl_am_I_root()) print *, "debug 6.1"       
     allocate(pfaf(nt_global))
     open(77,file="../input/pfaf_input.txt",status="old",action="read")
-    read(77,)pfaf
+    read(77,*)pfaf
+    close(77)
     !call MAPL_LocStreamGet(locstream, GRIDIM=pfaf, &
     !     tileGrid=tilegrid, nt_global=nt_global, RC=status)            
     !VERIFY_(STATUS)
@@ -435,6 +436,7 @@ contains
 if (mapl_am_I_root())then
     open(88,file="pfaf.txt",action="write")
     write(88,*)pfaf
+    close(88)
 endif
 
     ntiles = 0
