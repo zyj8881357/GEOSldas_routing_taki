@@ -732,10 +732,10 @@ deallocate(dataPtr)
 
     ! ------------------
     ! begin
-    
+    if (mapl_am_I_root()) print *, "debug 1"     
     call ESMF_UserCompGetInternalState ( GC, 'RiverRoute_state',wrap,status )
     VERIFY_(STATUS)
-
+    if (mapl_am_I_root()) print *, "debug 2"  
     route => wrap%ptr
 
 ! Get the target components name and set-up traceback handle.
@@ -743,7 +743,7 @@ deallocate(dataPtr)
 
     call ESMF_GridCompGet(GC, name=COMP_NAME, CONFIG=CF, RC=STATUS )
     VERIFY_(STATUS)
-  
+    if (mapl_am_I_root()) print *, "debug 3"   
     Iam = trim(COMP_NAME) // "RUN"
 
 ! Get my internal MAPL_Generic state
@@ -751,74 +751,86 @@ deallocate(dataPtr)
 
     call MAPL_GetObjectFromGC(GC, MAPL, STATUS)
     VERIFY_(STATUS)
-
+    if (mapl_am_I_root()) print *, "debug 4" 
     call MAPL_Get(MAPL, HEARTBEAT = HEARTBEAT, RC=STATUS)
     VERIFY_(STATUS)
-
+    if (mapl_am_I_root()) print *, "debug 5" 
 ! Start timers
 ! ------------
 
     call MAPL_TimerOn(MAPL,"RUN")
-
+    if (mapl_am_I_root()) print *, "debug 6" 
 ! Get parameters from generic state
 ! ---------------------------------
 
     call MAPL_Get(MAPL, INTERNAL_ESMF_STATE=INTERNAL, RC=STATUS)
     VERIFY_(STATUS) 
-    
+    if (mapl_am_I_root()) print *, "debug 7"     
 ! get pointers to inputs variables
 ! ----------------------------------
 
     ! get the field from IMPORT
     call ESMF_StateGet(IMPORT, 'RUNOFF', field=runoff_src, RC=STATUS)
     VERIFY_(STATUS)
-
+    if (mapl_am_I_root()) print *, "debug 8" 
     ! redist RunOff
     call ESMF_FieldRedist(srcField=runoff_src, dstField=route%field, &
                 routehandle=route%routehandle, rc=status)
     VERIFY_(STATUS)
-
+    if (mapl_am_I_root()) print *, "debug 9" 
     call ESMF_FieldGet(route%field, farrayPtr=RUNOFF, rc=status)
     VERIFY_(STATUS)
-
+    if (mapl_am_I_root()) print *, "debug 10" 
     pfaf_code => route%pfaf
     tile_area => route%tile_area
     
 ! get pointers to internal variables
 ! ----------------------------------
-  
+    if (mapl_am_I_root()) print *, "debug 11"   
     call MAPL_GetPointer(INTERNAL, AREACAT , 'AREACAT', RC=STATUS)
     VERIFY_(STATUS)
+    if (mapl_am_I_root()) print *, "debug 12"       
     call MAPL_GetPointer(INTERNAL, LENGSC  , 'LENGSC',  RC=STATUS)
     VERIFY_(STATUS)
+    if (mapl_am_I_root()) print *, "debug 13"          
     call MAPL_GetPointer(INTERNAL, DNSTR   , 'DNSTR'  , RC=STATUS)
     VERIFY_(STATUS)
+    if (mapl_am_I_root()) print *, "debug 14"          
     call MAPL_GetPointer(INTERNAL, WSTREAM , 'WSTREAM', RC=STATUS)
     VERIFY_(STATUS)
+    if (mapl_am_I_root()) print *, "debug 15"          
     call MAPL_GetPointer(INTERNAL, WRIVER  , 'WRIVER' , RC=STATUS)
     VERIFY_(STATUS)
+    if (mapl_am_I_root()) print *, "debug 16"          
     call MAPL_GetPointer(INTERNAL, LRIVERMOUTH, 'LRIVERMOUTH' , RC=STATUS)
     VERIFY_(STATUS)
+    if (mapl_am_I_root()) print *, "debug 17"          
     call MAPL_GetPointer(INTERNAL, ORIVERMOUTH, 'ORIVERMOUTH' , RC=STATUS)
     VERIFY_(STATUS)
-
+    if (mapl_am_I_root()) print *, "debug 18"      
 ! get pointers to EXPORTS
 ! -----------------------
 
     call MAPL_GetPointer(EXPORT, QSFLOW,   'QSFLOW'  , RC=STATUS)
     VERIFY_(STATUS)
+    if (mapl_am_I_root()) print *, "debug 19" 
     call MAPL_GetPointer(EXPORT, QINFLOW,  'QINFLOW' , RC=STATUS)
     VERIFY_(STATUS)
+    if (mapl_am_I_root()) print *, "debug 20"     
     call MAPL_GetPointer(EXPORT, QOUTFLOW, 'QOUTFLOW', RC=STATUS)
     VERIFY_(STATUS)
- 
+
+    if (mapl_am_I_root()) print *, "debug 21"  
     call MAPL_Get(MAPL, LocStream=LOCSTREAM, RC=STATUS)
     VERIFY_(STATUS)
+    if (mapl_am_I_root()) print *, "debug 22"     
     call MAPL_LocStreamGet(LOCSTREAM, TILEGRID=TILEGRID, RC=STATUS)
     VERIFY_(STATUS)    
 
+    if (mapl_am_I_root()) print *, "debug 23"  
     call MAPL_TimerOn  ( MAPL, "-RRM" )
 
+    if (mapl_am_I_root()) print *, "debug 24"  
     call MAPL_LocStreamGet(LocStream, NT_LOCAL=NTILES, RC=STATUS )
     N_CatL  = size(AREACAT)
 
@@ -852,7 +864,7 @@ deallocate(dataPtr)
 
     Local_Min = route%minCatch
     Local_Max = route%maxCatch
- 
+    if (mapl_am_I_root()) print *, "debug 25"   
     FIRST_TIME : IF (FirstTime) THEN
 
        ! Pfafstetter catchment Domain Decomposition :         
