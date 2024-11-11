@@ -479,7 +479,7 @@ write(*,*) "debug 6"
        _VERIFY(status)
 write(*,*) "debug 7"
 print *, "route%routing_tile_file =", trim(route%routing_tile_file)
-print *, "layout_ease =", layout_ease
+!print *, "layout_ease =", layout_ease
 !if (allocated(route%application_grid)) then
 !    print *, "route%application_grid is successfully allocated."
 !else
