@@ -541,17 +541,7 @@ endif
     VERIFY_(STATUS)
     if (mapl_am_I_root()) print *, "debug 17"   
     field = ESMF_FieldCreate(grid=newtilegrid, datacopyflag=ESMF_DATACOPY_VALUE, &
-         farrayPtr=tile_area, name='TILE_AREA', RC=STATUS)
-call ESMF_FieldGet(field, farrayPtr=dataPtr, rc=status)
-if (status /= ESMF_SUCCESS) then
-    print *, "Error retrieving field data"
-    stop
-end if
-if(mapl_am_I_root())then     
-do i = 1, size(dataPtr, 1)
-        print *, "Value at (", i, ") =", dataPtr(i)
-end do
-endif    
+         farrayPtr=tile_area, name='TILE_AREA', RC=STATUS)  
     !if (mapl_am_I_root()) then
     !  print *,"Total number of elements in tile_area:", size(tile_area)
     !  print *,"tile_area:",tile_area
@@ -566,6 +556,17 @@ endif
     ! redist tile_area
     call ESMF_FieldRedist(srcField=FIELD0, dstField=FIELD, &
          routehandle=route%routehandle, rc=status)
+
+call ESMF_FieldGet(field, farrayPtr=dataPtr, rc=status)
+if (status /= ESMF_SUCCESS) then
+    print *, "Error retrieving field data"
+    stop
+end if
+if(mapl_am_I_root())then     
+do i = 1, size(dataPtr, 1)
+        print *, "Value at (", i, ") =", dataPtr(i)
+end do
+endif      
 !call ESMF_FieldGet(field, localDe=localShape, rank=localRank, rc=status)
 !if (status /= ESMF_SUCCESS) then
 !    print *, "Error retrieving field dimensions"
