@@ -367,6 +367,7 @@ contains
     integer, pointer :: ims(:) => NULL()
     integer, pointer :: pfaf(:) => NULL()
     integer, pointer :: arbSeq(:) => NULL()
+    integer, pointer :: arbSeq_pf(:) => NULL()    
     integer, pointer :: arbSeq_ori(:) => NULL()    
     integer, allocatable :: arbIndex(:,:)
     real, pointer :: tile_area_src(:) => NULL()
@@ -450,7 +451,7 @@ endif
     do i = 1, nt_global
        pf = pfaf(i)
        if (pf >= minCatch .and. pf <= maxCatch) then ! I want this!
-          print *,"my PE is:",mype,"pf=",pf
+          !print *,"my PE is:",mype,"pf=",pf
           ntiles = ntiles+1
           !realloc if needed
           arbSeq_ori(ntiles) = i
@@ -460,6 +461,7 @@ endif
     allocate(arbSeq(ntiles))
     arbSeq=arbSeq_ori(1:ntiles)
     deallocate(arbSeq_ori)
+
     if (mapl_am_I_root()) print *, "debug 8"   
     distgrid = ESMF_DistGridCreate(arbSeqIndexList=arbSeq, rc=status)
     VERIFY_(STATUS)
@@ -599,10 +601,28 @@ deallocate(dataPtr)
     VERIFY_(STATUS)
     call ESMF_FieldDestroy(field0, rc=status)
     VERIFY_(STATUS)
+    if (mapl_am_I_root()) print *, "debug 20.1"  
+
+    ntiles = 0
+    !loop over total_n_tiles
+    allocate(arbSeq_ori(1:nt_global))
+    do i = 1, nt_global
+       pf = pfaf(i)
+       if (pf >= minCatch .and. pf <= maxCatch) then ! I want this!
+          print *,"my PE is:",mype,"pf=",pf
+          ntiles = ntiles+1
+          !realloc if needed
+          arbSeq_ori(ntiles) = pf
+       end if
+    end do ! global tile loop
+    if (mapl_am_I_root()) print *, "ntiles:",ntiles
+    allocate(arbSeq_pf(ntiles))
+    arbSeq_pf=arbSeq_ori(1:ntiles)
+    deallocate(arbSeq_ori)
 
     ! redist pfaf (NOTE: me might need a second routehandle for integers)
 
-    route%pfaf => arbSeq
+    route%pfaf => arbSeq_pf
     route%ntiles = ntiles
     route%minCatch = minCatch
     route%maxCatch = maxCatch
