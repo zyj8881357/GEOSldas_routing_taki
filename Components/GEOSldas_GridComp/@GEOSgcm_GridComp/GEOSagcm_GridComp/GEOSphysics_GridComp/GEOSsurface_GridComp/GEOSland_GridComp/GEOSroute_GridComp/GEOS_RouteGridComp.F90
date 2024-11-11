@@ -435,6 +435,7 @@ contains
     do i = 1, nt_global
        pf = pfaf(i)
        if (pf >= minCatch .and. pf <= maxCatch) then ! I want this!
+          print *,"my PE is:",mype,"pf=",pf
           ntiles = ntiles+1
           !realloc if needed
           arbSeq(ntiles) = i
