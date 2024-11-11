@@ -453,7 +453,7 @@ endif
           print *,"my PE is:",mype,"pf=",pf
           ntiles = ntiles+1
           !realloc if needed
-          arbSeq_ori(ntiles) = pf
+          arbSeq_ori(ntiles) = i
        end if
     end do ! global tile loop
     if (mapl_am_I_root()) print *, "ntiles:",ntiles
@@ -532,7 +532,7 @@ endif
       print *,"Total number of elements in local_id:", size(local_id)
       print *,"local_id:",local_id
     endif
-    stop
+    !stop
     VERIFY_(STATUS)
     if (mapl_am_I_root()) print *, "debug 16"   
     field0 = ESMF_FieldCreate(grid=tilegrid, datacopyflag=ESMF_DATACOPY_VALUE, &
