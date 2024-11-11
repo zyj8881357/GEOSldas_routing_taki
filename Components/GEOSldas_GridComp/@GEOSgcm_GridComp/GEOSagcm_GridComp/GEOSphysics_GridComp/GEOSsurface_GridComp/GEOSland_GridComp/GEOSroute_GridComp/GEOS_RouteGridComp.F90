@@ -485,10 +485,10 @@ print *, "route%routing_tile_file =", trim(route%routing_tile_file)
 !else
 !    print *, "Error: route%application_grid is not allocated!"
 !endif
-       call MAPL_LocStreamCreate(application_ls,layout_ease,trim(route%routing_tile_file),'application_ls',mask=[MAPL_LAND], &
-            grid=route%application_grid,rc=status)
-       _VERIFY(status)
-       route%application_ls=application_ls
+!       call MAPL_LocStreamCreate(application_ls,layout_ease,trim(route%routing_tile_file),'application_ls',mask=[MAPL_LAND], &
+!            grid=route%application_grid,rc=status)
+!       _VERIFY(status)
+!       route%application_ls=application_ls
 write(*,*) "debug 8"       
        call MAPL_LocstreamCreate(route_ls,layout_catch,trim(route%routing_tile_file),'route_ls', mask=[MAPL_LAND], &
             grid=CatchGrid,use_pfaf=.true.,rc=status)
