@@ -378,7 +378,7 @@ contains
 
 
 integer :: localRank, localShape(ESMF_MAXDIM)
-real(ESMF_KIND_R8), pointer :: dataPtr(:,:)
+real(ESMF_KIND_R8), pointer :: dataPtr(:)
 integer :: j
     ! ------------------
     ! begin
@@ -572,9 +572,7 @@ if (status /= ESMF_SUCCESS) then
 end if
 if(mapl_am_I_root())then     
 do i = 1, size(dataPtr, 1)
-    do j = 1, size(dataPtr, 2)
-        print *, "Value at (", i, ",", j, ") =", dataPtr(i, j)
-    end do
+        print *, "Value at (", i, ") =", dataPtr(i)
 end do
 endif
 stop
