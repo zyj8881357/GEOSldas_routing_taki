@@ -367,6 +367,7 @@ contains
     integer, pointer :: ims(:) => NULL()
     integer, pointer :: pfaf(:) => NULL()
     integer, pointer :: arbSeq(:) => NULL()
+    integer, pointer :: arbSeq_ori(:) => NULL()    
     integer, allocatable :: arbIndex(:,:)
     real, pointer :: tile_area_src(:) => NULL()
     real, pointer :: tile_area(:) => NULL()
@@ -441,16 +442,19 @@ endif
 
     ntiles = 0
     !loop over total_n_tiles
-    allocate(arbSeq(1:nt_global))
+    allocate(arbSeq_ori(1:nt_global))
     do i = 1, nt_global
        pf = pfaf(i)
        if (pf >= minCatch .and. pf <= maxCatch) then ! I want this!
           print *,"my PE is:",mype,"pf=",pf
           ntiles = ntiles+1
           !realloc if needed
-          arbSeq(ntiles) = pf
+          arbSeq_ori(ntiles) = pf
        end if
     end do ! global tile loop
+    allocate(arbSeq(ntiles))
+    arbSeq=arbSeq_ori(1:ntiles)
+    deallocate(arbSeq_ori)
     write (*,*) "debug 8"   
     distgrid = ESMF_DistGridCreate(arbSeqIndexList=arbSeq, rc=status)
     VERIFY_(STATUS)
