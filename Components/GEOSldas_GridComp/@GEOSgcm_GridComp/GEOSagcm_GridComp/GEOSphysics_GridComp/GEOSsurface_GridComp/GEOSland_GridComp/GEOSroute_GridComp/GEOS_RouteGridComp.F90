@@ -579,9 +579,7 @@ do i = 1, size(dataPtr, 1)
         print *, "redist field at (", i, ") =", dataPtr(i)
 end do
 endif
-deallocate(dataPtr)
-
-endif      
+deallocate(dataPtr)    
 !call ESMF_FieldGet(field, localDe=localShape, rank=localRank, rc=status)
 !if (status /= ESMF_SUCCESS) then
 !    print *, "Error retrieving field dimensions"
