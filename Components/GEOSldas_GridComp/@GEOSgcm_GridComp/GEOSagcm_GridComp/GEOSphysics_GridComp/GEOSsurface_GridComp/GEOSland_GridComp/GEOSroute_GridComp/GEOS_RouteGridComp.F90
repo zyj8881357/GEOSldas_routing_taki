@@ -480,7 +480,7 @@ write(*,*) "debug 6"
 write(*,*) "debug 7"
 print *, "route%routing_tile_file =", trim(route%routing_tile_file)
 print *, "layout_ease =", layout_ease
-if (associated(route%application_grid)) then
+if (allocated(route%application_grid)) then
     print *, "route%application_grid is successfully allocated."
 else
     print *, "Error: route%application_grid is not allocated!"
