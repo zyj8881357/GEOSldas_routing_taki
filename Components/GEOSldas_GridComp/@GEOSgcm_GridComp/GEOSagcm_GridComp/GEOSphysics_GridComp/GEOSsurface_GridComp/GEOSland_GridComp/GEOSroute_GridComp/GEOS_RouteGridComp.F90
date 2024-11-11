@@ -553,19 +553,12 @@ endif
     ! create routehandle
     call ESMF_FieldRedistStore(srcField=field0, dstField=field, &
                 routehandle=route%routehandle, rc=status)
-!-------------------------------------------------
-!allocate(scounts(ndes))
-!counts(myPE + 1) = size(tile_area_src)   
-!call MPI_Allgather(scounts(myPE + 1), 1, MPI_INTEGER, scounts, 1, MPI_INTEGER, MPI_COMM_WORLD, mpierr)
-
-!-------------------------------------------------
-
     VERIFY_(STATUS)
     if (mapl_am_I_root()) print *, "debug 19"    
     ! redist tile_area
     call ESMF_FieldRedist(srcField=FIELD0, dstField=FIELD, &
          routehandle=route%routehandle, rc=status)
-
+    VERIFY_(STATUS)
 call ESMF_FieldGet(field0, farrayPtr=dataPtr, rc=status)
 if (status /= ESMF_SUCCESS) then
     print *, "Error retrieving field0 data"
@@ -599,8 +592,8 @@ deallocate(dataPtr)
 !print *, "Field shape (size of each dimension):", localShape(1:localRank)
 !endif
 
-stop
-    !VERIFY_(STATUS)
+!stop
+
     if (mapl_am_I_root()) print *, "debug 20"   
     call ESMF_FieldDestroy(field, rc=status)
     VERIFY_(STATUS)
