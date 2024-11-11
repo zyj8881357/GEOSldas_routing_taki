@@ -378,13 +378,13 @@ contains
     ! ------------------
     ! begin
 
-    write (*,*) "debug 1"
+    if (mapl_am_I_root()) print *, "debug 1"
     
     call ESMF_UserCompGetInternalState ( GC, 'RiverRoute_state',wrap,status )
     VERIFY_(STATUS)
 
     route => wrap%ptr
-    write (*,*) "debug 2"
+    if (mapl_am_I_root()) print *, "debug 2"
 
     ! get vm
     ! extract comm
@@ -395,7 +395,7 @@ contains
     call ESMF_VMGet       (VM, localpet=MYPE, petcount=nDEs,  RC=STATUS)
     VERIFY_(STATUS)
 
-    write (*,*) "debug 3"
+    if (mapl_am_I_root()) print *, "debug 3"
     call MAPL_GetObjectFromGC ( GC, MAPL, RC=STATUS)
     VERIFY_(STATUS)
 
@@ -403,7 +403,7 @@ contains
     route%ndes = ndes
     route%mype = mype
 
-    write (*,*) "debug 4"    
+    if (mapl_am_I_root()) print *, "debug 4"    
     allocate(ims(1:ndes))
     ! define minCatch, maxCatch
     call MAPL_DecomposeDim ( n_catg,ims,ndes ) ! ims(mype+1) gives the size of my partition
@@ -413,25 +413,27 @@ contains
     maxCatch = beforeMe + ims(myPe+1)
     write(*,*) "my PE is:",mype,", minCatch is:",minCatch,", maxCatch is:",maxCatch
 
-    write (*,*) "debug 5"    
+    if (mapl_am_I_root()) print *, "debug 5"    
     ! get LocStream
     call MAPL_Get(MAPL, LocStream = locstream, RC=status)
     VERIFY_(STATUS)
-    write (*,*) "debug 6"   
+    if (mapl_am_I_root()) print *, "debug 6"   
     ! extract Pfaf (TILEI on the "other" grid)    
-    !call MAPL_LocStreamGet(locstream, &
-    !     tileGrid=tilegrid, nt_global=nt_global, RC=status)
-    write (*,*) "debug 6.1"       
-    !allocate(pfaf(nt_global))
-    call MAPL_LocStreamGet(locstream, GRIDIM=pfaf, &
-         tileGrid=tilegrid, nt_global=nt_global, RC=status) 
-    print *,"nt_global=",nt_global            
+    call MAPL_LocStreamGet(locstream, &
+         tileGrid=tilegrid, nt_global=nt_global, RC=status)
+    if (mapl_am_I_root()) print *, "nt_global=",nt_global     
+    if (mapl_am_I_root()) print *, "debug 6.1"       
+    allocate(pfaf(nt_global))
+    open(77,file="../input/pfaf_input.txt",status="old",action="read")
+    read(77,)pfaf
+    !call MAPL_LocStreamGet(locstream, GRIDIM=pfaf, &
+    !     tileGrid=tilegrid, nt_global=nt_global, RC=status)            
     !VERIFY_(STATUS)
-    write (*,*) "debug 7"   
+    if (mapl_am_I_root()) print *, "debug 7"   
     ! exchange Pfaf across PEs
 
 if (mapl_am_I_root())then
-    open(88,file="pfaf.txt")
+    open(88,file="pfaf.txt",action="write")
     write(88,*)pfaf
 endif
 
