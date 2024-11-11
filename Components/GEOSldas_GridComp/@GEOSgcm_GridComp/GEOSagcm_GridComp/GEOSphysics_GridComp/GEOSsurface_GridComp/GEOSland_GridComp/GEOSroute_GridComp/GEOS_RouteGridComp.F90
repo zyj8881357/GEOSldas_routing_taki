@@ -522,6 +522,10 @@ endif
     VERIFY_(STATUS)
     if (mapl_am_I_root()) print *, "debug 15"   
     call MAPL_LocStreamGet(locstream, TILEAREA = tile_area_src, RC=status)
+    if (mapl_am_I_root()) then
+      print *,"Total number of elements in tile_area_src:", size(tile_area_src)
+      print *,"tile_area_src:",tile_area_src
+    endif
     VERIFY_(STATUS)
     if (mapl_am_I_root()) print *, "debug 16"   
     field0 = ESMF_FieldCreate(grid=tilegrid, datacopyflag=ESMF_DATACOPY_VALUE, &
@@ -533,6 +537,10 @@ endif
     if (mapl_am_I_root()) print *, "debug 17"   
     field = ESMF_FieldCreate(grid=newtilegrid, datacopyflag=ESMF_DATACOPY_VALUE, &
          farrayPtr=tile_area, name='TILE_AREA', RC=STATUS)
+    if (mapl_am_I_root()) then
+      print *,"Total number of elements in tile_area:", size(tile_area)
+      print *,"tile_area:",tile_area
+    endif    
     VERIFY_(STATUS)
     if (mapl_am_I_root()) print *, "debug 18"   
     ! create routehandle
