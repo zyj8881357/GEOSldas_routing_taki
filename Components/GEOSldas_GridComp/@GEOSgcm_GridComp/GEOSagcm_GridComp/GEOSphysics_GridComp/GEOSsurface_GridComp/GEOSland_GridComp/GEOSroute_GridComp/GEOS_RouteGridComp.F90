@@ -566,7 +566,9 @@ if(mapl_am_I_root())then
 do i = 1, size(dataPtr, 1)
         print *, "redist field0 at (", i, ") =", dataPtr(i)
 end do
+endif
 deallocate(dataPtr)
+
 call ESMF_FieldGet(field, farrayPtr=dataPtr, rc=status)
 if (status /= ESMF_SUCCESS) then
     print *, "Error retrieving field data"
@@ -576,7 +578,8 @@ if(mapl_am_I_root())then
 do i = 1, size(dataPtr, 1)
         print *, "redist field at (", i, ") =", dataPtr(i)
 end do
-
+endif
+deallocate(dataPtr)
 
 endif      
 !call ESMF_FieldGet(field, localDe=localShape, rank=localRank, rc=status)
