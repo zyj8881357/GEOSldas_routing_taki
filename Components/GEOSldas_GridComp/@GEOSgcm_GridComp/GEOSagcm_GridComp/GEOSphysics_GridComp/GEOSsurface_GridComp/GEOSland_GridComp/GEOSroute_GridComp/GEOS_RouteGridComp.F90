@@ -430,6 +430,11 @@ contains
     write (*,*) "debug 7"   
     ! exchange Pfaf across PEs
 
+if (mapl_am_I_root())then
+    open(88,file="pfaf.txt")
+    write(88,*)pfaf
+endif
+
     ntiles = 0
     !loop over total_n_tiles
     allocate(arbSeq(1:nt_global))
