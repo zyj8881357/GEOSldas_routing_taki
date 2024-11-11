@@ -478,7 +478,13 @@ write(*,*) "debug 6"
        call ESMF_DistGridGet(distgrid,deLayout=layout_catch,rc=status)
        _VERIFY(status)
 write(*,*) "debug 7"
-print *,"route%application_grid:",route%application_grid,", layout_ease:",layout_ease,", route%routing_tile_file:",route%routing_tile_file
+print *, "route%routing_tile_file =", trim(route%routing_tile_file)
+print *, "layout_ease =", layout_ease
+if (associated(route%application_grid)) then
+    print *, "route%application_grid is successfully allocated."
+else
+    print *, "Error: route%application_grid is not allocated!"
+endif
        call MAPL_LocStreamCreate(application_ls,layout_ease,trim(route%routing_tile_file),'application_ls',mask=[MAPL_LAND], &
             grid=route%application_grid,rc=status)
        _VERIFY(status)
