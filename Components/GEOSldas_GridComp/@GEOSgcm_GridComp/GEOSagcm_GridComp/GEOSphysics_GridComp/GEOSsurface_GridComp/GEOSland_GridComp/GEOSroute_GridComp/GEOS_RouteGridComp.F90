@@ -437,22 +437,11 @@ contains
     end if
     route%ease_tiles = (index(master_gridname,"EASE")/=0)
 
-print *, "Checking if EASE_PFAFFSETTER_FILE exists in CF configuration..."
-call ESMF_ConfigFindLabel(CF, "EASE_PFAFFSETTER_FILE:", isPresent=alternate_tile_found, rc=status)
-if (alternate_tile_found) then
-    print *, "Found EASE_PFAFFSETTER_FILE, trying to get attribute..."
-    call ESMF_ConfigGetAttribute(CF, route%routing_tile_file, Label="EASE_PFAFFSETTER_FILE:", RC=status)
-    _VERIFY(status)
-    alternate_tile_found = .true.
-else
-    print *, "EASE_PFAFFSETTER_FILE not found in CF"
-end if
-
-
     alternate_tile_found=.false.
     if (route%ease_tiles) then
-       call ESMF_ConfigGetAttribute ( CF, route%routing_tile_file, Label="EASE_PFAFFSETTER_FILE:", RC=STATUS)
-       _VERIFY(status)
+       !call ESMF_ConfigGetAttribute ( CF, route%routing_tile_file, Label="EASE_PFAFFSETTER_FILE:", RC=STATUS)
+       !_VERIFY(status)
+       route%routing_tile_file="../input/SMAP-EASEv2-M36_SMAP-EASEv2-M36-Pfafstetter.til"
        alternate_tile_found=.true.
     else 
        call ESMF_ConfigFindLabel( CF, "routing_tile:", isPresent=alternate_tile_found,rc=status)
