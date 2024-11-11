@@ -370,6 +370,7 @@ contains
     integer, pointer :: arbSeq_ori(:) => NULL()    
     integer, allocatable :: arbIndex(:,:)
     real, pointer :: tile_area_src(:) => NULL()
+    integer,pointer :: local_id(:)  => NULL()
     real, pointer :: tile_area(:) => NULL()
     real, pointer :: ptr2(:) => NULL()
     
@@ -377,7 +378,6 @@ contains
     type (RROUTE_wrap)                     :: wrap
 
 
-integer :: localRank, localShape(ESMF_MAXDIM)
 real, pointer :: dataPtr(:)
 integer :: j
     ! ------------------
@@ -526,11 +526,13 @@ endif
     call ESMF_GridCompSet(gc, grid=catchGrid, RC=status)
     VERIFY_(STATUS)
     if (mapl_am_I_root()) print *, "debug 15"   
-    call MAPL_LocStreamGet(locstream, TILEAREA = tile_area_src, RC=status)
-    !if (mapl_am_I_root()) then
-    !  print *,"Total number of elements in tile_area_src:", size(tile_area_src)
-    !  print *,"tile_area_src:",tile_area_src
-    !endif
+    call MAPL_LocStreamGet(locstream, TILEAREA = tile_area_src, LOCAL_ID=local_id, RC=status)
+
+    if (mapl_am_I_root()) then
+      print *,"Total number of elements in local_id:", size(local_id)
+      print *,"local_id:",local_id
+    endif
+    stop
     VERIFY_(STATUS)
     if (mapl_am_I_root()) print *, "debug 16"   
     field0 = ESMF_FieldCreate(grid=tilegrid, datacopyflag=ESMF_DATACOPY_VALUE, &
@@ -551,7 +553,14 @@ endif
     ! create routehandle
     call ESMF_FieldRedistStore(srcField=field0, dstField=field, &
                 routehandle=route%routehandle, rc=status)
-    !VERIFY_(STATUS)
+!-------------------------------------------------
+!allocate(scounts(ndes))
+!counts(myPE + 1) = size(tile_area_src)   
+!call MPI_Allgather(scounts(myPE + 1), 1, MPI_INTEGER, scounts, 1, MPI_INTEGER, MPI_COMM_WORLD, mpierr)
+
+!-------------------------------------------------
+
+    VERIFY_(STATUS)
     if (mapl_am_I_root()) print *, "debug 19"    
     ! redist tile_area
     call ESMF_FieldRedist(srcField=FIELD0, dstField=FIELD, &
