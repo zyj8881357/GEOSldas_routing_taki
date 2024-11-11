@@ -478,7 +478,7 @@ write(*,*) "debug 6"
        call ESMF_DistGridGet(distgrid,deLayout=layout_catch,rc=status)
        _VERIFY(status)
 write(*,*) "debug 7"
-print *,"route%application_grid:"route%application_grid,", layout_ease:",layout_ease,", route%routing_tile_file:",route%routing_tile_file,",application_ls:",application_ls
+print *,"route%application_grid:",route%application_grid,", layout_ease:",layout_ease,", route%routing_tile_file:",route%routing_tile_file,",application_ls:",application_ls
        call MAPL_LocStreamCreate(application_ls,layout_ease,trim(route%routing_tile_file),'application_ls',mask=[MAPL_LAND], &
             grid=route%application_grid,rc=status)
        _VERIFY(status)
