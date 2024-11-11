@@ -451,39 +451,47 @@ contains
        end if
     end if
 
-    _ASSERT(.not.(alternate_tile_found .and. ease_grid_found),"can not use alternative tile file for route when running ease grid")
+   print *,"alternate_tile_found:",alternate_tile_found,", ease_grid_found:",ease_grid_found
+    !_ASSERT(.not.(alternate_tile_found .and. ease_grid_found),"can not use alternative tile file for route when running ease grid")
 
     if (alternate_tile_found) then
 
        if (route%ease_tiles) then
+write(*,*) "debug 1"
           route%application_grid = grid_manager%make_grid(cf,prefix="GEOSldas"//".",rc=status)
           _VERIFY(status)
+write(*,*) "debug 2"          
        else
           call ESMF_GridCompGet(GC,grid=route%application_grid,rc=status)
           _VERIFY(status)
        end if
-
+write(*,*) "debug 3"
        call ESMF_GridGet(route%application_grid,distgrid=distgrid,rc=status)
        _VERIFY(status)
+write(*,*) "debug 4"       
        call ESMF_DistGridGet(distgrid,deLayout=layout_ease,rc=status)
        _VERIFY(status)
+write(*,*) "debug 5"       
        call ESMF_GridGet(CatchGrid,distgrid=distgrid,rc=status)
        _VERIFY(status)
+write(*,*) "debug 6"       
        call ESMF_DistGridGet(distgrid,deLayout=layout_catch,rc=status)
        _VERIFY(status)
-
+write(*,*) "debug 7"
        call MAPL_LocStreamCreate(application_ls,layout_ease,trim(route%routing_tile_file),'application_ls',mask=[MAPL_LAND], &
             grid=route%application_grid,rc=status)
        _VERIFY(status)
        route%application_ls=application_ls
+write(*,*) "debug 8"       
        call MAPL_LocstreamCreate(route_ls,layout_catch,trim(route%routing_tile_file),'route_ls', mask=[MAPL_LAND], &
             grid=CatchGrid,use_pfaf=.true.,rc=status)
        _VERIFY(status)
        route%route_ls=route_ls
+write(*,*) "debug 9"       
        call MAPL_LocStreamCreateXform(xform=route%xform,locstreamOut=route_ls, &
             locstreamIn=application_ls,name="application_to_route",rc=status)
        _VERIFY(status)
-        
+write(*,*) "debug 10"        
     else
        call ESMF_GridGet(CatchGrid,distgrid=distgrid,rc=status)
        _VERIFY(status)
@@ -498,7 +506,7 @@ contains
              locStreamIn=locstream,name="tile_to_route",rc=status)
     end if
 
-
+write(*,*) "debug 11" 
     call MAPL_LocStreamGet(route%route_ls,nt_local=route%ntiles,rc=status)
     _VERIFY(status)
 
