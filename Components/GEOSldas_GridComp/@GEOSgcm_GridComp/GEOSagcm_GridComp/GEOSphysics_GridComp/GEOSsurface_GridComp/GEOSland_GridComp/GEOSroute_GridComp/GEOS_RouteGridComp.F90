@@ -419,26 +419,27 @@ contains
     VERIFY_(STATUS)
     write (*,*) "debug 6"   
     ! extract Pfaf (TILEI on the "other" grid)    
-    call MAPL_LocStreamGet(locstream, &
-         tileGrid=tilegrid, nt_global=nt_global, RC=status)
-    print *,"nt_global=",nt_global
+    !call MAPL_LocStreamGet(locstream, &
+    !     tileGrid=tilegrid, nt_global=nt_global, RC=status)
     write (*,*) "debug 6.1"       
     allocate(pfaf(nt_global))
     call MAPL_LocStreamGet(locstream, GRIDIM=pfaf, &
-         tileGrid=tilegrid, nt_global=nt_global, RC=status)    
+         tileGrid=tilegrid, nt_global=nt_global, RC=status) 
+    print *,"nt_global=",nt_global            
     !VERIFY_(STATUS)
     write (*,*) "debug 7"   
     ! exchange Pfaf across PEs
 
     ntiles = 0
     !loop over total_n_tiles
+    allocate(arbSeq(1:nt_global))
     do i = 1, nt_global
        pf = pfaf(i)
        if (pf >= minCatch .and. pf <= maxCatch) then ! I want this!
           print *,"my PE is:",mype,"pf=",pf
           ntiles = ntiles+1
           !realloc if needed
-          arbSeq(ntiles) = i
+          arbSeq(ntiles) = pf
        end if
     end do ! global tile loop
     write (*,*) "debug 8"   
