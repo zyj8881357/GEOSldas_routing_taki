@@ -441,7 +441,7 @@ contains
     if (route%ease_tiles) then
        !call ESMF_ConfigGetAttribute ( CF, route%routing_tile_file, Label="EASE_PFAFFSETTER_FILE:", RC=STATUS)
        !_VERIFY(status)
-       route%routing_tile_file="../input/SMAP-EASEv2-M36_SMAP-EASEv2-M36-Pfafstetter.til"
+       route%routing_tile_file="/umbc/xfs1/yujinz/users/yujinz/GEOSldas/test/SMAP_Nature_v10.0_M36_N32_1983_1995_routing/input/SMAP-EASEv2-M36_SMAP-EASEv2-M36-Pfafstetter.til"
        alternate_tile_found=.true.
     else 
        call ESMF_ConfigFindLabel( CF, "routing_tile:", isPresent=alternate_tile_found,rc=status)
@@ -478,6 +478,7 @@ write(*,*) "debug 6"
        call ESMF_DistGridGet(distgrid,deLayout=layout_catch,rc=status)
        _VERIFY(status)
 write(*,*) "debug 7"
+print *,"route%application_grid:"route%application_grid,", layout_ease:",layout_ease,", route%routing_tile_file:",route%routing_tile_file,",application_ls:",application_ls
        call MAPL_LocStreamCreate(application_ls,layout_ease,trim(route%routing_tile_file),'application_ls',mask=[MAPL_LAND], &
             grid=route%application_grid,rc=status)
        _VERIFY(status)
