@@ -556,15 +556,15 @@ endif
     ! redist tile_area
     call ESMF_FieldRedist(srcField=FIELD0, dstField=FIELD, &
          routehandle=route%routehandle, rc=status)
-call ESMF_FieldGet(field, localDe=localShape, rank=localRank, rc=status)
-if (status /= ESMF_SUCCESS) then
-    print *, "Error retrieving field dimensions"
-    stop
-end if
-if(mapl_am_I_root())then
-print *, "Field rank (number of dimensions):", localRank
-print *, "Field shape (size of each dimension):", localShape(1:localRank)
-endif
+!call ESMF_FieldGet(field, localDe=localShape, rank=localRank, rc=status)
+!if (status /= ESMF_SUCCESS) then
+!    print *, "Error retrieving field dimensions"
+!    stop
+!end if
+!if(mapl_am_I_root())then
+!print *, "Field rank (number of dimensions):", localRank
+!print *, "Field shape (size of each dimension):", localShape(1:localRank)
+!endif
 call ESMF_FieldGet(field, farrayPtr=dataPtr, rc=status)
 if (status /= ESMF_SUCCESS) then
     print *, "Error retrieving field data"
