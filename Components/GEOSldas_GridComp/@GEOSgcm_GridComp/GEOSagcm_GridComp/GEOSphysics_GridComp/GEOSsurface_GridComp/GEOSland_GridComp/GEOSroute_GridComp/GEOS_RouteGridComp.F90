@@ -881,24 +881,24 @@ deallocate(dataPtr)
        allocate (DstCatchID(1:N_CatG, 1: nDEs)) 
        allocate (srcProcsID   (1:N_CatG ))
        allocate (LocDstCatchID(1:N_CatG ))
-
+    if (mapl_am_I_root()) print *, "debug 26" 
        AllActive       = -9999
        srcProcsID      = -9999
        DstCatchID      = -9999
        LocDstCatchID   = NINT(DNSTR)
-
+    if (mapl_am_I_root()) print *, "debug 27" 
        call InitializeRiverRouting(MYPE, nDEs, MAPL_am_I_root(vm),pfaf_code, & 
             AllActive, DstCatchID, srcProcsID, LocDstCatchID, rc=STATUS)
 
        VERIFY_(STATUS)
-
+    if (mapl_am_I_root()) print *, "debug 28" 
        N_Active = count (srcProcsID == MYPE)
 
        allocate (GlbActive(1 : N_Active))
        allocate (tmp_index(1 : N_CatG  ))
 
        forall (N=1:N_CatG) tmp_index(N) = N
-
+    if (mapl_am_I_root()) print *, "debug 29" 
        GlbActive = pack (tmp_index, mask = (srcProcsID == MYPE))
 
        ! Initialize the cycle counter and sum (runoff) 
@@ -911,7 +911,7 @@ deallocate(dataPtr)
        FirstTime = .false.
 
        deallocate (tmp_index)
-       
+    if (mapl_am_I_root()) print *, "debug 30"        
     ENDIF FIRST_TIME
 
     ! For efficiency, the time step to call the river routing model is set at ROUTE_DT 
