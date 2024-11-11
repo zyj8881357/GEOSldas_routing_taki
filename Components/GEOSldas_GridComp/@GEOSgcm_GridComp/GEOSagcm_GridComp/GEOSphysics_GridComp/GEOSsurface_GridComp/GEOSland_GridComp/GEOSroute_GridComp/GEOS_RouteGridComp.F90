@@ -917,7 +917,7 @@ deallocate(dataPtr)
     ! For efficiency, the time step to call the river routing model is set at ROUTE_DT 
 
     N_CYC = ROUTE_DT/HEARTBEAT
-
+    if (mapl_am_I_root()) print *, "debug 31"   
     RUN_MODEL : if (ThisCycle == N_CYC) then  
 
        runoff_save = runoff_save + runoff/real (N_CYC)
@@ -930,7 +930,7 @@ deallocate(dataPtr)
        ! Unit conversion 
        
        mm2m3 = MAPL_RADIUS * MAPL_RADIUS / 1000.
-       
+    if (mapl_am_I_root()) print *, "debug 32"          
        ALLOCATE (RUNOFF_CATCH(1:N_CatG))
     
        RUNOFF_CATCH = 0.
@@ -938,12 +938,12 @@ deallocate(dataPtr)
        DO N = 1, NTILES 
           RUNOFF_CATCH (pfaf_code(n)) = RUNOFF_CATCH (pfaf_code(n)) + mm2m3 * RUNOFF_SAVE (N) * TILE_AREA (N)
        END DO
-       
+    if (mapl_am_I_root()) print *, "debug 33"         
        ! Inter-processor communication 1
        ! For catchment-tiles that contribute to the main catchment in some other processor, 
        ! send runoff to the corresponding srcProcsID(N)    
        ! -----------------------------------------------------------------------------------
-       
+    if (mapl_am_I_root()) print *, "debug 34"         
        do N = Local_Min, Local_Max
           
           if ((AllActive (N,MYPE+1) > 0).and.(srcProcsID(N) /= MYPE)) then
@@ -970,7 +970,7 @@ deallocate(dataPtr)
              endif
           endif
        end do
-       
+    if (mapl_am_I_root()) print *, "debug 35"         
        ! Now compress and create subsets of arrays that only contain active catchments 
        !    in the local processor
        ! -----------------------------------------------------------------------------
@@ -982,7 +982,7 @@ deallocate(dataPtr)
        if(allocated (QSFLOW_ACT  ) .eqv. .false.) allocate (QSFLOW_ACT  (1:N_Active))
        if(allocated (QOUTFLOW_ACT) .eqv. .false.) allocate (QOUTFLOW_ACT(1:N_Active))  
        if(allocated (RUNOFF_ACT  ) .eqv. .false.) allocate (RUNOFF_ACT  (1:N_Active))  
-       
+    if (mapl_am_I_root()) print *, "debug 36"         
        DO N = 1, size (GlbActive)
           
           I = GlbActive (N)
@@ -995,7 +995,7 @@ deallocate(dataPtr)
           AREACAT_ACT (N) = AREACAT (I)
           
        END DO
-       
+    if (mapl_am_I_root()) print *, "debug 37"         
        QSFLOW_ACT   = 0.
        QOUTFLOW_ACT = 0.
        QSFLOW       = 0.
@@ -1004,10 +1004,10 @@ deallocate(dataPtr)
        
        ! Call river_routing_model
        ! ------------------------
-       
+    if (mapl_am_I_root()) print *, "debug 38"         
        CALL RIVER_ROUTING  (N_Active, RUNOFF_ACT,AREACAT_ACT,LENGSC_ACT,  &
             WSTREAM_ACT,WRIVER_ACT, QSFLOW_ACT,QOUTFLOW_ACT) 
-       
+    if (mapl_am_I_root()) print *, "debug 39"        
        DO N = 1, size (GlbActive)
           
           I = GlbActive (N) - Local_Min + 1
@@ -1025,7 +1025,7 @@ deallocate(dataPtr)
 
           endif
        END DO
-       
+    if (mapl_am_I_root()) print *, "debug 40"        
        ! Inter-processor communication-2
        ! Update down stream catchments
        ! -------------------------------
@@ -1087,22 +1087,22 @@ deallocate(dataPtr)
        runoff_save = 0.
        ThisCycle   = 1         
 
-
+    if (mapl_am_I_root()) print *, "debug 41"  
     else
        
        runoff_save = runoff_save + runoff/real (N_CYC)
        
        ThisCycle = ThisCycle + 1
-       
+    if (mapl_am_I_root()) print *, "debug 31.5"         
     endif RUN_MODEL
-
+    if (mapl_am_I_root()) print *, "debug 42"  
  call MAPL_TimerOff ( MAPL, "-RRM" )
-
+    if (mapl_am_I_root()) print *, "debug 43"  
 ! All done
 ! --------
 
     call MAPL_TimerOff(MAPL,"RUN")
-
+    if (mapl_am_I_root()) print *, "debug 44"  
     RETURN_(ESMF_SUCCESS)
 
   end subroutine RUN
