@@ -564,7 +564,7 @@ if (status /= ESMF_SUCCESS) then
 end if
 if(mapl_am_I_root())then     
 do i = 1, size(dataPtr, 1)
-        print *, "Value at (", i, ") =", dataPtr(i)
+        print *, "redist Value at (", i, ") =", dataPtr(i)
 end do
 endif      
 !call ESMF_FieldGet(field, localDe=localShape, rank=localRank, rc=status)
