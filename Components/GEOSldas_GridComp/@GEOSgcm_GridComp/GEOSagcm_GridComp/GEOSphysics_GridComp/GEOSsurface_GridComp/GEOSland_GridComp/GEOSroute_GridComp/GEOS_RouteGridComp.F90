@@ -597,10 +597,10 @@ deallocate(dataPtr)
 !stop
 
     if (mapl_am_I_root()) print *, "debug 20"   
-    call ESMF_FieldDestroy(field, rc=status)
-    VERIFY_(STATUS)
-    call ESMF_FieldDestroy(field0, rc=status)
-    VERIFY_(STATUS)
+    !call ESMF_FieldDestroy(field, rc=status)
+    !VERIFY_(STATUS)
+    !call ESMF_FieldDestroy(field0, rc=status)
+    !VERIFY_(STATUS)
     if (mapl_am_I_root()) print *, "debug 20.1"  
 
     ntiles = 0
