@@ -376,6 +376,10 @@ contains
     type (T_RROUTE_STATE), pointer         :: route => null()
     type (RROUTE_wrap)                     :: wrap
 
+
+integer :: localRank, localShape(ESMF_MAXDIM)
+real(ESMF_KIND_R8), pointer :: dataPtr(:,:)
+integer :: j
     ! ------------------
     ! begin
 
@@ -452,6 +456,7 @@ endif
           arbSeq_ori(ntiles) = pf
        end if
     end do ! global tile loop
+    if (mapl_am_I_root()) print *, "ntiles:",ntiles
     allocate(arbSeq(ntiles))
     arbSeq=arbSeq_ori(1:ntiles)
     deallocate(arbSeq_ori)
@@ -537,21 +542,43 @@ endif
     if (mapl_am_I_root()) print *, "debug 17"   
     field = ESMF_FieldCreate(grid=newtilegrid, datacopyflag=ESMF_DATACOPY_VALUE, &
          farrayPtr=tile_area, name='TILE_AREA', RC=STATUS)
-    if (mapl_am_I_root()) then
-      print *,"Total number of elements in tile_area:", size(tile_area)
-      print *,"tile_area:",tile_area
-    endif    
+    !if (mapl_am_I_root()) then
+    !  print *,"Total number of elements in tile_area:", size(tile_area)
+    !  print *,"tile_area:",tile_area
+    !endif    
     VERIFY_(STATUS)
     if (mapl_am_I_root()) print *, "debug 18"   
     ! create routehandle
     call ESMF_FieldRedistStore(srcField=field0, dstField=field, &
                 routehandle=route%routehandle, rc=status)
-    VERIFY_(STATUS)
+    !VERIFY_(STATUS)
     if (mapl_am_I_root()) print *, "debug 19"    
     ! redist tile_area
     call ESMF_FieldRedist(srcField=FIELD0, dstField=FIELD, &
          routehandle=route%routehandle, rc=status)
-    VERIFY_(STATUS)
+call ESMF_FieldGet(field, localDe=localShape, rank=localRank, rc=status)
+if (status /= ESMF_SUCCESS) then
+    print *, "Error retrieving field dimensions"
+    stop
+end if
+if(mapl_am_I_root())then
+print *, "Field rank (number of dimensions):", localRank
+print *, "Field shape (size of each dimension):", localShape(1:localRank)
+endif
+call ESMF_FieldGet(field, farrayPtr=dataPtr, rc=status)
+if (status /= ESMF_SUCCESS) then
+    print *, "Error retrieving field data"
+    stop
+end if
+if(mapl_am_I_root())then     
+do i = 1, size(dataPtr, 1)
+    do j = 1, size(dataPtr, 2)
+        print *, "Value at (", i, ",", j, ") =", dataPtr(i, j)
+    end do
+end do
+endif
+stop
+    !VERIFY_(STATUS)
     if (mapl_am_I_root()) print *, "debug 20"   
     call ESMF_FieldDestroy(field, rc=status)
     VERIFY_(STATUS)
