@@ -706,6 +706,7 @@ endif
 ! ----------------------------------------------------- 
 
     real, dimension(:), pointer :: RUNOFF 
+    real, dimension(:), pointer :: RUNOFF_SRC0   
 
 ! -----------------------------------------------------
 ! INTERNAL pointers
@@ -799,16 +800,28 @@ endif
 
     ! get the field from IMPORT
     call ESMF_StateGet(IMPORT, 'RUNOFF', field=runoff_src, RC=STATUS)
+    VERIFY_(STATUS)    
+    call ESMF_FieldGet(runoff_src, farrayPtr=RUNOFF_SRC0, rc=status)    
     VERIFY_(STATUS)
+if(mapl_am_I_root())then     
+do i = 1, size(RUNOFF_SRC0, 1)
+        print *, "RUNOFF_SRC0 at (", i, ") =", RUNOFF_SRC0(i)
+end do
+endif    
     if (mapl_am_I_root()) print *, "debug 8" 
     ! redist RunOff
     !call ESMF_FieldRedist(srcField=runoff_src, dstField=route%field, &
     !            routehandle=route%routehandle, rc=status)
     !VERIFY_(STATUS)
-    route%field=0.
     if (mapl_am_I_root()) print *, "debug 9" 
     call ESMF_FieldGet(route%field, farrayPtr=RUNOFF, rc=status)
     VERIFY_(STATUS)
+if(mapl_am_I_root())then     
+do i = 1, size(RUNOFF, 1)
+        print *, "RUNOFF at (", i, ") =", RUNOFF(i)
+end do
+endif
+    RUNOFF = 0.   
     if (mapl_am_I_root()) print *, "debug 10" 
     pfaf_code => route%pfaf
     tile_area => route%tile_area
