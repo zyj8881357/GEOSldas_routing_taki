@@ -134,8 +134,8 @@ contains
     VERIFY_(STATUS)
 !    call MAPL_GridCompSetEntryPoint (GC, ESMF_METHOD_RUN, Run, RC=STATUS)
 !    VERIFY_(STATUS)
-    !call MAPL_GridCompSetEntryPoint ( GC, ESMF_METHOD_RUN, RUN1, RC=STATUS )
-    !VERIFY_(STATUS)
+    call MAPL_GridCompSetEntryPoint ( GC, ESMF_METHOD_RUN, RUN1, RC=STATUS )
+    VERIFY_(STATUS)
     call MAPL_GridCompSetEntryPoint ( GC, ESMF_METHOD_RUN, RUN2, RC=STATUS )
     VERIFY_(STATUS)
 
@@ -808,7 +808,7 @@ endif
     if (mapl_am_I_root()) print *, "debug 10" 
     pfaf_code => route%pfaf
     tile_area => route%tile_area
-    
+RETURN_(ESMF_SUCCESS)    
 ! get pointers to internal variables
 ! ----------------------------------
     if (mapl_am_I_root()) print *, "debug 11"   
