@@ -1572,7 +1572,7 @@ contains
 !--------------------------------
 
     DO I = 1, size(GCS)
-       if (trim(GCnames(i)) == "ROUTE") cycle      
+       !if (trim(GCnames(i)) == "ROUTE") cycle      
        call MAPL_TimerOn(MAPL,trim(GCnames(i)), RC=STATUS ); VERIFY_(STATUS)
        if (mapl_am_I_root()) print *, "Run1, GCnames:",GCnames(i)     
        call ESMF_GridCompRun(GCS(I), importState=GIM(I), exportState=GEX(I), &

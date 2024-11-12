@@ -644,8 +644,20 @@ deallocate(dataPtr)
 ! -----------------------------------------------------------
 ! RUN -- Run method for the route component
 ! -----------------------------------------------------------
+  subroutine RUN1 (GC,IMPORT, EXPORT, CLOCK, RC )
+    type(ESMF_GridComp), intent(inout) :: GC    
+    type(ESMF_State),    intent(inout) :: IMPORT
+    type(ESMF_State),    intent(inout) :: EXPORT
+    type(ESMF_Clock),    intent(inout) :: CLOCK
+    integer, optional,   intent(  out) :: RC
 
-  subroutine RUN (GC,IMPORT, EXPORT, CLOCK, RC )
+    if (mapl_am_I_root()) print *, "RUN1: debug in"  
+    RETURN_(ESMF_SUCCESS)
+
+  end subroutine RUN1
+
+
+  subroutine RUN2 (GC,IMPORT, EXPORT, CLOCK, RC )
 
 ! -----------------------------------------------------------
 ! !ARGUMENTS:
@@ -1105,7 +1117,7 @@ deallocate(dataPtr)
     if (mapl_am_I_root()) print *, "debug 44"  
     RETURN_(ESMF_SUCCESS)
     if (mapl_am_I_root()) print *, "debug 45"  
-  end subroutine RUN
+  end subroutine RUN2
 
 ! ---------------------------------------------------------------------------
 
