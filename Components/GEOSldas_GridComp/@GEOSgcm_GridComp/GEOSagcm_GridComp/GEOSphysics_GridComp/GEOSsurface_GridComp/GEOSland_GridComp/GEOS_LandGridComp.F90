@@ -1338,13 +1338,13 @@ contains
                               CHILD_ID = VEGDYN,&
                               RC=STATUS  )
     VERIFY_(STATUS) 
-!    IF(RUN_ROUTE == 1) THEN
-!       call MAPL_AddExportSpec ( GC, &
-!            SHORT_NAME = 'QOUTFLOW', &
-!            CHILD_ID = ROUTE(1),     &
-!            RC=STATUS  )
-!       VERIFY_(STATUS)       
-!    ENDIF
+    IF(RUN_ROUTE == 1) THEN
+       call MAPL_AddExportSpec ( GC, &
+            SHORT_NAME = 'QOUTFLOW', &
+            CHILD_ID = ROUTE(1),     &
+            RC=STATUS  )
+       VERIFY_(STATUS)       
+    ENDIF
 
 !EOS
     
@@ -1370,16 +1370,16 @@ contains
                                                       RC=STATUS )
           VERIFY_(STATUS)
 
-!          IF(RUN_ROUTE == 1) THEN
-!             call MAPL_AddConnectivity (                              &
-!                  GC                                                 ,&
-!                  SHORT_NAME  = (/'RUNOFF  '/)                       ,&
-!                  SRC_ID =  CATCH(I)                                 ,&
-!                  DST_ID =  ROUTE(I)                                 ,&
-!                  
-!                  RC=STATUS )
-!             VERIFY_(STATUS)            
-!          ENDIF
+          IF(RUN_ROUTE == 1) THEN
+             call MAPL_AddConnectivity (                              &
+                  GC                                                 ,&
+                  SHORT_NAME  = (/'RUNOFF  '/)                       ,&
+                  SRC_ID =  CATCH(I)                                 ,&
+                  DST_ID =  ROUTE(I)                                 ,&
+                  
+                  RC=STATUS )
+             VERIFY_(STATUS)            
+          ENDIF
 
        CASE (2,3)
           call MAPL_AddConnectivity (                                    & 
@@ -1389,18 +1389,17 @@ contains
             DST_ID =  CATCHCN(I)                               ,         &
             SRC_ID =  VEGDYN                                   ,         &
                                                       RC=STATUS ) 
-
-!          IF(RUN_ROUTE == 1) THEN
-!             call MAPL_AddConnectivity (                              &
-!                  GC                                                 ,&
-!                  SHORT_NAME  = (/'RUNOFF  '/)                       ,&
-!                  SRC_ID =  CATCHCN(I)                               ,&
-!                  DST_ID =  ROUTE(I)                                 ,&
-!                  
-!                  RC=STATUS )
-!             VERIFY_(STATUS)            
-!          ENDIF
-       END SELECT
+          IF(RUN_ROUTE == 1) THEN
+             call MAPL_AddConnectivity (                              &
+                  GC                                                 ,&
+                  SHORT_NAME  = (/'RUNOFF  '/)                       ,&
+                  SRC_ID =  CATCHCN(I)                               ,&
+                  DST_ID =  ROUTE(I)                                 ,&
+                  
+                  RC=STATUS )
+             VERIFY_(STATUS)            
+          ENDIF    
+       END SELECT   
     END DO
 
 
@@ -1573,6 +1572,7 @@ contains
 !--------------------------------
 
     DO I = 1, size(GCS)
+       if (trim(GCnames(i)) == "ROUTE") cycle      
        call MAPL_TimerOn(MAPL,trim(GCnames(i)), RC=STATUS ); VERIFY_(STATUS)
        if (mapl_am_I_root()) print *, "Run1, GCnames:",GCnames(i)     
        call ESMF_GridCompRun(GCS(I), importState=GIM(I), exportState=GEX(I), &
