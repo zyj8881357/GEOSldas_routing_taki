@@ -625,22 +625,25 @@ endif
           arbSeq_ori(ntiles) = pf
        end if
     end do ! global tile loop
+    ntiles = maxCatch-minCatch+1
     if (mapl_am_I_root()) print *, "ntiles:",ntiles
-    allocate(arbSeq_pf(ntiles))
-    arbSeq_pf=arbSeq_ori(1:ntiles)
+!    allocate(arbSeq_pf(ntiles))
+    allocate(arbSeq_pf(maxCatch-minCatch+1))
+    arbSeq_pf = [(i, i = minCatch, maxCatch)]
     deallocate(arbSeq_ori)
-
+   
     ! redist pfaf (NOTE: me might need a second routehandle for integers)
 
     route%pfaf => arbSeq_pf
-    route%ntiles = ntiles
+    !route%ntiles = ntiles  
+    route%ntiles = maxCatch-minCatch+1
     route%minCatch = minCatch
     route%maxCatch = maxCatch
     if (mapl_am_I_root()) print *, "debug 21"   
     allocate(ptr2(ntiles), stat=status)
     VERIFY_(STATUS)
-    route%field = ESMF_FieldCreate(grid=newtilegrid, datacopyflag=ESMF_DATACOPY_VALUE, &
-         farrayPtr=ptr2, name='RUNOFF', RC=STATUS)
+    route%field = ESMF_FieldCreate(grid=catchGrid, datacopyflag=ESMF_DATACOPY_VALUE, &
+        farrayPtr=ptr2, name='RUNOFF', RC=STATUS)
     VERIFY_(STATUS)
     if (mapl_am_I_root()) print *, "debug 22"       
     deallocate(ims)
@@ -799,9 +802,10 @@ endif
     VERIFY_(STATUS)
     if (mapl_am_I_root()) print *, "debug 8" 
     ! redist RunOff
-    call ESMF_FieldRedist(srcField=runoff_src, dstField=route%field, &
-                routehandle=route%routehandle, rc=status)
-    VERIFY_(STATUS)
+    !call ESMF_FieldRedist(srcField=runoff_src, dstField=route%field, &
+    !            routehandle=route%routehandle, rc=status)
+    !VERIFY_(STATUS)
+    route%field=0.
     if (mapl_am_I_root()) print *, "debug 9" 
     call ESMF_FieldGet(route%field, farrayPtr=RUNOFF, rc=status)
     VERIFY_(STATUS)
@@ -1132,7 +1136,7 @@ endif
 ! --------
 
     call MAPL_TimerOff(MAPL,"RUN2")
-    call MPI_Barrier(MPI_COMM_WORLD, mpierr)
+    !call MPI_Barrier(MPI_COMM_WORLD, mpierr)
 
     if (mapl_am_I_root()) print *, "debug 44"  
 

@@ -957,7 +957,7 @@ if (mapl_am_I_root()) print *, "GEOS_LdasGridCompMod, debug14"
     ! Turn timers off
     call MAPL_TimerOff(MAPL, "Run")
     call MAPL_TimerOff(MAPL, "TOTAL")
-call MPI_Barrier(MPI_COMM_WORLD, mpierr)    
+!call MPI_Barrier(MPI_COMM_WORLD, mpierr)    
 if (mapl_am_I_root()) print *, "GEOS_LdasGridCompMod, debug15"
     ! End
     RETURN_(ESMF_SUCCESS)
