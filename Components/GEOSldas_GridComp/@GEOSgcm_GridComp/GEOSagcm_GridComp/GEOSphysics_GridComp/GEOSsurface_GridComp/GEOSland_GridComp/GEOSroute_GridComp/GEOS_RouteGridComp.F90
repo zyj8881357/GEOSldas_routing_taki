@@ -286,10 +286,10 @@ contains
 
 !EOS
 
-    call MAPL_TimerAdd(GC,    name="RUN1"  ,RC=STATUS)
-    VERIFY_(STATUS)
-    call MAPL_TimerAdd(GC,    name="RUN2"  ,RC=STATUS)
-    VERIFY_(STATUS)    
+    !call MAPL_TimerAdd(GC,    name="RUN1"  ,RC=STATUS)
+    !VERIFY_(STATUS)
+    !call MAPL_TimerAdd(GC,    name="RUN2"  ,RC=STATUS)
+    !VERIFY_(STATUS)    
     call MAPL_TimerAdd(GC,    name="-RRM" ,RC=STATUS)
     VERIFY_(STATUS)
 
