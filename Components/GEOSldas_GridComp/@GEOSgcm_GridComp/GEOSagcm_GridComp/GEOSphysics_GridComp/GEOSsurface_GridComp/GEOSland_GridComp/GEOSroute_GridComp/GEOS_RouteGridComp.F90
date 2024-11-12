@@ -940,10 +940,10 @@ endif
     if (mapl_am_I_root()) print *, "debug 30"        
     ENDIF FIRST_TIME
 
-call MAPL_TimerOff ( MAPL, "-RRM" )
-call MAPL_TimerOff(MAPL,"RUN2")
-call MPI_Barrier(MPI_COMM_WORLD, mpierr)
-RETURN_(ESMF_SUCCESS)   
+!call MAPL_TimerOff ( MAPL, "-RRM" )
+!call MAPL_TimerOff(MAPL,"RUN2")
+!call MPI_Barrier(MPI_COMM_WORLD, mpierr)
+!RETURN_(ESMF_SUCCESS)   
     ! For efficiency, the time step to call the river routing model is set at ROUTE_DT 
 
     N_CYC = ROUTE_DT/HEARTBEAT
@@ -1157,7 +1157,7 @@ RETURN_(ESMF_SUCCESS)
 
     integer, optional,    intent(OUT):: rc
 
-    integer :: mpierr,i
+    integer :: mpierr
     character(len=ESMF_MAXSTR), parameter :: Iam='InitializeRiverRouting'
 
     ! STEP 1: Identify active catchments within the local processor. If the catchment is active in 
