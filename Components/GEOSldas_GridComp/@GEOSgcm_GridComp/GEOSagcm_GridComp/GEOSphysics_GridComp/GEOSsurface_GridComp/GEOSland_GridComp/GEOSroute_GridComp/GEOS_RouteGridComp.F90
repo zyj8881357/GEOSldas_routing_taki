@@ -35,7 +35,7 @@ module GEOS_RouteGridCompMod
   
   implicit none
   integer, parameter :: N_CatG = 291284
-  integer, parameter :: nt_all = 112573
+  !integer, parameter :: nt_all = 112573
   private
 
   type T_RROUTE_STATE
@@ -43,6 +43,7 @@ module GEOS_RouteGridCompMod
      type (ESMF_RouteHandle) :: routeHandle
      type (ESMF_Field)       :: field
      integer :: nTiles
+     integer :: nt_global
      integer :: comm
      integer :: nDes
      integer :: myPe
@@ -436,6 +437,7 @@ integer :: j
     ! extract Pfaf (TILEI on the "other" grid)    
     call MAPL_LocStreamGet(locstream, &
          tileGrid=tilegrid, nt_global=nt_global, RC=status)
+    route%nt_global = nt_global
     if (mapl_am_I_root()) print *, "nt_global=",nt_global     
     if (mapl_am_I_root()) print *, "debug 6.1"       
     allocate(pfaf(nt_global))
@@ -759,7 +761,7 @@ endif
     type (RROUTE_wrap)                     :: wrap
     INTEGER, DIMENSION(:)  ,ALLOCATABLE  :: global_buff, scounts, scounts_global,rdispls, rcounts    
 
-    integer :: mpierr    
+    integer :: mpierr, nt_global   
 
     ! ------------------
     ! begin
@@ -808,20 +810,22 @@ endif
     ndes = route%ndes
     mype = route%mype    
     ntiles = route%ntiles
-    allocate(global_buff(nt_all),scounts(ndes),scounts_global(ndes),rdispls(ndes))
+    nt_global = route%nt_global
+    allocate(global_buff(nt_global),scounts(ndes),scounts_global(ndes),rdispls(ndes))
     scounts=0
     scounts(mype+1)=ntiles
     !rdispls=[(i,i=0,ndes-1)]
-    call MPI_Allgather(scounts(mype+1), 1, MPI_INTEGER, scounts_global, 1, MPI_INTEGER, MPI_COMM_WORLD, mpierr)    
-    if(mype==3)then 
-      open(88,file="scounts.txt",action="write")
-      do i=1,nDes
-        write(88,*)scounts(i),scounts_global(i)
-      enddo
-      close(88)
-      print *,sum(scounts_global)
-    endif
-    stop
+    call MPI_Allgather(scounts(mype+1), 1, MPI_INTEGER, scounts_global, 1, MPI_INTEGER, MPI_COMM_WORLD, mpierr) 
+
+    !if(mype==3)then 
+    !  open(88,file="scounts.txt",action="write")
+    !  do i=1,nDes
+    !    write(88,*)scounts(i),scounts_global(i)
+    !  enddo
+    !  close(88)
+    !  print *,sum(scounts_global)
+    !endif
+    !stop
     !rdispls(1)=0
     !do i=2,nDes
     !  rdispls(i)=rdispls(i-1)+
