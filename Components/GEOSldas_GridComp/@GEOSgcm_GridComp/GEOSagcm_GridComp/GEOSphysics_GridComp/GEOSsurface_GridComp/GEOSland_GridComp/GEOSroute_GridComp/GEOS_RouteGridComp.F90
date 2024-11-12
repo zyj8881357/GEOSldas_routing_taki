@@ -808,6 +808,9 @@ endif
     if (mapl_am_I_root()) print *, "debug 10" 
     pfaf_code => route%pfaf
     tile_area => route%tile_area
+
+call MAPL_TimerOff(MAPL,"RUN2")
+call MPI_Barrier(MPI_COMM_WORLD, mpierr)
 RETURN_(ESMF_SUCCESS)    
 ! get pointers to internal variables
 ! ----------------------------------
