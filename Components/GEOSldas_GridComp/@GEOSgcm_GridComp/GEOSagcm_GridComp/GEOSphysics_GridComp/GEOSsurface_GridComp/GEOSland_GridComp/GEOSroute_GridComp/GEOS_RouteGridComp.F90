@@ -817,15 +817,15 @@ endif
     !rdispls=[(i,i=0,ndes-1)]
     call MPI_Allgather(scounts(mype+1), 1, MPI_INTEGER, scounts_global, 1, MPI_INTEGER, MPI_COMM_WORLD, mpierr) 
 
-    !if(mype==3)then 
-    !  open(88,file="scounts.txt",action="write")
-    !  do i=1,nDes
-    !    write(88,*)scounts(i),scounts_global(i)
-    !  enddo
-    !  close(88)
-    !  print *,sum(scounts_global)
-    !endif
-    !stop
+    if(mype==3)then 
+      open(88,file="scounts.txt",action="write")
+      do i=1,nDes
+        write(88,*)scounts(i),scounts_global(i)
+      enddo
+      close(88)
+      print *,sum(scounts_global)
+    endif
+    stop
     !rdispls(1)=0
     !do i=2,nDes
     !  rdispls(i)=rdispls(i-1)+
