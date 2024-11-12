@@ -890,10 +890,6 @@ endif
     Local_Min = route%minCatch
     Local_Max = route%maxCatch
 
-call MAPL_TimerOff ( MAPL, "-RRM" )
-call MAPL_TimerOff(MAPL,"RUN2")
-call MPI_Barrier(MPI_COMM_WORLD, mpierr)
-RETURN_(ESMF_SUCCESS)     
     if (mapl_am_I_root()) print *, "debug 25"   
     FIRST_TIME : IF (FirstTime) THEN
 
@@ -944,6 +940,10 @@ RETURN_(ESMF_SUCCESS)
     if (mapl_am_I_root()) print *, "debug 30"        
     ENDIF FIRST_TIME
 
+call MAPL_TimerOff ( MAPL, "-RRM" )
+call MAPL_TimerOff(MAPL,"RUN2")
+call MPI_Barrier(MPI_COMM_WORLD, mpierr)
+RETURN_(ESMF_SUCCESS)     
     ! For efficiency, the time step to call the river routing model is set at ROUTE_DT 
 
     N_CYC = ROUTE_DT/HEARTBEAT
