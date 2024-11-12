@@ -1186,14 +1186,15 @@ RETURN_(ESMF_SUCCESS)
     do i=2,numprocs
        rdispls(i)=rdispls(i-1)+rcounts(i-1)
     enddo
-
-call MPI_Barrier(MPI_COMM_WORLD, mpierr)
-RETURN_(ESMF_SUCCESS)   
+   
     
     call MPI_allgatherv  (                          &
          LocalActive, scounts         ,MPI_INTEGER, &
          global_buff, rcounts, rdispls,MPI_INTEGER, &
          MPI_COMM_WORLD, mpierr)
+
+call MPI_Barrier(MPI_COMM_WORLD, mpierr)
+RETURN_(ESMF_SUCCESS)
     
     do i=1,numprocs
        Allactive (:,i) = global_buff((i-1)*N_CatG+1:i*N_CatG)
