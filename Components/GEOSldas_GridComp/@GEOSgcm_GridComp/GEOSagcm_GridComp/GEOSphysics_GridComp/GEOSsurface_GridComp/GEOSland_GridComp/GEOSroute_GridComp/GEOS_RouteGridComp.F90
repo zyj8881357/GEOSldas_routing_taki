@@ -819,6 +819,7 @@ endif
         write(88,*)scounts(i),scounts_global(i)
       enddo
       close(88)
+      print *,sum(scounts_global)
     endif
     stop
     !rdispls(1)=0
