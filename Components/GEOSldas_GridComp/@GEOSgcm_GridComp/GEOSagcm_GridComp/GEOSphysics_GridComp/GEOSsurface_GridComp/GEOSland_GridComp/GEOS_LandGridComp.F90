@@ -1574,12 +1574,11 @@ contains
 
     DO I = 1, size(GCS)
        call MAPL_TimerOn(MAPL,trim(GCnames(i)), RC=STATUS ); VERIFY_(STATUS)
-       if (mapl_am_I_root()) then
-         print *, "Run1, GCnames:",GCnames(i)        
+       if (mapl_am_I_root()) print *, "Run1, GCnames:",GCnames(i)     
        call ESMF_GridCompRun(GCS(I), importState=GIM(I), exportState=GEX(I), &
                              CLOCK=CLOCK, PHASE=1, userRC=STATUS)       
        VERIFY_(STATUS)
-         print *, "Run1, Done GCnames:",GCnames(i)        
+       if (mapl_am_I_root()) print *, "Run1, Done GCnames:",GCnames(i)        
        call MAPL_TimerOff(MAPL,trim(GCnames(i)), RC=STATUS ); VERIFY_(STATUS)
     END DO
 
@@ -1650,12 +1649,12 @@ contains
 !--------------------------------
     DO I=1,size(GCS)
        if (I == VEGDYN) cycle
-         print *, "Run2, GCnames:",GCnames(i)        
+       if (mapl_am_I_root()) print *, "Run2, GCnames:",GCnames(i)        
        call MAPL_TimerOn(MAPL,trim(GCnames(i)), RC=STATUS ); VERIFY_(STATUS)
        call ESMF_GridCompRun(GCS(I), importState=GIM(I), exportState=GEX(I), &
                              CLOCK=CLOCK, PHASE=2, userRC=STATUS)
        VERIFY_(STATUS)
-         print *, "Run2, Done GCnames:",GCnames(i)        
+       if (mapl_am_I_root()) print *, "Run2, Done GCnames:",GCnames(i)        
        call MAPL_TimerOff(MAPL,trim(GCnames(i)), RC=STATUS ); VERIFY_(STATUS)
     END DO
 
