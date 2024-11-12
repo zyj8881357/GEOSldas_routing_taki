@@ -1157,7 +1157,7 @@ RETURN_(ESMF_SUCCESS)
 
     integer, optional,    intent(OUT):: rc
 
-    integer :: mpierr
+    integer :: mpierr,i
     character(len=ESMF_MAXSTR), parameter :: Iam='InitializeRiverRouting'
 
     ! STEP 1: Identify active catchments within the local processor. If the catchment is active in 
@@ -1174,6 +1174,12 @@ RETURN_(ESMF_SUCCESS)
        LocalActive(pfaf_code(n)) = pfaf_code(n) 
     end do
 
+if (mapl_am_I_root())then
+    open(88,file="LocalActive.txt",action="write")
+    write(88,*)LocalActive
+    close(88)
+endif    
+
     allocate (global_buff (N_CatG * numprocs))
     allocate (scounts(numprocs),rdispls(numprocs),rcounts(numprocs))  
 
@@ -1185,17 +1191,31 @@ RETURN_(ESMF_SUCCESS)
     
     do i=2,numprocs
        rdispls(i)=rdispls(i-1)+rcounts(i-1)
-    enddo
-   
+    enddo   
     
     call MPI_allgatherv  (                          &
          LocalActive, scounts         ,MPI_INTEGER, &
          global_buff, rcounts, rdispls,MPI_INTEGER, &
          MPI_COMM_WORLD, mpierr)
+
+if (mapl_am_I_root())then
+    open(88,file="global_buff.txt",action="write")
+    write(88,*)global_buff
+    close(88)
+endif    
     
     do i=1,numprocs
        Allactive (:,i) = global_buff((i-1)*N_CatG+1:i*N_CatG)
     enddo
+
+if (mapl_am_I_root())then
+    open(88,file="Allactive.txt",action="write")
+    do i=1,numprocs
+      write(88,*)Allactive (:,i)
+    enddo
+    close(88)
+endif    
+stop
 
     if (root_proc) then
 
@@ -1247,8 +1267,7 @@ RETURN_(ESMF_SUCCESS)
     end do
 
     global_buff= 0
-call MPI_Barrier(MPI_COMM_WORLD, mpierr)
-RETURN_(ESMF_SUCCESS)    
+   
     call MPI_allgatherv  (                          &
          LocDstCatchID,  scounts      ,MPI_INTEGER, &
          global_buff, rcounts, rdispls,MPI_INTEGER, &
