@@ -809,9 +809,6 @@ endif
     pfaf_code => route%pfaf
     tile_area => route%tile_area
 
-call MAPL_TimerOff(MAPL,"RUN2")
-call MPI_Barrier(MPI_COMM_WORLD, mpierr)
-RETURN_(ESMF_SUCCESS)    
 ! get pointers to internal variables
 ! ----------------------------------
     if (mapl_am_I_root()) print *, "debug 11"   
@@ -892,6 +889,11 @@ RETURN_(ESMF_SUCCESS)
 
     Local_Min = route%minCatch
     Local_Max = route%maxCatch
+
+call MAPL_TimerOff ( MAPL, "-RRM" )
+call MAPL_TimerOff(MAPL,"RUN2")
+call MPI_Barrier(MPI_COMM_WORLD, mpierr)
+RETURN_(ESMF_SUCCESS)     
     if (mapl_am_I_root()) print *, "debug 25"   
     FIRST_TIME : IF (FirstTime) THEN
 
