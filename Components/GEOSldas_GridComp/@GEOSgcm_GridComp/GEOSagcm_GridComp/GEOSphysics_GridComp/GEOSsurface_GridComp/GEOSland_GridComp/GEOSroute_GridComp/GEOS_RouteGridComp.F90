@@ -917,6 +917,10 @@ endif
             AllActive, DstCatchID, srcProcsID, LocDstCatchID, rc=STATUS)
 
        VERIFY_(STATUS)
+call MAPL_TimerOff ( MAPL, "-RRM" )
+call MAPL_TimerOff(MAPL,"RUN2")
+call MPI_Barrier(MPI_COMM_WORLD, mpierr)
+RETURN_(ESMF_SUCCESS)          
     if (mapl_am_I_root()) print *, "debug 28" 
        N_Active = count (srcProcsID == MYPE)
 
@@ -940,10 +944,7 @@ endif
     if (mapl_am_I_root()) print *, "debug 30"        
     ENDIF FIRST_TIME
 
-call MAPL_TimerOff ( MAPL, "-RRM" )
-call MAPL_TimerOff(MAPL,"RUN2")
-call MPI_Barrier(MPI_COMM_WORLD, mpierr)
-RETURN_(ESMF_SUCCESS)     
+  
     ! For efficiency, the time step to call the river routing model is set at ROUTE_DT 
 
     N_CYC = ROUTE_DT/HEARTBEAT
