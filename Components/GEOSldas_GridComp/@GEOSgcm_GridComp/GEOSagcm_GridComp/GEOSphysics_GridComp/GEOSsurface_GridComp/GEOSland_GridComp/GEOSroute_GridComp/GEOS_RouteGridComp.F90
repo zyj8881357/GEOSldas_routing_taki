@@ -423,7 +423,7 @@ integer :: j
     beforeMe = sum(ims(1:mype))
     minCatch = beforeMe + 1
     maxCatch = beforeMe + ims(myPe+1)
-    write(*,*) "my PE is:",mype,", minCatch is:",minCatch,", maxCatch is:",maxCatch
+    print *, "my PE is:",mype,", minCatch is:",minCatch,", maxCatch is:",maxCatch
 
     if (mapl_am_I_root()) print *, "debug 5"    
     ! get LocStream
@@ -536,10 +536,10 @@ endif
     if (mapl_am_I_root()) print *, "debug 15"   
     call MAPL_LocStreamGet(locstream, TILEAREA = tile_area_src, LOCAL_ID=local_id, RC=status)
 
-    if (mapl_am_I_root()) then
-      print *,"Total number of elements in local_id:", size(local_id)
-      print *,"local_id:",local_id
-    endif
+    !if (mapl_am_I_root()) then
+    !  print *,"Total number of elements in local_id:", size(local_id)
+    !  print *,"local_id:",local_id
+    !endif
     !stop
     VERIFY_(STATUS)
     if (mapl_am_I_root()) print *, "debug 16"   
@@ -615,7 +615,7 @@ deallocate(dataPtr)
     do i = 1, nt_global
        pf = pfaf(i)
        if (pf >= minCatch .and. pf <= maxCatch) then ! I want this!
-          print *,"my PE is:",mype,"pf=",pf
+          !print *,"my PE is:",mype,"pf=",pf
           ntiles = ntiles+1
           !realloc if needed
           arbSeq_ori(ntiles) = pf
