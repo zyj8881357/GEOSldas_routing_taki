@@ -35,6 +35,7 @@ module GEOS_RouteGridCompMod
   
   implicit none
   integer, parameter :: N_CatG = 291284
+  integer, parameter :: nt_all = 112573
   private
 
   type T_RROUTE_STATE
@@ -756,6 +757,7 @@ endif
     integer                                :: ndes, mype
     type (T_RROUTE_STATE), pointer         :: route => null()
     type (RROUTE_wrap)                     :: wrap
+    INTEGER, DIMENSION(:)  ,ALLOCATABLE  :: global_buff, scounts, scounts_global,rdispls, rcounts    
 
     integer :: mpierr    
 
@@ -803,24 +805,48 @@ endif
     VERIFY_(STATUS)    
     call ESMF_FieldGet(runoff_src, farrayPtr=RUNOFF_SRC0, rc=status)    
     VERIFY_(STATUS)
-if(mapl_am_I_root())then     
-do i = 1, size(RUNOFF_SRC0, 1)
-        print *, "RUNOFF_SRC0 at (", i, ") =", RUNOFF_SRC0(i)
-end do
-endif    
+    ndes = route%ndes
+    mype = route%mype    
+    ntiles = route%ntiles
+    allocate(global_buff(nt_all),scounts(ndes),scounts_global(ndes),rdispls(ndes))
+    scounts=0
+    scounts(mype+1)=ntiles
+    call MPI_Allgather(scounts, 1, MPI_INTEGER, scounts_global, 1, MPI_INTEGER, MPI_COMM_WORLD, mpierr)    
+    if(mype==3)then 
+      open(88,file="scounts.txt",action="write")
+      do i=1,nDes
+        write(88,*)scounts(i),scounts_global(i)
+      enddo
+      close(88)
+    endif
+    stop
+    !rdispls(1)=0
+    !do i=2,nDes
+    !  rdispls(i)=rdispls(i-1)+
+    !enddo
+
+
+!if(mapl_am_I_root())then     
+!do i = 1, size(RUNOFF_SRC0, 1)
+!        print *, "RUNOFF_SRC0 at (", i, ") =", RUNOFF_SRC0(i)
+!end do
+!endif    
     if (mapl_am_I_root()) print *, "debug 8" 
     ! redist RunOff
     !call ESMF_FieldRedist(srcField=runoff_src, dstField=route%field, &
     !            routehandle=route%routehandle, rc=status)
     !VERIFY_(STATUS)
     if (mapl_am_I_root()) print *, "debug 9" 
+
+
+
     call ESMF_FieldGet(route%field, farrayPtr=RUNOFF, rc=status)
     VERIFY_(STATUS)
-if(mapl_am_I_root())then     
-do i = 1, size(RUNOFF, 1)
-        print *, "RUNOFF at (", i, ") =", RUNOFF(i)
-end do
-endif
+!if(mapl_am_I_root())then     
+!do i = 1, size(RUNOFF, 1)
+!        print *, "RUNOFF at (", i, ") =", RUNOFF(i)
+!end do
+!endif
     RUNOFF = 0.   
     if (mapl_am_I_root()) print *, "debug 10" 
     pfaf_code => route%pfaf
