@@ -811,7 +811,7 @@ endif
     allocate(global_buff(nt_all),scounts(ndes),scounts_global(ndes),rdispls(ndes))
     scounts=0
     scounts(mype+1)=ntiles
-    call MPI_Allgather(scounts, 1, MPI_INTEGER, scounts_global, 1, MPI_INTEGER, MPI_COMM_WORLD, mpierr)    
+    call MPI_Allgather(scounts, 1, MPI_INTEGER, scounts_global, 1, mype, MPI_INTEGER, MPI_COMM_WORLD, mpierr)    
     if(mype==3)then 
       open(88,file="scounts.txt",action="write")
       do i=1,nDes
