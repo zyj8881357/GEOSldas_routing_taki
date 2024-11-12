@@ -567,29 +567,31 @@ endif
     call ESMF_FieldRedist(srcField=FIELD0, dstField=FIELD, &
          routehandle=route%routehandle, rc=status)
     VERIFY_(STATUS)
-call ESMF_FieldGet(field0, farrayPtr=dataPtr, rc=status)
-if (status /= ESMF_SUCCESS) then
-    print *, "Error retrieving field0 data"
-    stop
-end if
-if(mapl_am_I_root())then     
-do i = 1, size(dataPtr, 1)
-        print *, "redist field0 at (", i, ") =", dataPtr(i)
-end do
-endif
-deallocate(dataPtr)
 
-call ESMF_FieldGet(field, farrayPtr=dataPtr, rc=status)
-if (status /= ESMF_SUCCESS) then
-    print *, "Error retrieving field data"
-    stop
-end if
-if(mapl_am_I_root())then     
-do i = 1, size(dataPtr, 1)
-        print *, "redist field at (", i, ") =", dataPtr(i)
-end do
-endif
-deallocate(dataPtr)    
+!call ESMF_FieldGet(field0, farrayPtr=dataPtr, rc=status)
+!if (status /= ESMF_SUCCESS) then
+!    print *, "Error retrieving field0 data"
+!    stop
+!end if
+!if(mapl_am_I_root())then     
+!do i = 1, size(dataPtr, 1)
+!        print *, "redist field0 at (", i, ") =", dataPtr(i)
+!end do
+!endif
+!deallocate(dataPtr)
+
+!call ESMF_FieldGet(field, farrayPtr=dataPtr, rc=status)
+!if (status /= ESMF_SUCCESS) then
+!    print *, "Error retrieving field data"
+!    stop
+!end if
+!if(mapl_am_I_root())then     
+!do i = 1, size(dataPtr, 1)
+!        print *, "redist field at (", i, ") =", dataPtr(i)
+!end do
+!endif
+!deallocate(dataPtr)  
+
 !call ESMF_FieldGet(field, localDe=localShape, rank=localRank, rc=status)
 !if (status /= ESMF_SUCCESS) then
 !    print *, "Error retrieving field dimensions"
