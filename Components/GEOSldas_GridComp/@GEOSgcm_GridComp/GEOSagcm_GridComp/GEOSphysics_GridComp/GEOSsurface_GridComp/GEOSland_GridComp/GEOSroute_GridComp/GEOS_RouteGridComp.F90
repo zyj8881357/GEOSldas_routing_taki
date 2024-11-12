@@ -1192,9 +1192,6 @@ RETURN_(ESMF_SUCCESS)
          LocalActive, scounts         ,MPI_INTEGER, &
          global_buff, rcounts, rdispls,MPI_INTEGER, &
          MPI_COMM_WORLD, mpierr)
-
-call MPI_Barrier(MPI_COMM_WORLD, mpierr)
-RETURN_(ESMF_SUCCESS)
     
     do i=1,numprocs
        Allactive (:,i) = global_buff((i-1)*N_CatG+1:i*N_CatG)
@@ -1227,6 +1224,9 @@ RETURN_(ESMF_SUCCESS)
     endif
 
     call MPI_BCAST (srcProcsID, N_CatG, MPI_INTEGER, 0,MPI_COMM_WORLD,mpierr)
+
+call MPI_Barrier(MPI_COMM_WORLD, mpierr)
+RETURN_(ESMF_SUCCESS)
 
     ! STEP 2: reset downstream catchment indeces (from -1 OR 1:291284) of catchments that are
     !            in the local processor to full domain indeces.
