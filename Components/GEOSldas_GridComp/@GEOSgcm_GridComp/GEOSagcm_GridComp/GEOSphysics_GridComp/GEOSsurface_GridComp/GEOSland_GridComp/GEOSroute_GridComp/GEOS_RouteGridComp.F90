@@ -132,7 +132,11 @@ contains
 
     call MAPL_GridCompSetEntryPoint ( GC, ESMF_METHOD_INITIALIZE, Initialize, RC=STATUS )
     VERIFY_(STATUS)
-    call MAPL_GridCompSetEntryPoint (GC, ESMF_METHOD_RUN, Run, RC=STATUS)
+!    call MAPL_GridCompSetEntryPoint (GC, ESMF_METHOD_RUN, Run, RC=STATUS)
+!    VERIFY_(STATUS)
+    call MAPL_GridCompSetEntryPoint ( GC, ESMF_METHOD_RUN, RUN1, RC=STATUS )
+    VERIFY_(STATUS)
+    call MAPL_GridCompSetEntryPoint ( GC, ESMF_METHOD_RUN, RUN2, RC=STATUS )
     VERIFY_(STATUS)
 
 !------------------------------------------------------------
@@ -282,8 +286,10 @@ contains
 
 !EOS
 
-    call MAPL_TimerAdd(GC,    name="RUN"  ,RC=STATUS)
+    call MAPL_TimerAdd(GC,    name="RUN1"  ,RC=STATUS)
     VERIFY_(STATUS)
+    call MAPL_TimerAdd(GC,    name="RUN2"  ,RC=STATUS)
+    VERIFY_(STATUS)    
     call MAPL_TimerAdd(GC,    name="-RRM" ,RC=STATUS)
     VERIFY_(STATUS)
 
@@ -673,7 +679,7 @@ deallocate(dataPtr)
 ! ErrLog Variables
 ! -----------------------------------------------------------
 
-    character(len=ESMF_MAXSTR)          :: IAm="Run"
+    character(len=ESMF_MAXSTR)          :: IAm="Run2"
     integer                             :: STATUS
     character(len=ESMF_MAXSTR)          :: COMP_NAME
 
@@ -756,7 +762,7 @@ deallocate(dataPtr)
     call ESMF_GridCompGet(GC, name=COMP_NAME, CONFIG=CF, RC=STATUS )
     VERIFY_(STATUS)
     if (mapl_am_I_root()) print *, "debug 3"   
-    Iam = trim(COMP_NAME) // "RUN"
+    Iam = trim(COMP_NAME) // "RUN2"
 
 ! Get my internal MAPL_Generic state
 ! -----------------------------------------------------------
@@ -770,7 +776,7 @@ deallocate(dataPtr)
 ! Start timers
 ! ------------
 
-    call MAPL_TimerOn(MAPL,"RUN")
+    call MAPL_TimerOn(MAPL,"RUN2")
     if (mapl_am_I_root()) print *, "debug 6" 
 ! Get parameters from generic state
 ! ---------------------------------
@@ -1113,7 +1119,7 @@ deallocate(dataPtr)
 ! All done
 ! --------
 
-    call MAPL_TimerOff(MAPL,"RUN")
+    call MAPL_TimerOff(MAPL,"RUN2")
     if (mapl_am_I_root()) print *, "debug 44"  
     RETURN_(ESMF_SUCCESS)
     if (mapl_am_I_root()) print *, "debug 45"  
