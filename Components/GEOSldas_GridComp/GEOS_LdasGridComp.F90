@@ -813,33 +813,33 @@ contains
     integer :: LSM_CHOICE
 
     ! Begin...
-
+if (mapl_am_I_root()) print *, "GEOS_LdasGridCompMod, debug1"
     ! Get component's name and setup traceback handle
     call ESMF_GridCompget(gc, name=comp_name, rc=status)
     VERIFY_(status)
     Iam = trim(comp_name) // "::Run"
-
+if (mapl_am_I_root()) print *, "GEOS_LdasGridCompMod, debug2"
     ! Get MAPL obj
     call MAPL_GetObjectFromGC(gc, MAPL, rc=status)
     VERIFY_(status)
-
+if (mapl_am_I_root()) print *, "GEOS_LdasGridCompMod, debug3"
     ! Turn timers on
     call MAPL_TimerOn(MAPL, "TOTAL")
     call MAPL_TimerOn(MAPL, "Run")
-
+if (mapl_am_I_root()) print *, "GEOS_LdasGridCompMod, debug4"
     ! Get information about children
     call MAPL_Get(MAPL, GCS=gcs, GIM=gim, GEX=gex, GCNAMES=gcnames, rc=status)
     VERIFY_(STATUS)
-
+if (mapl_am_I_root()) print *, "GEOS_LdasGridCompMod, debug5"
     ! MPI
     call ESMF_VmGetCurrent(vm, rc=status)
     VERIFY_(status)
     IAmRoot = MAPL_Am_I_Root(vm)
     !call ESMF_VmGet(vm, mpicommunicator=mpicomm, rc=status)
     !VERIFY_(status)
-
+if (mapl_am_I_root()) print *, "GEOS_LdasGridCompMod, debug6"
     call MAPL_GetResource ( MAPL, LSM_CHOICE, Label="LSM_CHOICE:", DEFAULT=1, RC=STATUS)
-
+if (mapl_am_I_root()) print *, "GEOS_LdasGridCompMod, debug7"
     ! Get current time
     call ESMF_ClockGet(clock, currTime=ModelTimeCur, rc=status)
     VERIFY_(status)
@@ -847,7 +847,7 @@ contains
        call ESMF_TimePrint(ModelTimeCur, options='string', rc=status)
        VERIFY_(status)
     end if
-    
+if (mapl_am_I_root()) print *, "GEOS_LdasGridCompMod, debug8"    
     !phase2 initialization ( executed once)
     !adjust mean of perturbed forcing or Progn
     do i  = 1,NUM_ENSEMBLE
@@ -857,7 +857,7 @@ contains
        VERIFY_(status)
        call MAPL_TimerOff(MAPL, gcnames(igc))
     enddo
-
+if (mapl_am_I_root()) print *, "GEOS_LdasGridCompMod, debug9"
     ! Run children GridComps (in order)
     ! Generate raw perturbed force and progn
     do i  = 1,NUM_ENSEMBLE
@@ -867,7 +867,7 @@ contains
        VERIFY_(status)
        call MAPL_TimerOff(MAPL, gcnames(igc))
     enddo
-
+if (mapl_am_I_root()) print *, "GEOS_LdasGridCompMod, debug10"
 
     do i = 1, NUM_ENSEMBLE
        igc = METFORCE(i)
@@ -878,7 +878,7 @@ contains
        ! exit after i=1 if using deterministic forcing
        if (.not. ensemble_forcing) exit
     enddo
-
+if (mapl_am_I_root()) print *, "GEOS_LdasGridCompMod, debug11"
 
     do i  = 1,NUM_ENSEMBLE
 
@@ -930,13 +930,13 @@ contains
        endif
 
     enddo
-
+if (mapl_am_I_root()) print *, "GEOS_LdasGridCompMod, debug12"
     if ( mwRTM .and. LSM_CHOICE == 1 ) then
        ! output_smapl4smlmc
        call ESMF_GridCompRun(gcs(LANDASSIM), importState=gim(LANDASSIM), exportState=gex(LANDASSIM), clock=clock,phase=4, userRC=status)
        VERIFY_(status)
     endif
-
+if (mapl_am_I_root()) print *, "GEOS_LdasGridCompMod, debug13"
     ! Run land analysis
     if (land_assim) then 
        igc = LANDASSIM
@@ -953,11 +953,11 @@ contains
        enddo
        call MAPL_TimerOff(MAPL, gcnames(igc))
     endif
-
+if (mapl_am_I_root()) print *, "GEOS_LdasGridCompMod, debug14"
     ! Turn timers off
     call MAPL_TimerOff(MAPL, "Run")
     call MAPL_TimerOff(MAPL, "TOTAL")
-
+if (mapl_am_I_root()) print *, "GEOS_LdasGridCompMod, debug15"
     ! End
     RETURN_(ESMF_SUCCESS)
 
