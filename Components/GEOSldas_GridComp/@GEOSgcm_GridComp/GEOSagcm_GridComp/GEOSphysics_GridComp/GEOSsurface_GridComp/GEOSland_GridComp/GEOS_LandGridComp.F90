@@ -1568,7 +1568,7 @@ contains
 
     call MAPL_Get (MAPL, GCS=GCS, GIM=GIM, GEX=GEX, GCnames=GCnames,rc=STATUS)
     VERIFY_(STATUS)
-
+    if (mapl_am_I_root()) print *,"Run1, All GCnames:",GCnames
 ! Call the children's RUN methods
 !--------------------------------
 
@@ -1644,7 +1644,7 @@ contains
 
     call MAPL_Get (MAPL, GCS=GCS, GIM=GIM, GEX=GEX, GCnames=GCnames,rc=STATUS)
     VERIFY_(STATUS)
-
+    if (mapl_am_I_root()) print *,"Run2, All GCnames:",GCnames
 ! Call the children's RUN methods
 !--------------------------------
     DO I=1,size(GCS)
