@@ -1104,7 +1104,7 @@ deallocate(dataPtr)
     call MAPL_TimerOff(MAPL,"RUN")
     if (mapl_am_I_root()) print *, "debug 44"  
     RETURN_(ESMF_SUCCESS)
-
+    if (mapl_am_I_root()) print *, "debug 45"  
   end subroutine RUN
 
 ! ---------------------------------------------------------------------------

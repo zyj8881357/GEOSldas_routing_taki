@@ -194,7 +194,7 @@ contains
 
        allocate (ROUTE(NUM_CATCH), stat=status)
        VERIFY_(STATUS)
-!    IF(RUN_ROUTE == 1) THEN
+    IF(RUN_ROUTE == 1) THEN
        if (NUM_CATCH == 1) then
           ROUTE(1) = MAPL_AddChild(GC, NAME='ROUTE', SS=RouteSetServices, RC=STATUS)
           VERIFY_(STATUS)
@@ -206,7 +206,7 @@ contains
              VERIFY_(STATUS)
           end do
        end if
-!    ENDIF
+    ENDIF
     
 !BOS
 
