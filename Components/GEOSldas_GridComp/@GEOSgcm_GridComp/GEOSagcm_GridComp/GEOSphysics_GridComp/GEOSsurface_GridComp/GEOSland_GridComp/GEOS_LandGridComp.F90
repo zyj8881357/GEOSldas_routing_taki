@@ -1657,10 +1657,11 @@ contains
        if (mapl_am_I_root()) print *, "Run2, Done GCnames:",GCnames(i)        
        call MAPL_TimerOff(MAPL,trim(GCnames(i)), RC=STATUS ); VERIFY_(STATUS)
     END DO
-
+ if (mapl_am_I_root()) print *, "GEOS_LandGridCompMod, debug1"
     call MAPL_TimerOff(MAPL,"RUN2", RC=STATUS ); VERIFY_(STATUS)
+ if (mapl_am_I_root()) print *, "GEOS_LandGridCompMod, debug2"    
     call MAPL_TimerOff(MAPL,"TOTAL", RC=STATUS ); VERIFY_(STATUS)
-    
+ if (mapl_am_I_root()) print *, "GEOS_LandGridCompMod, debug3"        
     RETURN_(ESMF_SUCCESS)
 
   end subroutine Run2
