@@ -753,6 +753,8 @@ endif
     type (T_RROUTE_STATE), pointer         :: route => null()
     type (RROUTE_wrap)                     :: wrap
 
+    integer :: mpierr    
+
     ! ------------------
     ! begin
     if (mapl_am_I_root()) print *, "debug 1"     
@@ -1125,7 +1127,10 @@ endif
 ! --------
 
     call MAPL_TimerOff(MAPL,"RUN2")
+    call MPI_Barrier(MPI_COMM_WORLD, mpierr)
+
     if (mapl_am_I_root()) print *, "debug 44"  
+
     RETURN_(ESMF_SUCCESS)
     if (mapl_am_I_root()) print *, "debug 45"  
   end subroutine RUN2
