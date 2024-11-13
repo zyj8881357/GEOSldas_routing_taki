@@ -821,22 +821,23 @@ endif
       rdispls(i)=rdispls(i-1)+scounts_global(i-1)
     enddo
     runoff_global = -9999.
-    call MPI_Barrier(MPI_COMM_WORLD, mpierr)
 
     if (mapl_am_I_root()) print *, "debug 7.1",", sum tiles:",sum(scounts_global),", nt_global:",nt_global    
+    call MPI_Barrier(MPI_COMM_WORLD, mpierr)
     call MPI_allgatherv  (                          &
          RUNOFF_SRC0,  scounts(mype+1)      ,MPI_REAL, &
          runoff_global, scounts_global, rdispls,MPI_REAL, &
          MPI_COMM_WORLD, mpierr) 
-    call MPI_Barrier(MPI_COMM_WORLD, mpierr)
+    !call MPI_Barrier(MPI_COMM_WORLD, mpierr)
 
-    if(mapl_am_I_root())then 
+    if(mype=3)then 
       open(88,file="runoff_global.txt",action="write")
       do i=1,nt_global
         write(88,*)"i=",i,", unoff_global(i)=",runoff_global(i)
       enddo
       close(88)
     endif
+    call MPI_Barrier(MPI_COMM_WORLD, mpierr)    
     stop
 
 
