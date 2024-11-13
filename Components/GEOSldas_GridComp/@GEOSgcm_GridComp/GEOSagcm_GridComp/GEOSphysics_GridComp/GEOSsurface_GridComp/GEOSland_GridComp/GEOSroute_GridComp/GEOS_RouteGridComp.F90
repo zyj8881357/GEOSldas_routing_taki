@@ -35,6 +35,7 @@ module GEOS_RouteGridCompMod
   
   implicit none
   integer, parameter :: N_CatG = 291284
+  integer,parameter :: nmax=150  
   !integer, parameter :: nt_all = 112573
   private
 
@@ -362,7 +363,6 @@ contains
 ! Locals
 ! -----------------------------------------------------------
 
-    integer,parameter :: nmax=150
     type (ESMF_VM) :: VM
     integer        :: comm
     integer        :: nDEs
@@ -657,7 +657,6 @@ endif
     route%field = ESMF_FieldCreate(grid=catchGrid, datacopyflag=ESMF_DATACOPY_VALUE, &
         farrayPtr=ptr2, name='RUNOFF', RC=STATUS)
     VERIFY_(STATUS)
-    if (mapl_am_I_root()) print *, "debug 21.1"  
   ! Read sub-area data from text files
     allocate(nsub_global(N_CatG),subarea_global(nmax,N_CatG),area_cat_global(N_CatG))
     open(77,file="../input/Pfaf_nsub_M36.txt",status="old",action="read"); read(77,*)nsub_global; close(77)
@@ -671,27 +670,26 @@ endif
     route%tile_area => area_cat
     route%nsub => nsub
     route%subarea => subarea
-
-    if (mapl_am_I_root()) print *, "debug 21.2"     
+    
     allocate(subi_global(nmax,N_CatG),subi(nmax,ntiles))
     open(77,file="../input/Pfaf_isub_M36.txt",status="old",action="read"); read(77,*)subi_global; close(77)
     subi=subi_global(:,minCatch:maxCatch)
     route%subi => subi
     deallocate(subi_global)
  
-    if (mapl_am_I_root())then
-      open(88,file="nsub.txt",action="write")
-      open(89,file="subarea.txt",action="write")
-      open(90,file="subi.txt",action="write")
-      open(91,file="tile_area.txt",action="write")
-      do i=1,nTiles
-        write(88,*)route%nsub(i)
-        write(89,'(150(1x,f10.4))')route%subarea(:,i)
-        write(90,'(150(i7))')route%subi(:,i)
-        write(91,*)route%tile_area(i)
-      enddo
-      stop
-    endif
+    !if (mapl_am_I_root())then
+    !  open(88,file="nsub.txt",action="write")
+    !  open(89,file="subarea.txt",action="write")
+    !  open(90,file="subi.txt",action="write")
+    !  open(91,file="tile_area.txt",action="write")
+    !  do i=1,nTiles
+    !    write(88,*)route%nsub(i)
+    !    write(89,'(150(1x,f10.4))')route%subarea(:,i)
+    !    write(90,'(150(i7))')route%subi(:,i)
+    !    write(91,*)route%tile_area(i)
+    !  enddo
+    !  stop
+    !endif
 
     if (mapl_am_I_root()) print *, "debug 22"       
     deallocate(ims)
@@ -805,9 +803,9 @@ endif
     type (T_RROUTE_STATE), pointer         :: route => null()
     type (RROUTE_wrap)                     :: wrap
     INTEGER, DIMENSION(:)  ,ALLOCATABLE  :: scounts, scounts_global,rdispls, rcounts  
-    real, dimension(:), pointer :: runoff_global     
+    real, dimension(:), pointer :: runoff_global,runoff_local,area_local    
 
-    integer :: mpierr, nt_global,nt_local   
+    integer :: mpierr, nt_global,nt_local, it, j
 
     ! ------------------
     ! begin
@@ -855,8 +853,11 @@ endif
     nt_local=size(RUNOFF_SRC0, 1) 
     VERIFY_(STATUS)
     ndes = route%ndes
-    mype = route%mype    
+    mype = route%mype  
+    ntiles = route%ntiles  
     nt_global = route%nt_global
+    Local_Min = route%minCatch
+    Local_Max = route%maxCatch    
     allocate(runoff_global(nt_global),scounts(ndes),scounts_global(ndes),rdispls(ndes))
     scounts=0
     scounts(mype+1)=nt_local  
@@ -872,23 +873,41 @@ endif
          runoff_global, scounts_global, rdispls,MPI_REAL, &
          MPI_COMM_WORLD, mpierr) 
 
-    !call MPI_Barrier(MPI_COMM_WORLD, mpierr)
+    allocate(runoff_local(1:ntiles),area_local(1:ntiles))
+    runoff_local=0.
+    area_local=0.
+    do i=1,ntiles
+      do j=1,nmax
+        it=route%subi(j,i) 
+      ! Check for valid fraction and runoff values
+        if(it>0)then
+          runoff_local(i)=runoff_local(i)+route%subarea(j,i)*runoff_global(it)   
+          area_local(i)=area_local(i)+route%subarea(j,i)
+        endif
+      enddo
+      if(area_local(i)>0.)runoff_local(i)=runoff_local(i)/area_local(i)
+    enddo    
 
-    if(mype==1)then 
+
+    if(mapl_am_I_root())then 
       open(88,file="runoff_global.txt",action="write")
       do i=1,nt_global
         write(88,*)"i=",i,", runoff_global(i)=",runoff_global(i)
       enddo
       close(88)
-      open(88,file="runoff_local.txt",action="write")
+      open(88,file="runoff_local_tile.txt",action="write")
       do i=1,nt_local
         write(88,*)"i=",i,", runoff_local(i)=",RUNOFF_SRC0(i)
       enddo
+      close(88)
+      open(88,file="runoff_local_catch.txt",action="write")
+      do i=1,ntiles
+        write(88,*)"i=",i,", runoff_local(i)=",runoff_local(i)
+      enddo
       close(88)      
-    endif
-    call MPI_Barrier(MPI_COMM_WORLD, mpierr)    
-    stop
-
+      stop      
+    endif   
+    deallocate(runoff_global)
 
     !rdispls(1)=0
     !do i=2,nDes
@@ -1000,8 +1019,6 @@ endif
 
     !call MAPL_LocStreamGet(LocStream, 9th_coulumn_in_TILFILE=pfaf_code, RC=STATUS )
 
-    Local_Min = route%minCatch
-    Local_Max = route%maxCatch
 
     if (mapl_am_I_root()) print *, "debug 25"   
     FIRST_TIME : IF (FirstTime) THEN
