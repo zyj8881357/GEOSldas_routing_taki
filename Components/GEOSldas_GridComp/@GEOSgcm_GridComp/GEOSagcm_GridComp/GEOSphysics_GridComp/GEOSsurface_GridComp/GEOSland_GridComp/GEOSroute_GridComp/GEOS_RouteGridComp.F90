@@ -682,7 +682,7 @@ endif
       open(91,file="tile_area.txt",action="write")
       do i=1,nTiles
         write(88,*)route%nsub(i)
-        write(89,'(150(1x,f10.4))')route%route%subarea(:,i)
+        write(89,'(150(1x,f10.4))')route%subarea(:,i)
         write(90,'(150(i7))')route%subi(:,i)
         write(91,*)route%tile_area(i)
       enddo
