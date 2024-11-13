@@ -1077,15 +1077,15 @@ endif
 
     N_CYC = ROUTE_DT/HEARTBEAT    
     RUN_MODEL : if (ThisCycle == N_CYC) then  
-
+if (mapl_am_I_root()) print *, "debug 8"   
        runoff_save = runoff_save + RUNOFF_SRC0/real (N_CYC)
-
+if (mapl_am_I_root()) print *, "debug 9" 
        allocate(runoff_global(nt_global))
        call MPI_allgatherv  (                          &
           runoff_save,  route%scounts_global(mype+1)      ,MPI_REAL, &
           runoff_global, route%scounts_global, route%rdispls,MPI_REAL, &
           MPI_COMM_WORLD, mpierr) 
-
+if (mapl_am_I_root()) print *, "debug 10" 
        allocate(RUNOFF_ACT(1:ntiles),area_local(1:ntiles))
        RUNOFF_ACT=0.
        area_local=0. 
@@ -1101,7 +1101,7 @@ endif
          !if(area_local(i)>0.)runoff_local(i)=runoff_local(i)/area_local(i)
        enddo  
        deallocate(runoff_global,area_local)
-
+if (mapl_am_I_root()) print *, "debug 11" 
 
     allocate(runoff_cat_global(n_catg),scounts(ndes),scounts_global(ndes),rdispls(ndes))
     scounts=0
@@ -1115,6 +1115,7 @@ endif
          runoff_local,  scounts(mype+1)      ,MPI_REAL, &
          runoff_cat_global, scounts_global, rdispls,MPI_REAL, &
          MPI_COMM_WORLD, mpierr) 
+    call MPI_Barrier(MPI_COMM_WORLD, mpierr)    
     if(mapl_am_I_root())then 
       open(88,file="runoff_cat_global.txt",action="write")
       do i=1,n_catg
