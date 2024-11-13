@@ -390,10 +390,10 @@ contains
     real, pointer :: tile_area(:) => NULL()
     real, pointer :: ptr2(:) => NULL()
 
-    real,pointer :: subarea_global(:,:),subarea(:,:) ! Arrays for sub-area and fractions
-    integer,pointer :: subi_global(:,:),subi(:,:)
-    integer,pointer :: nsub_global(:),nsub(:)
-    real,pointer :: area_cat_global(:),area_cat(:)
+    real,pointer :: subarea_global(:,:)=> NULL(),subarea(:,:)=> NULL() ! Arrays for sub-area and fractions
+    integer,pointer :: subi_global(:,:)=> NULL(),subi(:,:)=> NULL()
+    integer,pointer :: nsub_global(:)=> NULL(),nsub(:)=> NULL()
+    real,pointer :: area_cat_global(:)=> NULL(),area_cat(:)=> NULL()
     
     type (T_RROUTE_STATE), pointer         :: route => null()
     type (RROUTE_wrap)                     :: wrap
