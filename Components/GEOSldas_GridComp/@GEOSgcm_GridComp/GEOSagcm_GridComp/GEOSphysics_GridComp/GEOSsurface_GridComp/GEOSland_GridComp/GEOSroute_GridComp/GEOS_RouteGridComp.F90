@@ -759,9 +759,9 @@ endif
     integer                                :: ndes, mype
     type (T_RROUTE_STATE), pointer         :: route => null()
     type (RROUTE_wrap)                     :: wrap
-    INTEGER, DIMENSION(:)  ,ALLOCATABLE  :: global_buff, scounts, scounts_global,rdispls, rcounts    
+    INTEGER, DIMENSION(:)  ,ALLOCATABLE  :: runoff_global, scounts, scounts_global,rdispls, rcounts    
 
-    integer :: mpierr, nt_global   
+    integer :: mpierr, nt_global,nt_local   
 
     ! ------------------
     ! begin
@@ -805,17 +805,24 @@ endif
     ! get the field from IMPORT
     call ESMF_StateGet(IMPORT, 'RUNOFF', field=runoff_src, RC=STATUS)
     VERIFY_(STATUS)    
-    call ESMF_FieldGet(runoff_src, farrayPtr=RUNOFF_SRC0, rc=status)    
+    call ESMF_FieldGet(runoff_src, farrayPtr=RUNOFF_SRC0, rc=status)   
+    nt_local=size(RUNOFF_SRC0, 1) 
     VERIFY_(STATUS)
     ndes = route%ndes
     mype = route%mype    
     ntiles = route%ntiles
     nt_global = route%nt_global
-    allocate(global_buff(nt_global),scounts(ndes),scounts_global(ndes),rdispls(ndes))
+    allocate(runoff_global(nt_global),scounts(ndes),scounts_global(ndes),rdispls(ndes))
     scounts=0
-    scounts(mype+1)=ntiles
+    scounts(mype+1)=nt_local
     !rdispls=[(i,i=0,ndes-1)]
     call MPI_Allgather(scounts(mype+1), 1, MPI_INTEGER, scounts_global, 1, MPI_INTEGER, MPI_COMM_WORLD, mpierr) 
+
+    !call MPI_allgatherv  (                          &
+    !     RUNOFF_SRC0,  scounts      ,MPI_INTEGER, &
+    !     global_buff, rcounts, rdispls,MPI_INTEGER, &
+    !     MPI_COMM_WORLD, mpierr) 
+
 
     if(mype==3)then 
       open(88,file="scounts.txt",action="write")
@@ -826,6 +833,8 @@ endif
       print *,sum(scounts_global)
     endif
     stop
+
+
     !rdispls(1)=0
     !do i=2,nDes
     !  rdispls(i)=rdispls(i-1)+
