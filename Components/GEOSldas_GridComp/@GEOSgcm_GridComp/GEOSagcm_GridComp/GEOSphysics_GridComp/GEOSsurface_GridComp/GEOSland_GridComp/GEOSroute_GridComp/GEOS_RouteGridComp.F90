@@ -45,6 +45,7 @@ module GEOS_RouteGridCompMod
      type (ESMF_Field)       :: field
      integer :: nTiles
      integer :: nt_global
+     integer :: nt_local
      integer :: comm
      integer :: nDes
      integer :: myPe
@@ -57,6 +58,7 @@ module GEOS_RouteGridCompMod
      real,    pointer :: subarea(:,:) => NULL()
      integer, pointer :: scounts_global(:) => NULL()
      integer, pointer :: rdispls(:) => NULL()
+     real,    pointer :: runoff_save(:) => NULL()
 
   end type T_RROUTE_STATE
 
@@ -397,6 +399,7 @@ contains
     integer,pointer :: nsub_global(:)=> NULL(),nsub(:)=> NULL()
     real,pointer :: area_cat_global(:)=> NULL(),area_cat(:)=> NULL()
     integer,pointer :: scounts(:)=>NULL(), scounts_global(:)=>NULL(),rdispls(:)=>NULL()
+    real,pointer :: runoff_save(:)=>NULL()
     
     type (T_RROUTE_STATE), pointer         :: route => null()
     type (RROUTE_wrap)                     :: wrap
@@ -682,7 +685,6 @@ endif
 
     call ESMF_FieldGet(field0, farrayPtr=dataPtr, rc=status)
     nt_local=size(dataPtr, 1)
-    if (mapl_am_I_root()) print *,"nt_local=",nt_local
     allocate(scounts(ndes),scounts_global(ndes),rdispls(ndes))
     scounts=0
     scounts(mype+1)=nt_local  
@@ -691,11 +693,13 @@ endif
     do i=2,nDes
       rdispls(i)=rdispls(i-1)+scounts_global(i-1)
     enddo
-    deallocate(scounts,dataPtr)
+    deallocate(scounts)
     route%scounts_global=>scounts_global
     route%rdispls=>rdispls
+    route%nt_local=nt_local
+    allocate(route%runoff_save(1:nt_local))
+    route%runoff_save=0.
 
- 
     !if (mapl_am_I_root())then
     !  open(88,file="nsub.txt",action="write")
     !  open(89,file="subarea.txt",action="write")
@@ -814,7 +818,7 @@ endif
     integer                                  :: K, N, I, req
     REAL                                     :: mm2m3, rbuff, HEARTBEAT 
     REAL, ALLOCATABLE, DIMENSION(:)          :: RUNOFF_CATCH, RUNOFF_ACT,AREACAT_ACT,& 
-         LENGSC_ACT, WSTREAM_ACT,WRIVER_ACT, QSFLOW_ACT,QOUTFLOW_ACT, runoff_save
+         LENGSC_ACT, WSTREAM_ACT,WRIVER_ACT, QSFLOW_ACT,QOUTFLOW_ACT
     INTEGER, ALLOCATABLE, DIMENSION(:)       :: tmp_index
     type(ESMF_Field) :: runoff_src
 
@@ -825,6 +829,7 @@ endif
     real, dimension(:), pointer :: runoff_global,runoff_local,area_local,runoff_cat_global    
 
     integer :: mpierr, nt_global,nt_local, it, j
+    real,pointer :: runoff_save(:)=>NULL()
 
     ! ------------------
     ! begin
@@ -850,7 +855,7 @@ endif
     if (mapl_am_I_root()) print *, "debug 4" 
     call MAPL_Get(MAPL, HEARTBEAT = HEARTBEAT, RC=STATUS)
     VERIFY_(STATUS)
-    if (mapl_am_I_root()) print *, "debug 5" 
+    if (mapl_am_I_root()) print *, "debug 5,HEARTBEAT=",HEARTBEAT 
 ! Start timers
 ! ------------
 
@@ -869,57 +874,58 @@ endif
     mype = route%mype  
     ntiles = route%ntiles  
     nt_global = route%nt_global  
-
+    runoff_save => route%runoff_save
 
     ! get the field from IMPORT
     call ESMF_StateGet(IMPORT, 'RUNOFF', field=runoff_src, RC=STATUS)
     VERIFY_(STATUS)    
     call ESMF_FieldGet(runoff_src, farrayPtr=RUNOFF_SRC0, rc=status)   
     VERIFY_(STATUS) 
-    allocate(runoff_global(nt_global))
-    call MPI_allgatherv  (                          &
-         RUNOFF_SRC0,  route%scounts_global(mype+1)      ,MPI_REAL, &
-         runoff_global, route%scounts_global, route%rdispls,MPI_REAL, &
-         MPI_COMM_WORLD, mpierr) 
 
-    allocate(runoff_local(1:ntiles),area_local(1:ntiles))
-    runoff_local=0.
-    area_local=0. 
-    do i=1,ntiles
-      if (mapl_am_I_root()) print *, "i=",i
-      do j=1,nmax
-        it=route%subi(j,i) 
-        if (mapl_am_I_root()) print *, "j=",j,", it=",it
-        if(it>0)then
-          runoff_local(i)=runoff_local(i)+route%subarea(j,i)*runoff_global(it)   
-          area_local(i)=area_local(i)+route%subarea(j,i)
-        endif
-        if(it==0)exit
-      enddo
-      if(area_local(i)>0.)runoff_local(i)=runoff_local(i)/area_local(i)
-    enddo  
-    deallocate(runoff_global)
+    !allocate(runoff_global(nt_global))
+    !call MPI_allgatherv  (                          &
+    !     RUNOFF_SRC0,  route%scounts_global(mype+1)      ,MPI_REAL, &
+    !     runoff_global, route%scounts_global, route%rdispls,MPI_REAL, &
+    !     MPI_COMM_WORLD, mpierr) 
+
+    !allocate(runoff_local(1:ntiles),area_local(1:ntiles))
+    !runoff_local=0.
+    !area_local=0. 
+    !do i=1,ntiles
+    !  if (mapl_am_I_root()) print *, "i=",i
+    !  do j=1,nmax
+    !    it=route%subi(j,i) 
+    !    if (mapl_am_I_root()) print *, "j=",j,", it=",it
+    !    if(it>0)then
+    !      runoff_local(i)=runoff_local(i)+route%subarea(j,i)*runoff_global(it)   
+    !      area_local(i)=area_local(i)+route%subarea(j,i)
+    !    endif
+    !    if(it==0)exit
+    !  enddo
+    !  if(area_local(i)>0.)runoff_local(i)=runoff_local(i)/area_local(i)
+    !enddo  
+    !deallocate(runoff_global)
 
 
-    allocate(runoff_cat_global(n_catg),scounts(ndes),scounts_global(ndes),rdispls(ndes))
-    scounts=0
-    scounts(mype+1)=ntiles  
-    call MPI_Allgather(scounts(mype+1), 1, MPI_INTEGER, scounts_global, 1, MPI_INTEGER, MPI_COMM_WORLD, mpierr)     
-    rdispls(1)=0
-    do i=2,nDes
-      rdispls(i)=rdispls(i-1)+scounts_global(i-1)
-    enddo
-    call MPI_allgatherv  (                          &
-         runoff_local,  scounts(mype+1)      ,MPI_REAL, &
-         runoff_cat_global, scounts_global, rdispls,MPI_REAL, &
-         MPI_COMM_WORLD, mpierr) 
-    if(mapl_am_I_root())then 
-      open(88,file="runoff_cat_global.txt",action="write")
-      do i=1,n_catg
-        write(88,*)runoff_cat_global(i)
-      enddo     
-      stop      
-    endif   
+    !allocate(runoff_cat_global(n_catg),scounts(ndes),scounts_global(ndes),rdispls(ndes))
+    !scounts=0
+    !scounts(mype+1)=ntiles  
+    !call MPI_Allgather(scounts(mype+1), 1, MPI_INTEGER, scounts_global, 1, MPI_INTEGER, MPI_COMM_WORLD, mpierr)     
+    !rdispls(1)=0
+    !do i=2,nDes
+    !  rdispls(i)=rdispls(i-1)+scounts_global(i-1)
+    !enddo
+    !call MPI_allgatherv  (                          &
+    !     runoff_local,  scounts(mype+1)      ,MPI_REAL, &
+    !     runoff_cat_global, scounts_global, rdispls,MPI_REAL, &
+    !     MPI_COMM_WORLD, mpierr) 
+    !if(mapl_am_I_root())then 
+    !  open(88,file="runoff_cat_global.txt",action="write")
+    !  do i=1,n_catg
+    !    write(88,*)runoff_cat_global(i)
+    !  enddo     
+    !  stop      
+    !endif   
 
 
     !rdispls(1)=0
@@ -951,54 +957,40 @@ endif
 !    tile_area => route%tile_area
 
 ! get pointers to internal variables
-! ----------------------------------
-    if (mapl_am_I_root()) print *, "debug 11"   
+! ---------------------------------- 
     call MAPL_GetPointer(INTERNAL, AREACAT , 'AREACAT', RC=STATUS)
-    VERIFY_(STATUS)
-    if (mapl_am_I_root()) print *, "debug 12"       
+    VERIFY_(STATUS)    
     call MAPL_GetPointer(INTERNAL, LENGSC  , 'LENGSC',  RC=STATUS)
-    VERIFY_(STATUS)
-    if (mapl_am_I_root()) print *, "debug 13"          
+    VERIFY_(STATUS)        
     call MAPL_GetPointer(INTERNAL, DNSTR   , 'DNSTR'  , RC=STATUS)
-    VERIFY_(STATUS)
-    if (mapl_am_I_root()) print *, "debug 14"          
+    VERIFY_(STATUS)         
     call MAPL_GetPointer(INTERNAL, WSTREAM , 'WSTREAM', RC=STATUS)
-    VERIFY_(STATUS)
-    if (mapl_am_I_root()) print *, "debug 15"          
+    VERIFY_(STATUS)     
     call MAPL_GetPointer(INTERNAL, WRIVER  , 'WRIVER' , RC=STATUS)
-    VERIFY_(STATUS)
-    if (mapl_am_I_root()) print *, "debug 16"          
+    VERIFY_(STATUS)         
     call MAPL_GetPointer(INTERNAL, LRIVERMOUTH, 'LRIVERMOUTH' , RC=STATUS)
-    VERIFY_(STATUS)
-    if (mapl_am_I_root()) print *, "debug 17"          
+    VERIFY_(STATUS)        
     call MAPL_GetPointer(INTERNAL, ORIVERMOUTH, 'ORIVERMOUTH' , RC=STATUS)
-    VERIFY_(STATUS)
-    if (mapl_am_I_root()) print *, "debug 18"      
+    VERIFY_(STATUS)  
 ! get pointers to EXPORTS
 ! -----------------------
 
     call MAPL_GetPointer(EXPORT, QSFLOW,   'QSFLOW'  , RC=STATUS)
     VERIFY_(STATUS)
-    if (mapl_am_I_root()) print *, "debug 19" 
     call MAPL_GetPointer(EXPORT, QINFLOW,  'QINFLOW' , RC=STATUS)
     VERIFY_(STATUS)
-    if (mapl_am_I_root()) print *, "debug 20"     
     call MAPL_GetPointer(EXPORT, QOUTFLOW, 'QOUTFLOW', RC=STATUS)
     VERIFY_(STATUS)
 
-    if (mapl_am_I_root()) print *, "debug 21"  
     call MAPL_Get(MAPL, LocStream=LOCSTREAM, RC=STATUS)
-    VERIFY_(STATUS)
-    if (mapl_am_I_root()) print *, "debug 22"     
+    VERIFY_(STATUS)   
     call MAPL_LocStreamGet(LOCSTREAM, TILEGRID=TILEGRID, RC=STATUS)
     VERIFY_(STATUS)    
-
-    if (mapl_am_I_root()) print *, "debug 23"  
     call MAPL_TimerOn  ( MAPL, "-RRM" )
 
     !if (mapl_am_I_root()) print *, "debug 24"  
-    call MAPL_LocStreamGet(LocStream, NT_LOCAL=NTILES, RC=STATUS )
-    N_CatL  = size(AREACAT)
+    !call MAPL_LocStreamGet(LocStream, NT_LOCAL=NTILES, RC=STATUS )
+    !N_CatL  = size(AREACAT)
 
 !@@    ALLOCATE (pfaf_code (1:NTILES)) ! 9th_coulumn_in_TILFILE
 
@@ -1028,8 +1020,8 @@ endif
 
     !call MAPL_LocStreamGet(LocStream, 9th_coulumn_in_TILFILE=pfaf_code, RC=STATUS )
 
-
-    FIRST_TIME : IF (FirstTime) THEN
+!IF(1==0)THEN
+!    FIRST_TIME : IF (FirstTime) THEN
 
        ! Pfafstetter catchment Domain Decomposition :         
        ! --------------------------------------------
@@ -1039,44 +1031,43 @@ endif
        ! DstCatchID  : 2-D array contains downstream catchID and downstream processor (identical in any processor)
        ! LocDstCatchID  : Downstream catchID when for catchments that are local to the processor.
 
-       ndes = route%ndes
-       mype = route%mype
-       allocate (AllActive    (1:N_CatG, 1: nDEs))
-       allocate (DstCatchID(1:N_CatG, 1: nDEs)) 
-       allocate (srcProcsID   (1:N_CatG ))
-       allocate (LocDstCatchID(1:N_CatG ))
-    if (mapl_am_I_root()) print *, "debug 26" 
-       AllActive       = -9999
-       srcProcsID      = -9999
-       DstCatchID      = -9999
-       LocDstCatchID   = NINT(DNSTR)
-    if (mapl_am_I_root()) print *, "debug 27" 
-       call InitializeRiverRouting(MYPE, nDEs, MAPL_am_I_root(vm),pfaf_code, & 
-            AllActive, DstCatchID, srcProcsID, LocDstCatchID, rc=STATUS)
+!       allocate (AllActive    (1:N_CatG, 1: nDEs))
+!       allocate (DstCatchID(1:N_CatG, 1: nDEs)) 
+!       allocate (srcProcsID   (1:N_CatG ))
+!       allocate (LocDstCatchID(1:N_CatG ))
 
-       VERIFY_(STATUS)         
-    if (mapl_am_I_root()) print *, "debug 28" 
-       N_Active = count (srcProcsID == MYPE)
+!       AllActive       = -9999
+!       srcProcsID      = -9999
+!       DstCatchID      = -9999
+!       LocDstCatchID   = NINT(DNSTR)
 
-       allocate (GlbActive(1 : N_Active))
-       allocate (tmp_index(1 : N_CatG  ))
+!       call InitializeRiverRouting(MYPE, nDEs, MAPL_am_I_root(vm),pfaf_code, & 
+!            AllActive, DstCatchID, srcProcsID, LocDstCatchID, rc=STATUS)
 
-       forall (N=1:N_CatG) tmp_index(N) = N
-    if (mapl_am_I_root()) print *, "debug 29" 
-       GlbActive = pack (tmp_index, mask = (srcProcsID == MYPE))
+!       VERIFY_(STATUS)         
+ 
+!       N_Active = count (srcProcsID == MYPE)
+
+!       allocate (GlbActive(1 : N_Active))
+!       allocate (tmp_index(1 : N_CatG  ))
+
+!       forall (N=1:N_CatG) tmp_index(N) = N
+
+!       GlbActive = pack (tmp_index, mask = (srcProcsID == MYPE))
 
        ! Initialize the cycle counter and sum (runoff) 
 
-       allocate (runoff_save (1:NTILES))
+!       allocate (runoff_save (1:NTILES))
 
-       runoff_save = 0.
-       ThisCycle   = 1
+!       runoff_save = 0.
+!       ThisCycle   = 1
 
-       FirstTime = .false.
+!       FirstTime = .false.
 
-       deallocate (tmp_index)
-    if (mapl_am_I_root()) print *, "debug 30"        
-    ENDIF FIRST_TIME
+!       deallocate (tmp_index)     
+!    ENDIF FIRST_TIME
+!ENDIF
+
 
 !call MAPL_TimerOff ( MAPL, "-RRM" )
 !call MAPL_TimerOff(MAPL,"RUN2")
@@ -1084,12 +1075,54 @@ endif
 !RETURN_(ESMF_SUCCESS)   
     ! For efficiency, the time step to call the river routing model is set at ROUTE_DT 
 
-    N_CYC = ROUTE_DT/HEARTBEAT
-    if (mapl_am_I_root()) print *, "debug 31"   
+    N_CYC = ROUTE_DT/HEARTBEAT    
     RUN_MODEL : if (ThisCycle == N_CYC) then  
 
-       runoff_save = runoff_save + runoff/real (N_CYC)
+       runoff_save = runoff_save + RUNOFF_SRC0/real (N_CYC)
 
+       allocate(runoff_global(nt_global))
+       call MPI_allgatherv  (                          &
+          runoff_save,  route%scounts_global(mype+1)      ,MPI_REAL, &
+          runoff_global, route%scounts_global, route%rdispls,MPI_REAL, &
+          MPI_COMM_WORLD, mpierr) 
+
+       allocate(RUNOFF_ACT(1:ntiles),area_local(1:ntiles))
+       RUNOFF_ACT=0.
+       area_local=0. 
+       do i=1,ntiles
+         do j=1,nmax
+           it=route%subi(j,i) 
+           if(it>0)then
+             RUNOFF_ACT(i)=RUNOFF_ACT(i)+route%subarea(j,i)*runoff_global(it)/1000.   
+             area_local(i)=area_local(i)+route%subarea(j,i)
+           endif
+           if(it==0)exit
+         enddo
+         !if(area_local(i)>0.)runoff_local(i)=runoff_local(i)/area_local(i)
+       enddo  
+       deallocate(runoff_global,area_local)
+
+
+    allocate(runoff_cat_global(n_catg),scounts(ndes),scounts_global(ndes),rdispls(ndes))
+    scounts=0
+    scounts(mype+1)=ntiles  
+    call MPI_Allgather(scounts(mype+1), 1, MPI_INTEGER, scounts_global, 1, MPI_INTEGER, MPI_COMM_WORLD, mpierr)     
+    rdispls(1)=0
+    do i=2,nDes
+      rdispls(i)=rdispls(i-1)+scounts_global(i-1)
+    enddo
+    call MPI_allgatherv  (                          &
+         runoff_local,  scounts(mype+1)      ,MPI_REAL, &
+         runoff_cat_global, scounts_global, rdispls,MPI_REAL, &
+         MPI_COMM_WORLD, mpierr) 
+    if(mapl_am_I_root())then 
+      open(88,file="runoff_cat_global.txt",action="write")
+      do i=1,n_catg
+        write(88,*)runoff_cat_global(i)
+      enddo     
+      stop      
+    endif   
+    call MPI_Barrier(MPI_COMM_WORLD, mpierr)
        ! Here we aggreagate GEOS_Catch/GEOS_CatchCN produced RUNOFF from TILES to CATCHMENTS
        ! Everything is local to the parallel block. Units: RUNOFF [kg m-2 s-1], 
        !        RUNOFF_CATCH [m3 s-1]
@@ -1097,85 +1130,79 @@ endif
        
        ! Unit conversion 
        
-       mm2m3 = MAPL_RADIUS * MAPL_RADIUS / 1000.
-    if (mapl_am_I_root()) print *, "debug 32"          
-       ALLOCATE (RUNOFF_CATCH(1:N_CatG))
+       !mm2m3 = MAPL_RADIUS * MAPL_RADIUS / 1000.         
+       !ALLOCATE (RUNOFF_CATCH(1:N_CatG))
     
-       RUNOFF_CATCH = 0.
+       !RUNOFF_CATCH = 0.
        
-       DO N = 1, NTILES 
-          RUNOFF_CATCH (pfaf_code(n)) = RUNOFF_CATCH (pfaf_code(n)) + mm2m3 * RUNOFF_SAVE (N) * TILE_AREA (N)
-       END DO
-    if (mapl_am_I_root()) print *, "debug 33"         
+       !DO N = 1, NTILES 
+       !   RUNOFF_CATCH (pfaf_code(n)) = RUNOFF_CATCH (pfaf_code(n)) + mm2m3 * RUNOFF_SAVE (N) * TILE_AREA (N)
+       !END DO     
        ! Inter-processor communication 1
        ! For catchment-tiles that contribute to the main catchment in some other processor, 
        ! send runoff to the corresponding srcProcsID(N)    
-       ! -----------------------------------------------------------------------------------
-    if (mapl_am_I_root()) print *, "debug 34"         
-       do N = Local_Min, Local_Max
+       ! -----------------------------------------------------------------------------------        
+       !do N = Local_Min, Local_Max
           
-          if ((AllActive (N,MYPE+1) > 0).and.(srcProcsID(N) /= MYPE)) then
+       !   if ((AllActive (N,MYPE+1) > 0).and.(srcProcsID(N) /= MYPE)) then
              
-             rbuff = RUNOFF_CATCH (N)
+       !      rbuff = RUNOFF_CATCH (N)
              
-             call MPI_ISend(rbuff,1,MPI_real,srcProcsID(N),999,MPI_COMM_WORLD,req,status)
-             call MPI_WAIT (req  ,MPI_STATUS_IGNORE,status)
+       !      call MPI_ISend(rbuff,1,MPI_real,srcProcsID(N),999,MPI_COMM_WORLD,req,status)
+       !      call MPI_WAIT (req  ,MPI_STATUS_IGNORE,status)
              
-             RUNOFF_CATCH (N) = 0.
+       !      RUNOFF_CATCH (N) = 0.
              
-          else
+       !   else
              
-             if(srcProcsID(N) == MYPE) then 
+       !      if(srcProcsID(N) == MYPE) then 
                 
-                do i = 1,nDEs                
-                   if((i-1 /= MYPE).and.(AllActive (N,i) > 0))  then                   
+       !         do i = 1,nDEs                
+       !            if((i-1 /= MYPE).and.(AllActive (N,i) > 0))  then                   
                       
-                      call MPI_RECV(rbuff,1,MPI_real,i-1,999,MPI_COMM_WORLD,MPI_STATUS_IGNORE,status)
-                      RUNOFF_CATCH (N) = RUNOFF_CATCH (N) + rbuff
+       !               call MPI_RECV(rbuff,1,MPI_real,i-1,999,MPI_COMM_WORLD,MPI_STATUS_IGNORE,status)
+       !               RUNOFF_CATCH (N) = RUNOFF_CATCH (N) + rbuff
                       
-                   endif
-                end do
-             endif
-          endif
-       end do
-    if (mapl_am_I_root()) print *, "debug 35"         
+       !            endif
+       !         end do
+       !      endif
+       !   endif
+       !end do        
        ! Now compress and create subsets of arrays that only contain active catchments 
        !    in the local processor
        ! -----------------------------------------------------------------------------
        
-       if(allocated (LENGSC_ACT ) .eqv. .false.) allocate (LENGSC_ACT  (1:N_Active))
-       if(allocated (AREACAT_ACT ) .eqv. .false.) allocate (AREACAT_ACT (1:N_Active))
-       if(allocated (WSTREAM_ACT ) .eqv. .false.) allocate (WSTREAM_ACT (1:N_Active))
-       if(allocated (WRIVER_ACT  ) .eqv. .false.) allocate (WRIVER_ACT  (1:N_Active))
-       if(allocated (QSFLOW_ACT  ) .eqv. .false.) allocate (QSFLOW_ACT  (1:N_Active))
-       if(allocated (QOUTFLOW_ACT) .eqv. .false.) allocate (QOUTFLOW_ACT(1:N_Active))  
-       if(allocated (RUNOFF_ACT  ) .eqv. .false.) allocate (RUNOFF_ACT  (1:N_Active))  
-    if (mapl_am_I_root()) print *, "debug 36"         
-       DO N = 1, size (GlbActive)
+       !if(allocated (LENGSC_ACT ) .eqv. .false.) allocate (LENGSC_ACT  (1:N_Active))
+       !if(allocated (AREACAT_ACT ) .eqv. .false.) allocate (AREACAT_ACT (1:N_Active))
+       !if(allocated (WSTREAM_ACT ) .eqv. .false.) allocate (WSTREAM_ACT (1:N_Active))
+       !if(allocated (WRIVER_ACT  ) .eqv. .false.) allocate (WRIVER_ACT  (1:N_Active))
+       !if(allocated (QSFLOW_ACT  ) .eqv. .false.) allocate (QSFLOW_ACT  (1:N_Active))
+       !if(allocated (QOUTFLOW_ACT) .eqv. .false.) allocate (QOUTFLOW_ACT(1:N_Active))  
+       !if(allocated (RUNOFF_ACT  ) .eqv. .false.) allocate (RUNOFF_ACT  (1:N_Active))        
+       !DO N = 1, size (GlbActive)
           
-          I = GlbActive (N)
-          RUNOFF_ACT  (N) = RUNOFF_CATCH (I)
+       !   I = GlbActive (N)
+       !   RUNOFF_ACT  (N) = RUNOFF_CATCH (I)
           
-          I = GlbActive (N) - Local_Min + 1
-          WSTREAM_ACT (N) = WSTREAM (I)
-          WRIVER_ACT  (N) = WRIVER  (I)
-          LENGSC_ACT  (N) = LENGSC  (I)
-          AREACAT_ACT (N) = AREACAT (I)
+       !   I = GlbActive (N) - Local_Min + 1
+       !   WSTREAM_ACT (N) = WSTREAM (I)
+       !   WRIVER_ACT  (N) = WRIVER  (I)
+       !   LENGSC_ACT  (N) = LENGSC  (I)
+       !   AREACAT_ACT (N) = AREACAT (I)
           
-       END DO
-    if (mapl_am_I_root()) print *, "debug 37"         
-       QSFLOW_ACT   = 0.
-       QOUTFLOW_ACT = 0.
-       QSFLOW       = 0.
-       QOUTFLOW     = 0.
-       QINFLOW      = 0.
+       !END DO      
+       !QSFLOW_ACT   = 0.
+       !QOUTFLOW_ACT = 0.
+       !QSFLOW       = 0.
+       !QOUTFLOW     = 0.
+       !QINFLOW      = 0.
        
        ! Call river_routing_model
-       ! ------------------------
-    if (mapl_am_I_root()) print *, "debug 38"         
-       CALL RIVER_ROUTING  (N_Active, RUNOFF_ACT,AREACAT_ACT,LENGSC_ACT,  &
+       ! ------------------------     
+       CALL RIVER_ROUTING  (ntiles, RUNOFF_ACT,AREACAT_ACT,LENGSC_ACT,  &
             WSTREAM_ACT,WRIVER_ACT, QSFLOW_ACT,QOUTFLOW_ACT) 
-    if (mapl_am_I_root()) print *, "debug 39"        
+
+
        DO N = 1, size (GlbActive)
           
           I = GlbActive (N) - Local_Min + 1
@@ -1192,8 +1219,7 @@ endif
              ! if(LRIVERMOUTH(... ) > 0) send QOUTFLOW(I) [m3/s] to LRIVERMOUTH(N) th lake tile
 
           endif
-       END DO
-    if (mapl_am_I_root()) print *, "debug 40"        
+       END DO      
        ! Inter-processor communication-2
        ! Update down stream catchments
        ! -------------------------------
@@ -1255,27 +1281,24 @@ endif
        runoff_save = 0.
        ThisCycle   = 1         
 
-    if (mapl_am_I_root()) print *, "debug 41"  
     else
        
-       runoff_save = runoff_save + runoff/real (N_CYC)
+       runoff_save = runoff_save + RUNOFF_SRC0/real (N_CYC)
        
        ThisCycle = ThisCycle + 1
-    if (mapl_am_I_root()) print *, "debug 31.5"         
-    endif RUN_MODEL
-    if (mapl_am_I_root()) print *, "debug 42"  
- call MAPL_TimerOff ( MAPL, "-RRM" )
-    if (mapl_am_I_root()) print *, "debug 43"  
+
+    endif RUN_MODEL 
+
+    runoff_save => NULL()
+
 ! All done
 ! --------
-
+    call MAPL_TimerOff ( MAPL, "-RRM" ) 
     call MAPL_TimerOff(MAPL,"RUN2")
     !call MPI_Barrier(MPI_COMM_WORLD, mpierr)
 
-    if (mapl_am_I_root()) print *, "debug 44"  
 
     RETURN_(ESMF_SUCCESS)
-    if (mapl_am_I_root()) print *, "debug 45"  
   end subroutine RUN2
 
 ! ---------------------------------------------------------------------------
