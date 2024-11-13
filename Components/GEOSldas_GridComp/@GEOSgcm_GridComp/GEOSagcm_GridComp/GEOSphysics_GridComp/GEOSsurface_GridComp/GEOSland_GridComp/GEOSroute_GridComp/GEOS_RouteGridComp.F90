@@ -663,7 +663,7 @@ endif
     open(77,file="../input/Pfaf_nsub_M36.txt",status="old",action="read"); read(77,*)nsub_global; close(77)
     open(77,file="../input/Pfaf_asub_M36.txt",status="old",action="read"); read(77,*)subarea_global; close(77)
     open(77,file="../input/Pfaf_isub_M36.txt",status="old",action="read"); read(77,*)subi_global; close(77)
-    open(77,file="../input/Pfaf_area.txt",status="old",action="read"); read(77,*)area_global; close(77)
+    open(77,file="../input/Pfaf_area.txt",status="old",action="read"); read(77,*)area_cat_global; close(77)
     allocate(nsub(ntiles),subarea(nmax,ntiles),subi(nmax,ntiles),area_cat(ntiles))
     nsub=nsub_global(minCatch:maxCatch)
     subarea=subarea_global(:,minCatch:maxCatch)
