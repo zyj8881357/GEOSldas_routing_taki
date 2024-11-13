@@ -815,22 +815,24 @@ endif
     allocate(runoff_global(nt_global),scounts(ndes),scounts_global(ndes),rdispls(ndes))
     scounts=0
     scounts(mype+1)=nt_local
-    !rdispls=[(i,i=0,ndes-1)]
     call MPI_Allgather(scounts(mype+1), 1, MPI_INTEGER, scounts_global, 1, MPI_INTEGER, MPI_COMM_WORLD, mpierr) 
-
-    !call MPI_allgatherv  (                          &
-    !     RUNOFF_SRC0,  scounts      ,MPI_INTEGER, &
-    !     global_buff, rcounts, rdispls,MPI_INTEGER, &
-    !     MPI_COMM_WORLD, mpierr) 
+    rdispls(1)=0
+    do i=2,nDes
+      rdispls(i)=rdispls(i-1)+scounts_global(i-1)
+    enddo
+    runoff_global = -9999.
+    call MPI_allgatherv  (                          &
+         RUNOFF_SRC0,  scounts(mype+1)      ,MPI_REAL, &
+         runoff_global, scounts, rdispls,MPI_REAL, &
+         MPI_COMM_WORLD, mpierr) 
 
 
     if(mype==3)then 
-      open(88,file="scounts.txt",action="write")
-      do i=1,nDes
-        write(88,*)scounts(i),scounts_global(i)
+      open(88,file="runoff_global.txt",action="write")
+      do i=1,nt_global
+        write(88,*)runoff_global(i)
       enddo
       close(88)
-      print *,sum(scounts_global)
     endif
     stop
 
