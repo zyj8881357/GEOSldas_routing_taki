@@ -665,31 +665,31 @@ endif
     if (mapl_am_I_root()) print *, "debug 21.1.2" 
     open(77,file="../input/Pfaf_asub_M36.txt",status="old",action="read"); read(77,*)subarea_global; close(77)
     if (mapl_am_I_root()) print *, "debug 21.1.3" 
-    open(77,file="../input/Pfaf_isub_M36.txt",status="old",action="read"); read(77,*)subi_global; close(77)
+    !open(77,file="../input/Pfaf_isub_M36.txt",status="old",action="read"); read(77,*)subi_global; close(77)
     if (mapl_am_I_root()) print *, "debug 21.1.4" 
     open(77,file="../input/Pfaf_area.txt",status="old",action="read"); read(77,*)area_cat_global; close(77)
     if (mapl_am_I_root()) print *, "debug 21.2"          
     allocate(nsub(ntiles),subarea(nmax,ntiles),subi(nmax,ntiles),area_cat(ntiles))
     nsub=nsub_global(minCatch:maxCatch)
     subarea=subarea_global(:,minCatch:maxCatch)
-    subi=subi_global(:,minCatch:maxCatch)
+    !subi=subi_global(:,minCatch:maxCatch)
     area_cat=area_cat_global(minCatch:maxCatch)
     if (mapl_am_I_root()) print *, "debug 21.3"      
     deallocate(nsub_global,subarea_global,subi_global,area_cat_global)
     route%tile_area => area_cat
     route%nsub => nsub
     route%subarea => subarea
-    route%subi => subi
+    !route%subi => subi
     if (mapl_am_I_root()) print *, "debug 21.4"   
     if (mapl_am_I_root())then
       open(88,file="nsub.txt",action="write")
       open(89,file="subarea.txt",action="write")
-      open(90,file="subi.txt",action="write")
+      !open(90,file="subi.txt",action="write")
       open(91,file="tile_area.txt",action="write")
       do i=1,nTiles
         write(88,*)route%nsub(i)
         write(89,'(150(1x,f10.4))')route%subarea(:,i)
-        write(90,'(150(i7))')route%subi(:,i)
+        !write(90,'(150(i7))')route%subi(:,i)
         write(91,*)route%tile_area(i)
       enddo
       stop
