@@ -830,12 +830,17 @@ endif
          MPI_COMM_WORLD, mpierr) 
     !call MPI_Barrier(MPI_COMM_WORLD, mpierr)
 
-    if(mype==3)then 
+    if(mapl_am_I_root())then 
       open(88,file="runoff_global.txt",action="write")
       do i=1,nt_global
-        write(88,*)"i=",i,", unoff_global(i)=",runoff_global(i)
+        write(88,*)"i=",i,", runoff_global(i)=",runoff_global(i)
       enddo
       close(88)
+      open(88,file="runoff_local.txt",action="write")
+      do i=1,nt_local
+        write(88,*)"i=",i,", runoff_local(i)=",RUNOFF_SRC0(i)
+      enddo
+      close(88)      
     endif
     call MPI_Barrier(MPI_COMM_WORLD, mpierr)    
     stop
