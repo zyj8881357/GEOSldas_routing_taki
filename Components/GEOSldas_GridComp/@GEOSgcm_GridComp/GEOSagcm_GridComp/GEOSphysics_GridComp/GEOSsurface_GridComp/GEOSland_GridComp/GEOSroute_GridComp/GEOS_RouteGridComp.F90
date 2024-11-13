@@ -35,7 +35,7 @@ module GEOS_RouteGridCompMod
   
   implicit none
   integer, parameter :: N_CatG = 291284
-  !integer, parameter :: nt_all = 112573
+  integer, parameter :: nt_all = 112573
   private
 
   type T_RROUTE_STATE
@@ -812,7 +812,7 @@ endif
     mype = route%mype    
     ntiles = route%ntiles
     nt_global = route%nt_global
-    allocate(runoff_global(nt_global),scounts(ndes),scounts_global(ndes),rdispls(ndes))
+    allocate(runoff_global(nt_all),scounts(ndes),scounts_global(ndes),rdispls(ndes))
     scounts=0
     scounts(mype+1)=nt_local
     call MPI_Allgather(scounts(mype+1), 1, MPI_INTEGER, scounts_global, 1, MPI_INTEGER, MPI_COMM_WORLD, mpierr) 
@@ -823,7 +823,7 @@ endif
     runoff_global = -9999.
     call MPI_Barrier(MPI_COMM_WORLD, mpierr)
 
-    if (mapl_am_I_root()) print *, "debug 7.1"     
+    if (mapl_am_I_root()) print *, "debug 7.1",", sum tiles:",sum(scounts_global),", nt_global:",nt_global    
     call MPI_allgatherv  (                          &
          RUNOFF_SRC0,  scounts(mype+1)      ,MPI_REAL, &
          runoff_global, scounts_global, rdispls,MPI_REAL, &
