@@ -759,7 +759,8 @@ endif
     integer                                :: ndes, mype
     type (T_RROUTE_STATE), pointer         :: route => null()
     type (RROUTE_wrap)                     :: wrap
-    INTEGER, DIMENSION(:)  ,ALLOCATABLE  :: runoff_global, scounts, scounts_global,rdispls, rcounts    
+    INTEGER, DIMENSION(:)  ,ALLOCATABLE  :: scounts, scounts_global,rdispls, rcounts  
+    REAL, DIMENSION(:)  ,ALLOCATABLE  :: runoff_global  
 
     integer :: mpierr, nt_global,nt_local   
 
