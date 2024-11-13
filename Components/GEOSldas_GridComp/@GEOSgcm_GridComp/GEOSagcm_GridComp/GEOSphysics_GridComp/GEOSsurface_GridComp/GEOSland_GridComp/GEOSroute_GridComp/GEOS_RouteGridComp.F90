@@ -828,7 +828,7 @@ endif
          RUNOFF_SRC0,  scounts(mype+1)      ,MPI_REAL, &
          runoff_global, scounts_global, rdispls,MPI_REAL, &
          MPI_COMM_WORLD, mpierr) 
-
+    call MPI_Barrier(MPI_COMM_WORLD, mpierr)
 
     if(mype==3)then 
       open(88,file="runoff_global.txt",action="write")
