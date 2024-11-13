@@ -873,6 +873,20 @@ endif
          runoff_global, scounts_global, rdispls,MPI_REAL, &
          MPI_COMM_WORLD, mpierr) 
 
+    if (mapl_am_I_root())then
+      open(88,file="nsub.txt",action="write")
+      open(89,file="subarea.txt",action="write")
+      open(90,file="subi.txt",action="write")
+      open(91,file="tile_area.txt",action="write")
+      do i=1,ntiles
+        write(88,*)route%nsub(i)
+        write(89,'(150(1x,f10.4))')route%subarea(:,i)
+        write(90,'(150(i7))')route%subi(:,i)
+        write(91,*)route%tile_area(i)
+      enddo
+      !stop
+    endif
+
     allocate(runoff_local(1:ntiles),area_local(1:ntiles))
     runoff_local=0.
     area_local=0.
