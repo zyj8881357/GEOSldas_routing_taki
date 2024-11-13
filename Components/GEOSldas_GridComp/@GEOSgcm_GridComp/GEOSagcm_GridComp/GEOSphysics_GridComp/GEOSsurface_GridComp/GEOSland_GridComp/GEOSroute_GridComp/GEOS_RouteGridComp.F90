@@ -833,7 +833,7 @@ endif
     if(mype==3)then 
       open(88,file="runoff_global.txt",action="write")
       do i=1,nt_global
-        write(88,*)runoff_global(i)
+        write(88,*)"i=",i,", unoff_global(i)=",runoff_global(i)
       enddo
       close(88)
     endif
