@@ -403,7 +403,7 @@ contains
 
 
     real, pointer :: dataPtr(:)
-    integer :: j
+    integer :: j,nt_local
     ! ------------------
     ! begin
 
