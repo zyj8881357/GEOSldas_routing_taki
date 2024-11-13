@@ -803,7 +803,7 @@ endif
     type (T_RROUTE_STATE), pointer         :: route => null()
     type (RROUTE_wrap)                     :: wrap
     INTEGER, DIMENSION(:)  ,ALLOCATABLE  :: scounts, scounts_global,rdispls, rcounts  
-    real, dimension(:), pointer :: runoff_global,runoff_local,area_local    
+    real, dimension(:), pointer :: runoff_global,runoff_local,area_local,runoff_cat_global    
 
     integer :: mpierr, nt_global,nt_local, it, j
 
@@ -867,36 +867,20 @@ endif
       rdispls(i)=rdispls(i-1)+scounts_global(i-1)
     enddo
 
-    if (mapl_am_I_root()) print *, "debug 7.1",", sum tiles:",sum(scounts_global),", nt_global:",nt_global    
+    !if (mapl_am_I_root()) print *, "debug 7.1",", sum tiles:",sum(scounts_global),", nt_global:",nt_global    
     call MPI_allgatherv  (                          &
          RUNOFF_SRC0,  scounts(mype+1)      ,MPI_REAL, &
          runoff_global, scounts_global, rdispls,MPI_REAL, &
          MPI_COMM_WORLD, mpierr) 
 
-    if (mapl_am_I_root())then
-      open(88,file="nsub.txt",action="write")
-      open(89,file="subarea.txt",action="write")
-      open(90,file="subi.txt",action="write")
-      open(91,file="tile_area.txt",action="write")
-      do i=1,ntiles
-        write(88,*)route%nsub(i)
-        write(89,'(150(1x,f10.4))')route%subarea(:,i)
-        write(90,'(150(i7))')route%subi(:,i)
-        write(91,*)route%tile_area(i)
-      enddo
-      !stop
-    endif
-
     allocate(runoff_local(1:ntiles),area_local(1:ntiles))
     runoff_local=0.
-    area_local=0.
-    if (mapl_am_I_root()) print *, "debug 7.2"    
+    area_local=0. 
     do i=1,ntiles
       if (mapl_am_I_root()) print *, "i=",i
       do j=1,nmax
         it=route%subi(j,i) 
         if (mapl_am_I_root()) print *, "j=",j,", it=",it
-      ! Check for valid fraction and runoff values
         if(it>0)then
           runoff_local(i)=runoff_local(i)+route%subarea(j,i)*runoff_global(it)   
           area_local(i)=area_local(i)+route%subarea(j,i)
@@ -904,26 +888,36 @@ endif
         if(it==0)exit
       enddo
       if(area_local(i)>0.)runoff_local(i)=runoff_local(i)/area_local(i)
-    enddo    
+    enddo  
 
-    if (mapl_am_I_root()) print *, "debug 7.3"
-
+    allocate(runoff_cat_global(n_catg))
+    scounts=0
+    scounts(mype+1)=ntiles  
+    call MPI_Allgather(scounts(mype+1), 1, MPI_INTEGER, scounts_global, 1, MPI_INTEGER, MPI_COMM_WORLD, mpierr)     
+    rdispls(1)=0
+    do i=2,nDes
+      rdispls(i)=rdispls(i-1)+scounts_global(i-1)
+    enddo
+    call MPI_allgatherv  (                          &
+         runoff_local,  scounts(mype+1)      ,MPI_REAL, &
+         runoff_cat_global, scounts_global, rdispls,MPI_REAL, &
+         MPI_COMM_WORLD, mpierr) 
     if(mapl_am_I_root())then 
-      open(88,file="runoff_global.txt",action="write")
-      do i=1,nt_global
-        write(88,*)"i=",i,", runoff_global(i)=",runoff_global(i)
+      open(88,file="runoff_cat_global.txt",action="write")
+      do i=1,n_catg
+        write(88,*)runoff_cat_global(i)
       enddo
-      close(88)
-      open(88,file="runoff_local_tile.txt",action="write")
-      do i=1,nt_local
-        write(88,*)"i=",i,", runoff_local(i)=",RUNOFF_SRC0(i)
-      enddo
-      close(88)
-      open(88,file="runoff_local_catch.txt",action="write")
-      do i=1,ntiles
-        write(88,*)"i=",i,", runoff_local(i)=",runoff_local(i)
-      enddo
-      close(88)      
+    !  close(88)
+    !  open(88,file="runoff_local_tile.txt",action="write")
+    !  do i=1,nt_local
+    !    write(88,*)"i=",i,", runoff_local(i)=",RUNOFF_SRC0(i)
+    !  enddo
+    !  close(88)
+    !  open(88,file="runoff_local_catch.txt",action="write")
+    !  do i=1,ntiles
+    !    write(88,*)"i=",i,", runoff_local(i)=",runoff_local(i)
+    !  enddo
+    !  close(88)      
       stop      
     endif   
     deallocate(runoff_global)
@@ -939,17 +933,14 @@ endif
 !        print *, "RUNOFF_SRC0 at (", i, ") =", RUNOFF_SRC0(i)
 !end do
 !endif    
-    if (mapl_am_I_root()) print *, "debug 8" 
     ! redist RunOff
     !call ESMF_FieldRedist(srcField=runoff_src, dstField=route%field, &
     !            routehandle=route%routehandle, rc=status)
     !VERIFY_(STATUS)
-    if (mapl_am_I_root()) print *, "debug 9" 
 
+   ! call ESMF_FieldGet(route%field, farrayPtr=RUNOFF, rc=status)
+   ! VERIFY_(STATUS)
 
-
-    call ESMF_FieldGet(route%field, farrayPtr=RUNOFF, rc=status)
-    VERIFY_(STATUS)
 !if(mapl_am_I_root())then     
 !do i = 1, size(RUNOFF, 1)
 !        print *, "RUNOFF at (", i, ") =", RUNOFF(i)
