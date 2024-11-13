@@ -657,24 +657,26 @@ endif
     route%field = ESMF_FieldCreate(grid=catchGrid, datacopyflag=ESMF_DATACOPY_VALUE, &
         farrayPtr=ptr2, name='RUNOFF', RC=STATUS)
     VERIFY_(STATUS)
-
+    if (mapl_am_I_root()) print *, "debug 21.1"  
   ! Read sub-area data from text files
     allocate(nsub_global(N_CatG),subarea_global(nmax,N_CatG),subi_global(nmax,N_CatG),area_cat_global(N_CatG))
     open(77,file="../input/Pfaf_nsub_M36.txt",status="old",action="read"); read(77,*)nsub_global; close(77)
     open(77,file="../input/Pfaf_asub_M36.txt",status="old",action="read"); read(77,*)subarea_global; close(77)
     open(77,file="../input/Pfaf_isub_M36.txt",status="old",action="read"); read(77,*)subi_global; close(77)
     open(77,file="../input/Pfaf_area.txt",status="old",action="read"); read(77,*)area_cat_global; close(77)
+    if (mapl_am_I_root()) print *, "debug 21.2"          
     allocate(nsub(ntiles),subarea(nmax,ntiles),subi(nmax,ntiles),area_cat(ntiles))
     nsub=nsub_global(minCatch:maxCatch)
     subarea=subarea_global(:,minCatch:maxCatch)
     subi=subi_global(:,minCatch:maxCatch)
     area_cat=area_cat_global(minCatch:maxCatch)
+    if (mapl_am_I_root()) print *, "debug 21.3"      
     deallocate(nsub_global,subarea_global,subi_global,area_cat_global)
     route%tile_area => area_cat
     route%nsub => nsub
     route%subarea => subarea
     route%subi => subi
- 
+    if (mapl_am_I_root()) print *, "debug 21.4"   
     if (mapl_am_I_root())then
       open(88,file="nsub.txt",action="write")
       open(89,file="subarea.txt",action="write")
