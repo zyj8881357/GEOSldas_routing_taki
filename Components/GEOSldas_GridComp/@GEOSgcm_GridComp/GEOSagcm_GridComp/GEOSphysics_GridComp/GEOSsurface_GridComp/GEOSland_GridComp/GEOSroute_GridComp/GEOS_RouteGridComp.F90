@@ -878,6 +878,7 @@ endif
     area_local=0.
     if (mapl_am_I_root()) print *, "debug 7.2"    
     do i=1,ntiles
+      if (mapl_am_I_root()) print *, "i=",i
       do j=1,nmax
         it=route%subi(j,i) 
       ! Check for valid fraction and runoff values
