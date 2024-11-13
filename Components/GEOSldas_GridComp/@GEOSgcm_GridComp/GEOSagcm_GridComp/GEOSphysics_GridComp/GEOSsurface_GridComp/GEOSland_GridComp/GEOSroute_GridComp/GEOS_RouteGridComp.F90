@@ -830,7 +830,7 @@ endif
          MPI_COMM_WORLD, mpierr) 
     !call MPI_Barrier(MPI_COMM_WORLD, mpierr)
 
-    if(mype=3)then 
+    if(mype==3)then 
       open(88,file="runoff_global.txt",action="write")
       do i=1,nt_global
         write(88,*)"i=",i,", unoff_global(i)=",runoff_global(i)
