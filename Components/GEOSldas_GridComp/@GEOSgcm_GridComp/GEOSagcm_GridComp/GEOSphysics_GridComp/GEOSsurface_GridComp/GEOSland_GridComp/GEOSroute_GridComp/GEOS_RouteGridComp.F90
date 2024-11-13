@@ -35,7 +35,7 @@ module GEOS_RouteGridCompMod
   
   implicit none
   integer, parameter :: N_CatG = 291284
-  integer, parameter :: nt_all = 112573
+  !integer, parameter :: nt_all = 112573
   private
 
   type T_RROUTE_STATE
@@ -51,6 +51,10 @@ module GEOS_RouteGridCompMod
      integer :: maxCatch
      integer, pointer :: pfaf(:) => NULL()
      real,    pointer :: tile_area(:) => NULL()
+     integer, pointer :: nsub(:) => NULL()
+     integer, pointer :: subi(:,:) => NULL()
+     real,    pointer :: subarea(:,:) => NULL()
+
   end type T_RROUTE_STATE
 
   ! Wrapper for extracting internal state
@@ -811,9 +815,8 @@ endif
     VERIFY_(STATUS)
     ndes = route%ndes
     mype = route%mype    
-    ntiles = route%ntiles
     nt_global = route%nt_global
-    allocate(runoff_global(nt_all),scounts(ndes),scounts_global(ndes),rdispls(ndes))
+    allocate(runoff_global(nt_global),scounts(ndes),scounts_global(ndes),rdispls(ndes))
     scounts=0
     scounts(mype+1)=nt_local
     call MPI_Allgather(scounts(mype+1), 1, MPI_INTEGER, scounts_global, 1, MPI_INTEGER, MPI_COMM_WORLD, mpierr) 
@@ -821,14 +824,14 @@ endif
     do i=2,nDes
       rdispls(i)=rdispls(i-1)+scounts_global(i-1)
     enddo
-    runoff_global = -9999.
 
     if (mapl_am_I_root()) print *, "debug 7.1",", sum tiles:",sum(scounts_global),", nt_global:",nt_global    
-    call MPI_Barrier(MPI_COMM_WORLD, mpierr)
+    !call MPI_Barrier(MPI_COMM_WORLD, mpierr)
     call MPI_allgatherv  (                          &
          RUNOFF_SRC0,  scounts(mype+1)      ,MPI_REAL, &
          runoff_global, scounts_global, rdispls,MPI_REAL, &
          MPI_COMM_WORLD, mpierr) 
+
     !call MPI_Barrier(MPI_COMM_WORLD, mpierr)
 
     if(mype==1)then 
