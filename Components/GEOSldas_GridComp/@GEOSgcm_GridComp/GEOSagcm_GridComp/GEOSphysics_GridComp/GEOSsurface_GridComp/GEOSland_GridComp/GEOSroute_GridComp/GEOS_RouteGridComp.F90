@@ -881,11 +881,13 @@ endif
       if (mapl_am_I_root()) print *, "i=",i
       do j=1,nmax
         it=route%subi(j,i) 
+        if (mapl_am_I_root()) print *, "j=",j,", it=",it
       ! Check for valid fraction and runoff values
         if(it>0)then
           runoff_local(i)=runoff_local(i)+route%subarea(j,i)*runoff_global(it)   
           area_local(i)=area_local(i)+route%subarea(j,i)
         endif
+        if(it==0)exit
       enddo
       if(area_local(i)>0.)runoff_local(i)=runoff_local(i)/area_local(i)
     enddo    
