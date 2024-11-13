@@ -362,6 +362,7 @@ contains
 ! Locals
 ! -----------------------------------------------------------
 
+    integer,parameter :: nmax=150
     type (ESMF_VM) :: VM
     integer        :: comm
     integer        :: nDEs
@@ -388,6 +389,11 @@ contains
     integer,pointer :: local_id(:)  => NULL()
     real, pointer :: tile_area(:) => NULL()
     real, pointer :: ptr2(:) => NULL()
+
+    real,allocatable :: subarea_global(:,:),subarea(:,:) ! Arrays for sub-area and fractions
+    integer,allocatable :: subi_global(:,:),subi(:,:)
+    integer,allocatable :: nsub_global(:),nsub(:)
+    real,allocatable :: area_cat_global(:),area_cat(:)
     
     type (T_RROUTE_STATE), pointer         :: route => null()
     type (RROUTE_wrap)                     :: wrap
@@ -642,8 +648,7 @@ endif
     ! redist pfaf (NOTE: me might need a second routehandle for integers)
 
     route%pfaf => arbSeq_pf
-    !route%ntiles = ntiles  
-    route%ntiles = maxCatch-minCatch+1
+    route%ntiles = ntiles  
     route%minCatch = minCatch
     route%maxCatch = maxCatch
     if (mapl_am_I_root()) print *, "debug 21"   
@@ -652,6 +657,38 @@ endif
     route%field = ESMF_FieldCreate(grid=catchGrid, datacopyflag=ESMF_DATACOPY_VALUE, &
         farrayPtr=ptr2, name='RUNOFF', RC=STATUS)
     VERIFY_(STATUS)
+
+  ! Read sub-area data from text files
+    allocate(nsub_global(N_CatG),subarea_global(nmax,N_CatG),subi_global(nmax,N_CatG),area_cat_global(N_CatG))
+    open(77,file="../input/Pfaf_nsub_M36.txt",status="old",action="read"); read(77,*)nsub_global; close(77)
+    open(77,file="../input/Pfaf_asub_M36.txt",status="old",action="read"); read(77,*)subarea_global; close(77)
+    open(77,file="../input/Pfaf_isub_M36.txt",status="old",action="read"); read(77,*)subi_global; close(77)
+    open(77,file="../input/Pfaf_area.txt",status="old",action="read"); read(77,*)area_global; close(77)
+    allocate(nsub(ntiles),subarea(nmax,ntiles),subi(nmax,ntiles),area_cat(ntiles))
+    nsub=nsub_global(minCatch:maxCatch)
+    subarea=subarea_global(:,minCatch:maxCatch)
+    subi=subi_global(:,minCatch:maxCatch)
+    area_cat=area_cat_global(minCatch:maxCatch)
+    deallocate(nsub_global,subarea_global,subi_global,area_cat_global)
+    route%tile_area => area_cat
+    route%nsub => nsub
+    route%subarea => subarea
+    route%subi => subi
+ 
+    if (mapl_am_I_root())then
+      open(88,file="nsub.txt",action="write")
+      open(89,file="subarea.txt",action="write")
+      open(90,file="subi.txt",action="write")
+      open(91,file="tile_area.txt",action="write")
+      do i=1,nTiles
+        write(88,*)route%nsub(i)
+        write(89,'(150(1x,f10.4))')route%route%subarea(:,i)
+        write(90,'(150(i7))')route%subi(:,i)
+        write(91,*)route%tile_area(i)
+      enddo
+      stop
+    endif
+
     if (mapl_am_I_root()) print *, "debug 22"       
     deallocate(ims)
     call MAPL_GenericInitialize ( GC, import, export, clock, rc=status )
@@ -818,7 +855,7 @@ endif
     nt_global = route%nt_global
     allocate(runoff_global(nt_global),scounts(ndes),scounts_global(ndes),rdispls(ndes))
     scounts=0
-    scounts(mype+1)=nt_local
+    scounts(mype+1)=nt_local  
     call MPI_Allgather(scounts(mype+1), 1, MPI_INTEGER, scounts_global, 1, MPI_INTEGER, MPI_COMM_WORLD, mpierr) 
     rdispls(1)=0
     do i=2,nDes
@@ -826,7 +863,6 @@ endif
     enddo
 
     if (mapl_am_I_root()) print *, "debug 7.1",", sum tiles:",sum(scounts_global),", nt_global:",nt_global    
-    !call MPI_Barrier(MPI_COMM_WORLD, mpierr)
     call MPI_allgatherv  (                          &
          RUNOFF_SRC0,  scounts(mype+1)      ,MPI_REAL, &
          runoff_global, scounts_global, rdispls,MPI_REAL, &
