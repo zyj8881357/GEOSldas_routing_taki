@@ -660,9 +660,13 @@ endif
     if (mapl_am_I_root()) print *, "debug 21.1"  
   ! Read sub-area data from text files
     allocate(nsub_global(N_CatG),subarea_global(nmax,N_CatG),subi_global(nmax,N_CatG),area_cat_global(N_CatG))
+    if (mapl_am_I_root()) print *, "debug 21.1.1" 
     open(77,file="../input/Pfaf_nsub_M36.txt",status="old",action="read"); read(77,*)nsub_global; close(77)
+    if (mapl_am_I_root()) print *, "debug 21.1.2" 
     open(77,file="../input/Pfaf_asub_M36.txt",status="old",action="read"); read(77,*)subarea_global; close(77)
+    if (mapl_am_I_root()) print *, "debug 21.1.3" 
     open(77,file="../input/Pfaf_isub_M36.txt",status="old",action="read"); read(77,*)subi_global; close(77)
+    if (mapl_am_I_root()) print *, "debug 21.1.4" 
     open(77,file="../input/Pfaf_area.txt",status="old",action="read"); read(77,*)area_cat_global; close(77)
     if (mapl_am_I_root()) print *, "debug 21.2"          
     allocate(nsub(ntiles),subarea(nmax,ntiles),subi(nmax,ntiles),area_cat(ntiles))
