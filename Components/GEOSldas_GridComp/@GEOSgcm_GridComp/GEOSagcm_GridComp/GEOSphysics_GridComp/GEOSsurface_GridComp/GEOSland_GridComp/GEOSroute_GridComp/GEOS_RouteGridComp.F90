@@ -821,9 +821,12 @@ endif
       rdispls(i)=rdispls(i-1)+scounts_global(i-1)
     enddo
     runoff_global = -9999.
+    call MPI_Barrier(MPI_COMM_WORLD, mpierr)
+
+    if (mapl_am_I_root()) print *, "debug 7.1"     
     call MPI_allgatherv  (                          &
          RUNOFF_SRC0,  scounts(mype+1)      ,MPI_REAL, &
-         runoff_global, scounts, rdispls,MPI_REAL, &
+         runoff_global, scounts_global, rdispls,MPI_REAL, &
          MPI_COMM_WORLD, mpierr) 
 
 
