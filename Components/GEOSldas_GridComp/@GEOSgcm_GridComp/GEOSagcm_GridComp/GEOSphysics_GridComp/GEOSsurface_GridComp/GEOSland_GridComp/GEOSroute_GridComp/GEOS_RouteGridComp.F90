@@ -876,6 +876,7 @@ endif
     allocate(runoff_local(1:ntiles),area_local(1:ntiles))
     runoff_local=0.
     area_local=0.
+    if (mapl_am_I_root()) print *, "debug 7.2"    
     do i=1,ntiles
       do j=1,nmax
         it=route%subi(j,i) 
@@ -888,6 +889,7 @@ endif
       if(area_local(i)>0.)runoff_local(i)=runoff_local(i)/area_local(i)
     enddo    
 
+    if (mapl_am_I_root()) print *, "debug 7.3"
 
     if(mapl_am_I_root())then 
       open(88,file="runoff_global.txt",action="write")
