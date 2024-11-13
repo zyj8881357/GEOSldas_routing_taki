@@ -55,6 +55,8 @@ module GEOS_RouteGridCompMod
      integer, pointer :: nsub(:) => NULL()
      integer, pointer :: subi(:,:) => NULL()
      real,    pointer :: subarea(:,:) => NULL()
+     integer, pointer :: scounts_global(:) => NULL()
+     integer, pointer :: rdispls(:) => NULL()
 
   end type T_RROUTE_STATE
 
@@ -394,13 +396,14 @@ contains
     integer,pointer :: subi_global(:,:)=> NULL(),subi(:,:)=> NULL()
     integer,pointer :: nsub_global(:)=> NULL(),nsub(:)=> NULL()
     real,pointer :: area_cat_global(:)=> NULL(),area_cat(:)=> NULL()
+    integer,pointer :: scounts(:)=>NULL(), scounts_global(:)=>NULL(),rdispls(:)=>NULL()
     
     type (T_RROUTE_STATE), pointer         :: route => null()
     type (RROUTE_wrap)                     :: wrap
 
 
-real, pointer :: dataPtr(:)
-integer :: j
+    real, pointer :: dataPtr(:)
+    integer :: j
     ! ------------------
     ! begin
 
@@ -676,6 +679,22 @@ endif
     subi=subi_global(:,minCatch:maxCatch)
     route%subi => subi
     deallocate(subi_global)
+
+    call ESMF_FieldGet(field0, farrayPtr=dataPtr, rc=status)
+    nt_local=size(dataPtr, 1)
+    if (mapl_am_I_root()) print *,"nt_local=",nt_local
+    allocate(scounts(ndes),scounts_global(ndes),rdispls(ndes))
+    scounts=0
+    scounts(mype+1)=nt_local  
+    call MPI_Allgather(scounts(mype+1), 1, MPI_INTEGER, scounts_global, 1, MPI_INTEGER, MPI_COMM_WORLD, mpierr) 
+    rdispls(1)=0
+    do i=2,nDes
+      rdispls(i)=rdispls(i-1)+scounts_global(i-1)
+    enddo
+    deallocate(scounts,dataPtr)
+    route%scounts_global=>scounts_global
+    route%rdispls=>rdispls
+
  
     !if (mapl_am_I_root())then
     !  open(88,file="nsub.txt",action="write")
@@ -846,31 +865,21 @@ endif
 ! get pointers to inputs variables
 ! ----------------------------------
 
+    ndes = route%ndes
+    mype = route%mype  
+    ntiles = route%ntiles  
+    nt_global = route%nt_global  
+
+
     ! get the field from IMPORT
     call ESMF_StateGet(IMPORT, 'RUNOFF', field=runoff_src, RC=STATUS)
     VERIFY_(STATUS)    
     call ESMF_FieldGet(runoff_src, farrayPtr=RUNOFF_SRC0, rc=status)   
-    nt_local=size(RUNOFF_SRC0, 1) 
-    VERIFY_(STATUS)
-    ndes = route%ndes
-    mype = route%mype  
-    ntiles = route%ntiles  
-    nt_global = route%nt_global
-    Local_Min = route%minCatch
-    Local_Max = route%maxCatch    
-    allocate(runoff_global(nt_global),scounts(ndes),scounts_global(ndes),rdispls(ndes))
-    scounts=0
-    scounts(mype+1)=nt_local  
-    call MPI_Allgather(scounts(mype+1), 1, MPI_INTEGER, scounts_global, 1, MPI_INTEGER, MPI_COMM_WORLD, mpierr) 
-    rdispls(1)=0
-    do i=2,nDes
-      rdispls(i)=rdispls(i-1)+scounts_global(i-1)
-    enddo
-
-    !if (mapl_am_I_root()) print *, "debug 7.1",", sum tiles:",sum(scounts_global),", nt_global:",nt_global    
+    VERIFY_(STATUS) 
+    allocate(runoff_global(nt_global))
     call MPI_allgatherv  (                          &
-         RUNOFF_SRC0,  scounts(mype+1)      ,MPI_REAL, &
-         runoff_global, scounts_global, rdispls,MPI_REAL, &
+         RUNOFF_SRC0,  route%scounts_global(mype+1)      ,MPI_REAL, &
+         runoff_global, route%scounts_global, route%rdispls,MPI_REAL, &
          MPI_COMM_WORLD, mpierr) 
 
     allocate(runoff_local(1:ntiles),area_local(1:ntiles))
@@ -889,8 +898,10 @@ endif
       enddo
       if(area_local(i)>0.)runoff_local(i)=runoff_local(i)/area_local(i)
     enddo  
+    deallocate(runoff_global)
 
-    allocate(runoff_cat_global(n_catg))
+
+    allocate(runoff_cat_global(n_catg),scounts(ndes),scounts_global(ndes),rdispls(ndes))
     scounts=0
     scounts(mype+1)=ntiles  
     call MPI_Allgather(scounts(mype+1), 1, MPI_INTEGER, scounts_global, 1, MPI_INTEGER, MPI_COMM_WORLD, mpierr)     
@@ -906,21 +917,10 @@ endif
       open(88,file="runoff_cat_global.txt",action="write")
       do i=1,n_catg
         write(88,*)runoff_cat_global(i)
-      enddo
-    !  close(88)
-    !  open(88,file="runoff_local_tile.txt",action="write")
-    !  do i=1,nt_local
-    !    write(88,*)"i=",i,", runoff_local(i)=",RUNOFF_SRC0(i)
-    !  enddo
-    !  close(88)
-    !  open(88,file="runoff_local_catch.txt",action="write")
-    !  do i=1,ntiles
-    !    write(88,*)"i=",i,", runoff_local(i)=",runoff_local(i)
-    !  enddo
-    !  close(88)      
+      enddo     
       stop      
     endif   
-    deallocate(runoff_global)
+
 
     !rdispls(1)=0
     !do i=2,nDes
@@ -946,10 +946,9 @@ endif
 !        print *, "RUNOFF at (", i, ") =", RUNOFF(i)
 !end do
 !endif
-    RUNOFF = 0.   
-    if (mapl_am_I_root()) print *, "debug 10" 
-    pfaf_code => route%pfaf
-    tile_area => route%tile_area
+ !   RUNOFF = 0.   
+!    pfaf_code => route%pfaf
+!    tile_area => route%tile_area
 
 ! get pointers to internal variables
 ! ----------------------------------
@@ -997,7 +996,7 @@ endif
     if (mapl_am_I_root()) print *, "debug 23"  
     call MAPL_TimerOn  ( MAPL, "-RRM" )
 
-    if (mapl_am_I_root()) print *, "debug 24"  
+    !if (mapl_am_I_root()) print *, "debug 24"  
     call MAPL_LocStreamGet(LocStream, NT_LOCAL=NTILES, RC=STATUS )
     N_CatL  = size(AREACAT)
 
@@ -1030,7 +1029,6 @@ endif
     !call MAPL_LocStreamGet(LocStream, 9th_coulumn_in_TILFILE=pfaf_code, RC=STATUS )
 
 
-    if (mapl_am_I_root()) print *, "debug 25"   
     FIRST_TIME : IF (FirstTime) THEN
 
        ! Pfafstetter catchment Domain Decomposition :         
