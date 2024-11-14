@@ -1567,18 +1567,15 @@ contains
 
     call MAPL_Get (MAPL, GCS=GCS, GIM=GIM, GEX=GEX, GCnames=GCnames,rc=STATUS)
     VERIFY_(STATUS)
-    if (mapl_am_I_root()) print *,"Run1, All GCnames:",GCnames
 ! Call the children's RUN methods
 !--------------------------------
 
     DO I = 1, size(GCS)
        if (trim(GCnames(i)) == "ROUTE") cycle      
-       call MAPL_TimerOn(MAPL,trim(GCnames(i)), RC=STATUS ); VERIFY_(STATUS)
-       if (mapl_am_I_root()) print *, "Run1, GCnames:",GCnames(i)     
+       call MAPL_TimerOn(MAPL,trim(GCnames(i)), RC=STATUS ); VERIFY_(STATUS)    
        call ESMF_GridCompRun(GCS(I), importState=GIM(I), exportState=GEX(I), &
                              CLOCK=CLOCK, PHASE=1, userRC=STATUS)       
-       VERIFY_(STATUS)
-       if (mapl_am_I_root()) print *, "Run1, Done GCnames:",GCnames(i)        
+       VERIFY_(STATUS)        
        call MAPL_TimerOff(MAPL,trim(GCnames(i)), RC=STATUS ); VERIFY_(STATUS)
     END DO
 
@@ -1644,24 +1641,18 @@ contains
 
     call MAPL_Get (MAPL, GCS=GCS, GIM=GIM, GEX=GEX, GCnames=GCnames,rc=STATUS)
     VERIFY_(STATUS)
-    if (mapl_am_I_root()) print *,"Run2, All GCnames:",GCnames
 ! Call the children's RUN methods
 !--------------------------------
     DO I=1,size(GCS)
-       if (I == VEGDYN) cycle
-       if (mapl_am_I_root()) print *, "Run2, GCnames:",GCnames(i)        
+       if (I == VEGDYN) cycle      
        call MAPL_TimerOn(MAPL,trim(GCnames(i)), RC=STATUS ); VERIFY_(STATUS)
        call ESMF_GridCompRun(GCS(I), importState=GIM(I), exportState=GEX(I), &
                              CLOCK=CLOCK, PHASE=2, userRC=STATUS)
-       VERIFY_(STATUS)
-       if (mapl_am_I_root()) print *, "Run2, Done GCnames:",GCnames(i)        
+       VERIFY_(STATUS)       
        call MAPL_TimerOff(MAPL,trim(GCnames(i)), RC=STATUS ); VERIFY_(STATUS)
     END DO
- if (mapl_am_I_root()) print *, "GEOS_LandGridCompMod, debug1"
-    call MAPL_TimerOff(MAPL,"RUN2", RC=STATUS ); VERIFY_(STATUS)
- if (mapl_am_I_root()) print *, "GEOS_LandGridCompMod, debug2"    
-    call MAPL_TimerOff(MAPL,"TOTAL", RC=STATUS ); VERIFY_(STATUS)
- if (mapl_am_I_root()) print *, "GEOS_LandGridCompMod, debug3"        
+    call MAPL_TimerOff(MAPL,"RUN2", RC=STATUS ); VERIFY_(STATUS)  
+    call MAPL_TimerOff(MAPL,"TOTAL", RC=STATUS ); VERIFY_(STATUS)       
     RETURN_(ESMF_SUCCESS)
 
   end subroutine Run2

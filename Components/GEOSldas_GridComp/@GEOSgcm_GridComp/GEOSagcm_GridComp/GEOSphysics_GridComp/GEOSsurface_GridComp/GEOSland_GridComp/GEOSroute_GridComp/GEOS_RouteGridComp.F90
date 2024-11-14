@@ -903,7 +903,7 @@ contains
     VERIFY_(STATUS)
     call MAPL_Get(MAPL, HEARTBEAT = HEARTBEAT, RC=STATUS)
     VERIFY_(STATUS)
-    if (mapl_am_I_root()) print *, "HEARTBEAT=",HEARTBEAT 
+    !if (mapl_am_I_root()) print *, "HEARTBEAT=",HEARTBEAT 
 ! Start timers
 ! ------------
 
@@ -1152,7 +1152,6 @@ contains
        runoff_save_m3,  route%scounts_global(mype+1)      ,MPI_REAL, &
        runoff_global_m3, route%scounts_global, route%rdispls_global,MPI_REAL, &
        MPI_COMM_WORLD, mpierr) 
-
     allocate(runoff_cat_global(n_catg) )  
     call MPI_allgatherv  (                          &
          RUNOFF_ACT,  route%scounts_cat(mype+1)      ,MPI_REAL, &
@@ -1352,8 +1351,8 @@ contains
 
        ! initialize the cycle counter and sum (runoff_tile) 
 
-       !runoff_save = 0.
-       !ThisCycle   = 1         
+       runoff_save = 0.
+       ThisCycle   = 1         
 
     else
        
