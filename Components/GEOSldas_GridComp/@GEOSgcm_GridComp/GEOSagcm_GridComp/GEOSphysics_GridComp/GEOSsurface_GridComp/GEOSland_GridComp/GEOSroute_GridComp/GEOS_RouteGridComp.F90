@@ -702,7 +702,7 @@ contains
 
     allocate(tile_area_local(nt_local),tile_area_global(nt_global))  
     open(77,file="../input/area_m36_1d.txt",status="old",action="read");read(77,*)tile_area_global;close(77)
-    tile_area_local=tile_area_global(rdispls(mype+1)+1:rdispls(mype+1)+nt_local)*1.e6 !km2->m2
+    tile_area_local=tile_area_global(rdispls_global(mype+1)+1:rdispls_global(mype+1)+nt_local)*1.e6 !km2->m2
     route%tile_area => tile_area_local
     deallocate(tile_area_global)
 
@@ -731,7 +731,7 @@ contains
     route%downid=>downid
     deallocate(downid_global)
 
-    allocate(route%wstream(ntiles),route%wriver(ntiles))
+    allocate(route%wstream(1:ntiles),route%wriver(1:ntiles))
     !This should be read from restart file
     route%wstream=0.
     route%wriver=0.
