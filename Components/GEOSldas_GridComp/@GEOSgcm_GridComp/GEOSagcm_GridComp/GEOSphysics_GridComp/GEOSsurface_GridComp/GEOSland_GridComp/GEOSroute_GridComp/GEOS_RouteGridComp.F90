@@ -897,6 +897,7 @@ endif
     ntiles = route%ntiles  
     nt_global = route%nt_global  
     runoff_save => route%runoff_save
+    nt_local = route%nt_local
 
     ! get the field from IMPORT
     call ESMF_StateGet(IMPORT, 'RUNOFF', field=runoff_src, RC=STATUS)
@@ -1109,9 +1110,10 @@ endif
        allocate(runoff_save_m3(nt_local),runoff_global_m3(nt_global))
        runoff_save_m3=runoff_save*route%tile_area/1000.
        if(mapl_am_I_root())then 
-         do i=1,nt_local
-           print *,"tile=",i,", tile_area=",route%tile_area(i)
-         enddo
+          open(88,file="runoff_cat_global.txt",action="write")
+          do i=1,nt_local
+            write(88,*)route%tile_area(i)
+          enddo   
        endif      
        call MPI_allgatherv  (                          &
           runoff_save_m3,  route%scounts_global(mype+1)      ,MPI_REAL, &
