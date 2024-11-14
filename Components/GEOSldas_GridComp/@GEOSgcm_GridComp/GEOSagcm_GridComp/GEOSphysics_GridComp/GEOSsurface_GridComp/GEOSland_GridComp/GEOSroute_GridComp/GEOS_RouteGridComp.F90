@@ -416,6 +416,8 @@ contains
     real,pointer :: runoff_save(:)=>NULL(), areacat(:)=>NULL()
     real,pointer :: lengsc_global(:)=>NULL(), lengsc(:)=>NULL()
     integer,pointer :: downid_global(:)=>NULL(), downid(:)=>NULL()
+
+    real,pointer :: wstream(:)=>NULL(),wriver(:)=>NULL()
     
     type (T_RROUTE_STATE), pointer         :: route => null()
     type (RROUTE_wrap)                     :: wrap
@@ -697,7 +699,8 @@ contains
     route%rdispls_cat=>rdispls_cat
 
     route%nt_local=nt_local
-    allocate(route%runoff_save(1:nt_local))
+    allocate(runoff_save(1:nt_local))
+    route%runoff_save => runoff_save
     route%runoff_save=0.
 
     allocate(tile_area_local(nt_local),tile_area_global(nt_global))  
@@ -731,7 +734,10 @@ contains
     route%downid=>downid
     deallocate(downid_global)
 
-    allocate(route%wstream(1:ntiles),route%wriver(1:ntiles))
+
+    allocate(wstream(1:ntiles),wriver(1:ntiles))
+    route%wstream=>wstream
+    route%wriver=>wriver
     !This should be read from restart file
     route%wstream=0.
     route%wriver=0.
