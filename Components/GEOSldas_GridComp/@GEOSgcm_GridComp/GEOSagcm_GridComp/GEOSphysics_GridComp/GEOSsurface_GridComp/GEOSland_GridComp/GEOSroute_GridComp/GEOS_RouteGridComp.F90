@@ -673,6 +673,7 @@ endif
     allocate(nsub(ntiles),subarea(nmax,ntiles))
     nsub=nsub_global(minCatch:maxCatch)
     subarea=subarea_global(:,minCatch:maxCatch)
+    subarea=subarea*1.e6
     !area_cat=area_cat_global(minCatch:maxCatch)   
     deallocate(nsub_global,subarea_global)
     route%tile_area => tile_area_src
