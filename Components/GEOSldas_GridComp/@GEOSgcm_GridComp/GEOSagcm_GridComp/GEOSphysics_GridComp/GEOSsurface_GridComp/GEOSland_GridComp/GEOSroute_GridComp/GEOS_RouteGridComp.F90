@@ -1106,16 +1106,19 @@ if (mapl_am_I_root()) print *, "debug 11"
     allocate(runoff_cat_global(n_catg),scounts(ndes),scounts_global(ndes),rdispls(ndes))
     scounts=0
     scounts(mype+1)=ntiles  
+if (mapl_am_I_root()) print *, "debug 12"     
     call MPI_Allgather(scounts(mype+1), 1, MPI_INTEGER, scounts_global, 1, MPI_INTEGER, MPI_COMM_WORLD, mpierr)     
     rdispls(1)=0
     do i=2,nDes
       rdispls(i)=rdispls(i-1)+scounts_global(i-1)
     enddo
+if (mapl_am_I_root()) print *, "debug 13, sum(scounts_global)=", sum(scounts_global)    
     call MPI_allgatherv  (                          &
          runoff_local,  scounts(mype+1)      ,MPI_REAL, &
          runoff_cat_global, scounts_global, rdispls,MPI_REAL, &
          MPI_COMM_WORLD, mpierr) 
-    call MPI_Barrier(MPI_COMM_WORLD, mpierr)    
+    call MPI_Barrier(MPI_COMM_WORLD, mpierr) 
+if (mapl_am_I_root()) print *, "debug 14"        
     if(mapl_am_I_root())then 
       open(88,file="runoff_cat_global.txt",action="write")
       do i=1,n_catg
