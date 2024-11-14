@@ -875,19 +875,16 @@ contains
     real,allocatable :: runoff_save_m3(:),runoff_global_m3(:)
 
     ! ------------------
-    ! begin
-    if (mapl_am_I_root()) print *, "debug 1"     
+    ! begin    
     call ESMF_UserCompGetInternalState ( GC, 'RiverRoute_state',wrap,status )
     VERIFY_(STATUS)
-    if (mapl_am_I_root()) print *, "debug 2"  
     route => wrap%ptr
 
 ! Get the target components name and set-up traceback handle.
 ! -----------------------------------------------------------
 
     call ESMF_GridCompGet(GC, name=COMP_NAME, CONFIG=CF, RC=STATUS )
-    VERIFY_(STATUS)
-    if (mapl_am_I_root()) print *, "debug 3"   
+    VERIFY_(STATUS) 
     Iam = trim(COMP_NAME) // "RUN2"
 
 ! Get my internal MAPL_Generic state
@@ -895,7 +892,6 @@ contains
 
     call MAPL_GetObjectFromGC(GC, MAPL, STATUS)
     VERIFY_(STATUS)
-    if (mapl_am_I_root()) print *, "debug 4" 
     call MAPL_Get(MAPL, HEARTBEAT = HEARTBEAT, RC=STATUS)
     VERIFY_(STATUS)
     if (mapl_am_I_root()) print *, "debug 5,HEARTBEAT=",HEARTBEAT 
@@ -903,13 +899,11 @@ contains
 ! ------------
 
     call MAPL_TimerOn(MAPL,"RUN2")
-    if (mapl_am_I_root()) print *, "debug 6" 
 ! Get parameters from generic state
 ! ---------------------------------
 
     call MAPL_Get(MAPL, INTERNAL_ESMF_STATE=INTERNAL, RC=STATUS)
     VERIFY_(STATUS) 
-    if (mapl_am_I_root()) print *, "debug 7"     
 ! get pointers to inputs variables
 ! ----------------------------------
 
