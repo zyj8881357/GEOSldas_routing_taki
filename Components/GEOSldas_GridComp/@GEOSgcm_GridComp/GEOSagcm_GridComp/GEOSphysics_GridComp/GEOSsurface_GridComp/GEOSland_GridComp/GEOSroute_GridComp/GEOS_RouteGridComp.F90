@@ -870,7 +870,8 @@ contains
 
     integer :: mpierr, nt_global,nt_local, it, j
     real,pointer :: runoff_save(:)=>NULL()
-    real,pointer :: WSTREAM_ACT(:)=>NULL(),WRIVER_ACT=>NULL()
+    real,pointer :: WSTREAM_ACT(:)=>NULL()
+    real,pointer :: WRIVER_ACT(:)=>NULL()
     real,allocatable :: runoff_save_m3(:),runoff_global_m3(:)
 
     ! ------------------
