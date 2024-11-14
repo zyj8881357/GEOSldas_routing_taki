@@ -394,6 +394,7 @@ contains
     real, pointer :: tile_area_src(:) => NULL()
     integer,pointer :: local_id(:)  => NULL()
     real, pointer :: tile_area_local(:) => NULL()
+    real, pointer :: tile_area(:) => NULL()    
     real, pointer :: ptr2(:) => NULL()
 
     real,pointer :: subarea_global(:,:)=> NULL(),subarea(:,:)=> NULL() ! Arrays for sub-area and fractions
