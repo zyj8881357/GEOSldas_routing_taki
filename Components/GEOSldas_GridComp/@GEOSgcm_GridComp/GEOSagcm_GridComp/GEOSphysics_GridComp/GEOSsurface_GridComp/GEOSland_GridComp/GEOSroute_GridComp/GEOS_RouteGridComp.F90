@@ -877,7 +877,7 @@ contains
     INTEGER, DIMENSION(:)  ,ALLOCATABLE  :: scounts, scounts_global,rdispls, rcounts  
     real, dimension(:), pointer :: runoff_global,runoff_local,area_local,runoff_cat_global    
 
-    integer :: mpierr, nt_global,nt_local, it, j
+    integer :: mpierr, nt_global,nt_local, it, j, upid
     real,pointer :: runoff_save(:)=>NULL()
     real,pointer :: WSTREAM_ACT(:)=>NULL()
     real,pointer :: WRIVER_ACT(:)=>NULL()
@@ -1258,9 +1258,9 @@ contains
 
        allocate(QOUTFLOW_GLOBAL(n_catg))
        call MPI_allgatherv  (                          &
-         QOUTFLOW_ACT,  route%scounts_cat(mype+1)      ,MPI_REAL, &
-         QOUTFLOW_GLOBAL, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
-         MPI_COMM_WORLD, mpierr) 
+            QOUTFLOW_ACT,  route%scounts_cat(mype+1)      ,MPI_REAL, &
+            QOUTFLOW_GLOBAL, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
+            MPI_COMM_WORLD, mpierr) 
 
        do i=1,nTiles
          do j=1,upmax
