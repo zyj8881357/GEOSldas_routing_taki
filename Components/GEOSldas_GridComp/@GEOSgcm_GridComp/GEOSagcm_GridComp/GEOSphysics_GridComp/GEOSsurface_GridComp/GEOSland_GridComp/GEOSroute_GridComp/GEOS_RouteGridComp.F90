@@ -677,6 +677,7 @@ endif
     subarea=subarea*1.e6
     !area_cat=area_cat_global(minCatch:maxCatch)   
     deallocate(nsub_global,subarea_global)
+    nt_local=size(tile_area_src,1)
     allocate(tile_area_local(1:nt_local))
     if (mapl_am_I_root()) print *, "size of tile_area_src=",size(tile_area_src,1)   
     tile_area_local=tile_area_src
@@ -690,8 +691,8 @@ endif
     route%subi => subi
     deallocate(subi_global)
 
-    call ESMF_FieldGet(field0, farrayPtr=dataPtr, rc=status)
-    nt_local=size(dataPtr, 1)
+    !call ESMF_FieldGet(field0, farrayPtr=dataPtr, rc=status)
+    !nt_local=size(dataPtr, 1)
     allocate(scounts(ndes),scounts_global(ndes),rdispls(ndes))
     scounts=0
     scounts(mype+1)=nt_local  
