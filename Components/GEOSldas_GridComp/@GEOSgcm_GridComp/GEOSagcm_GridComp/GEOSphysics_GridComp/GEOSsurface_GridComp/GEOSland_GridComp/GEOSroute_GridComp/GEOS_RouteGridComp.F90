@@ -59,6 +59,8 @@ module GEOS_RouteGridCompMod
      integer, pointer :: scounts_global(:) => NULL()
      integer, pointer :: rdispls(:) => NULL()
      real,    pointer :: runoff_save(:) => NULL()
+     real,    pointer :: areacat(:) => NULL()
+     real,    pointer :: lengsc(:) => NULL()
 
   end type T_RROUTE_STATE
 
@@ -399,14 +401,14 @@ contains
     integer,pointer :: nsub_global(:)=> NULL(),nsub(:)=> NULL()
     real,pointer :: area_cat_global(:)=> NULL(),area_cat(:)=> NULL()
     integer,pointer :: scounts(:)=>NULL(), scounts_global(:)=>NULL(),rdispls(:)=>NULL()
-    real,pointer :: runoff_save(:)=>NULL()
+    real,pointer :: runoff_save(:)=>NULL(), areacat(:)=>NULL()
     
     type (T_RROUTE_STATE), pointer         :: route => null()
     type (RROUTE_wrap)                     :: wrap
 
 
     real, pointer :: dataPtr(:)
-    integer :: j,nt_local,mpierr
+    integer :: j,nt_local,mpierr,it
     ! ------------------
     ! begin
 
@@ -664,16 +666,16 @@ endif
         farrayPtr=ptr2, name='RUNOFF', RC=STATUS)
     VERIFY_(STATUS)
   ! Read sub-area data from text files
-    allocate(nsub_global(N_CatG),subarea_global(nmax,N_CatG),area_cat_global(N_CatG))
+    allocate(nsub_global(N_CatG),subarea_global(nmax,N_CatG))
     open(77,file="../input/Pfaf_nsub_M36.txt",status="old",action="read"); read(77,*)nsub_global; close(77)
     open(77,file="../input/Pfaf_asub_M36.txt",status="old",action="read"); read(77,*)subarea_global; close(77)
-    open(77,file="../input/Pfaf_area.txt",status="old",action="read"); read(77,*)area_cat_global; close(77)         
-    allocate(nsub(ntiles),subarea(nmax,ntiles),area_cat(ntiles))
+    !open(77,file="../input/Pfaf_area.txt",status="old",action="read"); read(77,*)area_cat_global; close(77)         
+    allocate(nsub(ntiles),subarea(nmax,ntiles))
     nsub=nsub_global(minCatch:maxCatch)
     subarea=subarea_global(:,minCatch:maxCatch)
-    area_cat=area_cat_global(minCatch:maxCatch)   
-    deallocate(nsub_global,subarea_global,area_cat_global)
-    route%tile_area => area_cat
+    !area_cat=area_cat_global(minCatch:maxCatch)   
+    deallocate(nsub_global,subarea_global)
+    route%tile_area => tile_area_src
     route%nsub => nsub
     route%subarea => subarea
     
@@ -699,6 +701,19 @@ endif
     route%nt_local=nt_local
     allocate(route%runoff_save(1:nt_local))
     route%runoff_save=0.
+
+    allocate(areacat(1:ntiles))
+    areacat=0. 
+    do i=1,ntiles
+      do j=1,nmax
+        it=route%subi(j,i) 
+        if(it>0)then 
+          areacat(i)=areacat(i)+route%subarea(j,i)
+        endif
+        if(it==0)exit
+      enddo
+    enddo  
+    route%areacat=>areacat
 
     !if (mapl_am_I_root())then
     !  open(88,file="nsub.txt",action="write")
@@ -830,6 +845,7 @@ endif
 
     integer :: mpierr, nt_global,nt_local, it, j
     real,pointer :: runoff_save(:)=>NULL()
+    real,allocatable :: runoff_save_m3(:),runoff_global_m3(:)
 
     ! ------------------
     ! begin
@@ -1083,21 +1099,28 @@ endif
           runoff_save,  route%scounts_global(mype+1)      ,MPI_REAL, &
           runoff_global, route%scounts_global, route%rdispls,MPI_REAL, &
           MPI_COMM_WORLD, mpierr) 
-       allocate(RUNOFF_ACT(1:ntiles),area_local(1:ntiles))
+
+       allocate(runoff_save_m3(nt_local),runoff_global_m3(nt_global))
+       runoff_save_m3=runoff_save*route%tile_area/1000.
+       call MPI_allgatherv  (                          &
+          runoff_save_m3,  route%scounts_global(mype+1)      ,MPI_REAL, &
+          runoff_global_m3, route%scounts_global, route%rdispls,MPI_REAL, &
+          MPI_COMM_WORLD, mpierr) 
+
+       allocate(RUNOFF_ACT(1:ntiles))
        RUNOFF_ACT=0.
-       area_local=0. 
        do i=1,ntiles
          do j=1,nmax
            it=route%subi(j,i) 
            if(it>0)then
              RUNOFF_ACT(i)=RUNOFF_ACT(i)+route%subarea(j,i)*runoff_global(it)/1000.   
-             area_local(i)=area_local(i)+route%subarea(j,i)
            endif
            if(it==0)exit
          enddo
          !if(area_local(i)>0.)runoff_local(i)=runoff_local(i)/area_local(i)
        enddo  
-       deallocate(runoff_global,area_local) 
+
+       deallocate(runoff_global) 
 
 
     allocate(scounts(ndes),scounts_global(ndes),rdispls(ndes))
@@ -1114,10 +1137,12 @@ endif
          runoff_cat_global, scounts_global, rdispls,MPI_REAL, &
          MPI_COMM_WORLD, mpierr)     
     if(mapl_am_I_root())then 
-      open(88,file="runoff_cat_global.txt",action="write")
-      do i=1,n_catg
-        write(88,*)runoff_cat_global(i)*86400.
-      enddo     
+      print *,"sum(runoff_global_m3)=",sum(runoff_global_m3)
+      print *,"sum(runoff_cat_global)=",sum(runoff_cat_global)
+      !open(88,file="runoff_cat_global.txt",action="write")
+      !do i=1,n_catg
+      !  write(88,*)runoff_cat_global(i)*86400.
+      !enddo     
       stop      
     endif   
     call MPI_Barrier(MPI_COMM_WORLD, mpierr)
