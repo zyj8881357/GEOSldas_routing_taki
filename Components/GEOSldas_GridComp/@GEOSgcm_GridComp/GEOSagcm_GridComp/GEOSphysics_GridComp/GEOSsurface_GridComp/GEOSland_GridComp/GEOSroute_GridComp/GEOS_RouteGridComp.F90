@@ -393,7 +393,7 @@ contains
     integer, allocatable :: arbIndex(:,:)
     real, pointer :: tile_area_src(:) => NULL()
     integer,pointer :: local_id(:)  => NULL()
-    real, pointer :: tile_area(:) => NULL()
+    real, pointer :: tile_area_local(:) => NULL()
     real, pointer :: ptr2(:) => NULL()
 
     real,pointer :: subarea_global(:,:)=> NULL(),subarea(:,:)=> NULL() ! Arrays for sub-area and fractions
@@ -676,7 +676,10 @@ endif
     subarea=subarea*1.e6
     !area_cat=area_cat_global(minCatch:maxCatch)   
     deallocate(nsub_global,subarea_global)
-    route%tile_area => tile_area_src
+    allocate(tile_area_local(1:nt_local))
+    if (mapl_am_I_root()) print *, "size of tile_area_src=",size(tile_area_src,1)   
+    tile_area_local=tile_area_src
+    route%tile_area => tile_area_local
     route%nsub => nsub
     route%subarea => subarea
     
@@ -1103,6 +1106,11 @@ endif
 
        allocate(runoff_save_m3(nt_local),runoff_global_m3(nt_global))
        runoff_save_m3=runoff_save*route%tile_area/1000.
+       if(mapl_am_I_root())then 
+         do i=1,nt_local
+           print *,"tile=",i,", tile_area=",route%tile_area(i)
+         enddo
+       endif      
        call MPI_allgatherv  (                          &
           runoff_save_m3,  route%scounts_global(mype+1)      ,MPI_REAL, &
           runoff_global_m3, route%scounts_global, route%rdispls,MPI_REAL, &
