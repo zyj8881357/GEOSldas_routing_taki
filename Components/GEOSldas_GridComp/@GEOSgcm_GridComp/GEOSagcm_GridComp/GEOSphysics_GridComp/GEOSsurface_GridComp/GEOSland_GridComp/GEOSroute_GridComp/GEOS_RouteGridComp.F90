@@ -1103,7 +1103,7 @@ if (mapl_am_I_root()) print *, "debug 10"
        deallocate(runoff_global,area_local)
 if (mapl_am_I_root()) print *, "debug 11" 
 
-    allocate(runoff_cat_global(n_catg),scounts(ndes),scounts_global(ndes),rdispls(ndes))
+    allocate(scounts(ndes),scounts_global(ndes),rdispls(ndes))
     scounts=0
     scounts(mype+1)=ntiles  
 if (mapl_am_I_root()) print *, "debug 12"     
@@ -1112,12 +1112,12 @@ if (mapl_am_I_root()) print *, "debug 12"
     do i=2,nDes
       rdispls(i)=rdispls(i-1)+scounts_global(i-1)
     enddo
-if (mapl_am_I_root()) print *, "debug 13, sum(scounts_global)=", sum(scounts_global)    
+if (mapl_am_I_root()) print *, "debug 13, sum(scounts_global)=", sum(scounts_global) 
+    allocate(runoff_cat_global(n_catg) )  
     call MPI_allgatherv  (                          &
-         runoff_local,  scounts(mype+1)      ,MPI_REAL, &
+         RUNOFF_ACT,  scounts(mype+1)      ,MPI_REAL, &
          runoff_cat_global, scounts_global, rdispls,MPI_REAL, &
          MPI_COMM_WORLD, mpierr) 
-    call MPI_Barrier(MPI_COMM_WORLD, mpierr) 
 if (mapl_am_I_root()) print *, "debug 14"        
     if(mapl_am_I_root())then 
       open(88,file="runoff_cat_global.txt",action="write")
