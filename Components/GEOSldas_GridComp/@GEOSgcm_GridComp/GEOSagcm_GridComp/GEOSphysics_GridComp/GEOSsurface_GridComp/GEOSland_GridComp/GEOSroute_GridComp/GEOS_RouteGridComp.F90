@@ -36,6 +36,7 @@ module GEOS_RouteGridCompMod
   implicit none
   integer, parameter :: N_CatG = 291284
   integer,parameter :: nmax=150  
+  integer,parameter :: upmax=34
   !integer, parameter :: nt_all = 112573
   private
 
@@ -69,6 +70,7 @@ module GEOS_RouteGridCompMod
      real,    pointer :: wstream(:) => NULL() !m3
      real,    pointer :: wriver(:)  => NULL() !m3
      integer, pointer :: downid(:) => NULL()
+     integer, pointer :: upid(:,:) => NULL()
 
   end type T_RROUTE_STATE
 
@@ -416,6 +418,7 @@ contains
     real,pointer :: runoff_save(:)=>NULL(), areacat(:)=>NULL()
     real,pointer :: lengsc_global(:)=>NULL(), lengsc(:)=>NULL()
     integer,pointer :: downid_global(:)=>NULL(), downid(:)=>NULL()
+    integer,pointer :: upid_global(:,:)=>NULL(), upid(:,:)=>NULL()    
 
     real,pointer :: wstream(:)=>NULL(),wriver(:)=>NULL()
     
@@ -734,6 +737,12 @@ contains
     route%downid=>downid
     deallocate(downid_global)
 
+    allocate(upid_global(upmax,n_catg),upid(upmax,ntiles))   
+    open(77,file="../input/upstream_1D.txt",status="old",action="read");read(77,*)upid_global;close(77)  
+    upid=upid_global(:,minCatch:maxCatch)   
+    route%upid=>upid
+    deallocate(upid_global)
+
 
     allocate(wstream(1:ntiles),wriver(1:ntiles))
     route%wstream=>wstream
@@ -872,7 +881,7 @@ contains
     real,pointer :: runoff_save(:)=>NULL()
     real,pointer :: WSTREAM_ACT(:)=>NULL()
     real,pointer :: WRIVER_ACT(:)=>NULL()
-    real,allocatable :: runoff_save_m3(:),runoff_global_m3(:)
+    real,allocatable :: runoff_save_m3(:),runoff_global_m3(:),QOUTFLOW_GLOBAL(:)
 
     ! ------------------
     ! begin    
@@ -894,7 +903,7 @@ contains
     VERIFY_(STATUS)
     call MAPL_Get(MAPL, HEARTBEAT = HEARTBEAT, RC=STATUS)
     VERIFY_(STATUS)
-    if (mapl_am_I_root()) print *, "debug 5,HEARTBEAT=",HEARTBEAT 
+    if (mapl_am_I_root()) print *, "HEARTBEAT=",HEARTBEAT 
 ! Start timers
 ! ------------
 
@@ -1152,7 +1161,7 @@ contains
     if(mapl_am_I_root())then 
       print *,"sum(runoff_global_m3)=",sum(runoff_global_m3)
       print *,"sum(runoff_cat_global)=",sum(runoff_cat_global)
-      stop      
+      !stop      
     endif   
     deallocate(runoff_save_m3,runoff_global_m3,runoff_cat_global)
 
@@ -1246,85 +1255,105 @@ contains
        CALL RIVER_ROUTING  (ntiles, RUNOFF_ACT,AREACAT_ACT,LENGSC_ACT,  &
             WSTREAM_ACT,WRIVER_ACT, QSFLOW_ACT,QOUTFLOW_ACT) 
 
-       deallocate(RUNOFF_ACT,AREACAT_ACT,LENGSC_ACT)
 
-       DO N = 1, size (GlbActive)
-          
-          I = GlbActive (N) - Local_Min + 1
-          
-          WSTREAM (I) = WSTREAM_ACT (N) 
-          WRIVER  (I) = WRIVER_ACT  (N)  
-          QSFLOW  (I) = QSFLOW_ACT  (N)
-          QOUTFLOW(I) = QOUTFLOW_ACT(N)
+       allocate(QOUTFLOW_GLOBAL(n_catg))
+       call MPI_allgatherv  (                          &
+         QOUTFLOW_ACT,  route%scounts_cat(mype+1)      ,MPI_REAL, &
+         QOUTFLOW_GLOBAL, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
+         MPI_COMM_WORLD, mpierr) 
 
-          if (LocDstCatchID (GlbActive (N)) ==  GlbActive (N)) then
+       do i=1,nTiles
+         do j=1,upmax
+           if(route%upid(j,i)>0)then
+             upid=route%upid(j,i)
+             WRIVER_ACT(i)=WRIVER_ACT(i)+QOUTFLOW_GLOBAL(upid)*real(route_dt)
+           else
+             exit
+           endif
+         enddo
+       enddo
+
+       deallocate(RUNOFF_ACT,AREACAT_ACT,LENGSC_ACT,QSFLOW_ACT,QOUTFLOW_ACT,QOUTFLOW_GLOBAL)
+
+       WSTREAM_ACT=>NULL()
+       WRIVER_ACT=>NULL()      
+       !DO N = 1, size (GlbActive)
+          
+          !I = GlbActive (N) - Local_Min + 1
+          
+          !WSTREAM (I) = WSTREAM_ACT (N) 
+          !WRIVER  (I) = WRIVER_ACT  (N)  
+          !QSFLOW  (I) = QSFLOW_ACT  (N)
+          !QOUTFLOW(I) = QOUTFLOW_ACT(N)
+
+          !if (LocDstCatchID (GlbActive (N)) ==  GlbActive (N)) then
 
              ! This catchment drains to the ocean, lake or a sink 
              ! if(ORIVERMOUTH(... ) > 0) send QOUTFLOW(I) [m3/s] to ORIVERMOUTH(N) th ocean tile
              ! if(LRIVERMOUTH(... ) > 0) send QOUTFLOW(I) [m3/s] to LRIVERMOUTH(N) th lake tile
 
-          endif
-       END DO      
+          !endif
+       !END DO      
        ! Inter-processor communication-2
        ! Update down stream catchments
        ! -------------------------------
        
-       do N = 1,N_CatG 
+       !do N = 1,N_CatG 
           
-          if ((srcProcsID (N) == MYPE).and.(srcProcsID (LocDstCatchID (N)) == MYPE)) then ! destination is local
+          !if ((srcProcsID (N) == MYPE).and.(srcProcsID (LocDstCatchID (N)) == MYPE)) then ! destination is local
              
-             I = LocDstCatchID (N) - Local_Min + 1 ! Downstream index in the local processor
-             K = N - Local_Min + 1                 ! Source index in the local processor  
+             !I = LocDstCatchID (N) - Local_Min + 1 ! Downstream index in the local processor
+             !K = N - Local_Min + 1                 ! Source index in the local processor  
              
-             if(LocDstCatchID (N) /= N) then ! ensure not to refill the reservoir by itself
+             !if(LocDstCatchID (N) /= N) then ! ensure not to refill the reservoir by itself
                 
-                QINFLOW(I) = QINFLOW(I) + QOUTFLOW (K)
-                WRIVER (I) = WRIVER (I) + QOUTFLOW (K) * real(route_dt)
+                !QINFLOW(I) = QINFLOW(I) + QOUTFLOW (K)
+                !WRIVER (I) = WRIVER (I) + QOUTFLOW (K) * real(route_dt)
 
-             endif
+             !endif
                              
-          elseif ((srcProcsID (N) == MYPE).and.(srcProcsID (LocDstCatchID (N)) /= MYPE)) then 
+          !elseif ((srcProcsID (N) == MYPE).and.(srcProcsID (LocDstCatchID (N)) /= MYPE)) then 
              
-             if(srcProcsID (LocDstCatchID (N)) >= 0) then
+             !if(srcProcsID (LocDstCatchID (N)) >= 0) then
                 
                 ! Send to downstream processor
                 
-                K = N - Local_Min + 1                 ! Source index in the local processor  
+                !K = N - Local_Min + 1                 ! Source index in the local processor  
                 
-                call MPI_ISend(QOUTFLOW(K),1,MPI_real,srcProcsID (LocDstCatchID (N)),999,MPI_COMM_WORLD,req,status)
-                call MPI_WAIT(req,MPI_STATUS_IGNORE,status) 
+                !call MPI_ISend(QOUTFLOW(K),1,MPI_real,srcProcsID (LocDstCatchID (N)),999,MPI_COMM_WORLD,req,status)
+                !call MPI_WAIT(req,MPI_STATUS_IGNORE,status) 
                 
-             endif
+             !endif
              
-          elseif ((srcProcsID (N) /= MYPE).and.(srcProcsID (N) >= 0)) then
+          !elseif ((srcProcsID (N) /= MYPE).and.(srcProcsID (N) >= 0)) then
              
-             K = srcProcsID (dstCatchID(N,srcProcsID (N)+1))
+             !K = srcProcsID (dstCatchID(N,srcProcsID (N)+1))
              
-             if (k == MYPE) then
+             !if (k == MYPE) then
                 
-                do i = 1,nDEs
+                !do i = 1,nDEs
                    
-                   if(MYPE /= i-1) then 
+                   !if(MYPE /= i-1) then 
                       
-                      if((srcProcsID  (n) == i-1).and.(srcProcsID (dstCatchID(N, i)) == MYPE))then                       
-                         call MPI_RECV(rbuff,1,MPI_real, srcProcsID (N),999,MPI_COMM_WORLD,MPI_STATUS_IGNORE,status)
-                         K = dstCatchID(N,i) - Local_Min + 1
-                         QINFLOW (K) = QINFLOW (K) + rbuff
-                         WRIVER  (K) = WRIVER (K)  + rbuff * real(route_dt)
+                      !if((srcProcsID  (n) == i-1).and.(srcProcsID (dstCatchID(N, i)) == MYPE))then                       
+                         !call MPI_RECV(rbuff,1,MPI_real, srcProcsID (N),999,MPI_COMM_WORLD,MPI_STATUS_IGNORE,status)
+                         !K = dstCatchID(N,i) - Local_Min + 1
+                         !QINFLOW (K) = QINFLOW (K) + rbuff
+                         !RIVER  (K) = WRIVER (K)  + rbuff * real(route_dt)
                          
-                      endif
-                   endif
-                end do
-             endif
+                      !endif
+                   !endif
+                !end do
+             !endif
              
-          endif
+          !endif
           
-       end do
+       !end do
 
        ! initialize the cycle counter and sum (runoff_tile) 
 
-       runoff_save = 0.
-       ThisCycle   = 1         
+       !runoff_save = 0.
+       !ThisCycle   = 1         
 
     else
        

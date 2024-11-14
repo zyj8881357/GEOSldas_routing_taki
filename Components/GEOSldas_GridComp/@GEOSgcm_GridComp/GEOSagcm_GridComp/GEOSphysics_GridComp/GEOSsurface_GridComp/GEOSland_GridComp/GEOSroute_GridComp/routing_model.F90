@@ -84,6 +84,7 @@ MODULE routing_model
        IF(COEFF > K_RES_MAX) COEFF = K_SIMPLE 
 
        QOUTFLOW(N)   = COEFF * WRIVER(N)
+       QOUTFLOW(N)   = MIN(QOUTFLOW(N), WRIVER(N)) !make WRIVER(N) >=0.
        WRIVER(N)     = WRIVER(N)   - QOUTFLOW(N)
        QOUTFLOW(N)   = QOUTFLOW(N) / REAL (ROUTE_DT) 
        
