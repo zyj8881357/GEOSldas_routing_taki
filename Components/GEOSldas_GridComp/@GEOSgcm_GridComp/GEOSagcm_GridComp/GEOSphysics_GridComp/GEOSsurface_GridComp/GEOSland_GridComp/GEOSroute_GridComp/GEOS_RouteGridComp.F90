@@ -52,15 +52,15 @@ module GEOS_RouteGridCompMod
      integer :: minCatch
      integer :: maxCatch
      integer, pointer :: pfaf(:) => NULL()
-     real,    pointer :: tile_area(:) => NULL()
+     real,    pointer :: tile_area(:) => NULL() !m2
      integer, pointer :: nsub(:) => NULL()
      integer, pointer :: subi(:,:) => NULL()
-     real,    pointer :: subarea(:,:) => NULL()
+     real,    pointer :: subarea(:,:) => NULL() !m2
      integer, pointer :: scounts_global(:) => NULL()
      integer, pointer :: rdispls(:) => NULL()
      real,    pointer :: runoff_save(:) => NULL()
-     real,    pointer :: areacat(:) => NULL()
-     real,    pointer :: lengsc(:) => NULL()
+     real,    pointer :: areacat(:) => NULL() !m2
+     real,    pointer :: lengsc(:) => NULL() !m
 
   end type T_RROUTE_STATE
 
@@ -393,7 +393,7 @@ contains
     integer, allocatable :: arbIndex(:,:)
     real, pointer :: tile_area_src(:) => NULL()
     integer,pointer :: local_id(:)  => NULL()
-    real, pointer :: tile_area_local(:) => NULL()
+    real, pointer :: tile_area_local(:) => NULL(), tile_area_global(:) => NULL()
     real, pointer :: tile_area(:) => NULL()    
     real, pointer :: ptr2(:) => NULL()
 
@@ -669,30 +669,23 @@ endif
   ! Read sub-area data from text files
     allocate(nsub_global(N_CatG),subarea_global(nmax,N_CatG))
     open(77,file="../input/Pfaf_nsub_M36.txt",status="old",action="read"); read(77,*)nsub_global; close(77)
-    open(77,file="../input/Pfaf_asub_M36.txt",status="old",action="read"); read(77,*)subarea_global; close(77)
-    !open(77,file="../input/Pfaf_area.txt",status="old",action="read"); read(77,*)area_cat_global; close(77)         
+    open(77,file="../input/Pfaf_asub_M36.txt",status="old",action="read"); read(77,*)subarea_global; close(77)       
     allocate(nsub(ntiles),subarea(nmax,ntiles))
     nsub=nsub_global(minCatch:maxCatch)
     subarea=subarea_global(:,minCatch:maxCatch)
-    subarea=subarea*1.e6
-    !area_cat=area_cat_global(minCatch:maxCatch)   
+    subarea=subarea*1.e6 !km2->m2
     deallocate(nsub_global,subarea_global)
-    nt_local=size(tile_area_src,1)
-    allocate(tile_area_local(1:nt_local))
-    if (mapl_am_I_root()) print *, "size of tile_area_src=",size(tile_area_src,1)   
-    tile_area_local=tile_area_src
-    route%tile_area => tile_area_local
+
     route%nsub => nsub
     route%subarea => subarea
     
     allocate(subi_global(nmax,N_CatG),subi(nmax,ntiles))
-    open(77,file="../input/Pfaf_isub_M36.txt",status="old",action="read"); read(77,*)subi_global; close(77)
+    open(77,file="../input/Pfaf_isub_M36.txt",status="old",action="read");read(77,*)subi_global;close(77)
     subi=subi_global(:,minCatch:maxCatch)
     route%subi => subi
     deallocate(subi_global)
 
-    !call ESMF_FieldGet(field0, farrayPtr=dataPtr, rc=status)
-    !nt_local=size(dataPtr, 1)
+    nt_local=size(tile_area_src,1)
     allocate(scounts(ndes),scounts_global(ndes),rdispls(ndes))
     scounts=0
     scounts(mype+1)=nt_local  
@@ -708,6 +701,12 @@ endif
     allocate(route%runoff_save(1:nt_local))
     route%runoff_save=0.
 
+    allocate(tile_area_local(nt_local),tile_area_global(nt_global))  
+    open(77,file="../input/area_m36_1d.txt",status="old",action="read");read(77,*)tile_area_global;close(77)
+    tile_area_local=tile_area_global(rdispls(mype+1)+1:rdispls(mype+1)+nt_local)*1.e6 !km2->m2
+    route%tile_area => tile_area_local
+    deallocate(tile_area_global)
+
     allocate(areacat(1:ntiles))
     areacat=0. 
     do i=1,ntiles
@@ -720,6 +719,8 @@ endif
       enddo
     enddo  
     route%areacat=>areacat
+
+
 
     !if (mapl_am_I_root())then
     !  open(88,file="nsub.txt",action="write")
@@ -1110,7 +1111,7 @@ endif
        allocate(runoff_save_m3(nt_local),runoff_global_m3(nt_global))
        runoff_save_m3=runoff_save*route%tile_area/1000.
        if(mapl_am_I_root())then 
-          open(88,file="runoff_cat_global.txt",action="write")
+          open(88,file="tile_area.txt",action="write")
           do i=1,nt_local
             write(88,*)route%tile_area(i)
           enddo   
