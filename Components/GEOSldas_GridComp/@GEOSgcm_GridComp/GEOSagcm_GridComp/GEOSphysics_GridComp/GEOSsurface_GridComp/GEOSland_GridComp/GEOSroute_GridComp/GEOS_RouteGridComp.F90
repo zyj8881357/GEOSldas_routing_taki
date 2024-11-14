@@ -1158,9 +1158,12 @@ contains
          runoff_cat_global, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
          MPI_COMM_WORLD, mpierr)     
     if(mapl_am_I_root())then 
-      print *,"sum(runoff_global_m3)=",sum(runoff_global_m3)
-      print *,"sum(runoff_cat_global)=",sum(runoff_cat_global)
-      !stop      
+      open(88,file="runoff_global_m3.txt",status="unknown", position="append")
+      write(88,*)sum(runoff_global_m3)
+      close(88)
+      open(88,file="runoff_cat_global.txt",status="unknown", position="append")
+      write(88,*)sum(runoff_cat_global)
+      close(88)      
     endif   
     deallocate(runoff_save_m3,runoff_global_m3,runoff_cat_global)
 
@@ -1406,13 +1409,7 @@ contains
  
     do N = 1, size (pfaf_code)               
        LocalActive(pfaf_code(n)) = pfaf_code(n) 
-    end do
-
-if (mapl_am_I_root())then
-    open(88,file="LocalActive.txt",action="write")
-    write(88,*)LocalActive
-    close(88)
-endif    
+    end do 
 
     allocate (global_buff (N_CatG * numprocs))
     allocate (scounts(numprocs),rdispls(numprocs),rcounts(numprocs))  
@@ -1430,26 +1427,11 @@ endif
     call MPI_allgatherv  (                          &
          LocalActive, scounts         ,MPI_INTEGER, &
          global_buff, rcounts, rdispls,MPI_INTEGER, &
-         MPI_COMM_WORLD, mpierr)
-
-if (mapl_am_I_root())then
-    open(88,file="global_buff.txt",action="write")
-    write(88,*)global_buff
-    close(88)
-endif    
+         MPI_COMM_WORLD, mpierr) 
     
     do i=1,numprocs
        Allactive (:,i) = global_buff((i-1)*N_CatG+1:i*N_CatG)
     enddo
-
-if (mapl_am_I_root())then
-    open(88,file="Allactive.txt",action="write")
-    do i=1,numprocs
-      write(88,*)Allactive (:,i)
-    enddo
-    close(88)
-endif    
-stop
 
     if (root_proc) then
 
