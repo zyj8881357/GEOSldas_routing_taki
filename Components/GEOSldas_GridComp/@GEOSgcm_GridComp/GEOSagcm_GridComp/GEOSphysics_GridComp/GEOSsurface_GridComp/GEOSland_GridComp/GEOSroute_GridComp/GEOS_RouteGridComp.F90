@@ -1076,16 +1076,13 @@ endif
     ! For efficiency, the time step to call the river routing model is set at ROUTE_DT 
 
     N_CYC = ROUTE_DT/HEARTBEAT    
-    RUN_MODEL : if (ThisCycle == N_CYC) then  
-if (mapl_am_I_root()) print *, "debug 8"   
+    RUN_MODEL : if (ThisCycle == N_CYC) then   
        runoff_save = runoff_save + RUNOFF_SRC0/real (N_CYC)
-if (mapl_am_I_root()) print *, "debug 9" 
        allocate(runoff_global(nt_global))
        call MPI_allgatherv  (                          &
           runoff_save,  route%scounts_global(mype+1)      ,MPI_REAL, &
           runoff_global, route%scounts_global, route%rdispls,MPI_REAL, &
           MPI_COMM_WORLD, mpierr) 
-if (mapl_am_I_root()) print *, "debug 10" 
        allocate(RUNOFF_ACT(1:ntiles),area_local(1:ntiles))
        RUNOFF_ACT=0.
        area_local=0. 
@@ -1100,29 +1097,26 @@ if (mapl_am_I_root()) print *, "debug 10"
          enddo
          !if(area_local(i)>0.)runoff_local(i)=runoff_local(i)/area_local(i)
        enddo  
-       deallocate(runoff_global,area_local)
-if (mapl_am_I_root()) print *, "debug 11" 
+       deallocate(runoff_global,area_local) 
+
 
     allocate(scounts(ndes),scounts_global(ndes),rdispls(ndes))
     scounts=0
-    scounts(mype+1)=ntiles  
-if (mapl_am_I_root()) print *, "debug 12"     
+    scounts(mype+1)=ntiles     
     call MPI_Allgather(scounts(mype+1), 1, MPI_INTEGER, scounts_global, 1, MPI_INTEGER, MPI_COMM_WORLD, mpierr)     
     rdispls(1)=0
     do i=2,nDes
       rdispls(i)=rdispls(i-1)+scounts_global(i-1)
     enddo
-if (mapl_am_I_root()) print *, "debug 13, sum(scounts_global)=", sum(scounts_global) 
     allocate(runoff_cat_global(n_catg) )  
     call MPI_allgatherv  (                          &
          RUNOFF_ACT,  scounts(mype+1)      ,MPI_REAL, &
          runoff_cat_global, scounts_global, rdispls,MPI_REAL, &
-         MPI_COMM_WORLD, mpierr) 
-if (mapl_am_I_root()) print *, "debug 14"        
+         MPI_COMM_WORLD, mpierr)     
     if(mapl_am_I_root())then 
       open(88,file="runoff_cat_global.txt",action="write")
       do i=1,n_catg
-        write(88,*)runoff_cat_global(i)
+        write(88,*)runoff_cat_global(i)*86400.
       enddo     
       stop      
     endif   
