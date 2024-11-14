@@ -56,11 +56,19 @@ module GEOS_RouteGridCompMod
      integer, pointer :: nsub(:) => NULL()
      integer, pointer :: subi(:,:) => NULL()
      real,    pointer :: subarea(:,:) => NULL() !m2
+
      integer, pointer :: scounts_global(:) => NULL()
-     integer, pointer :: rdispls(:) => NULL()
+     integer, pointer :: rdispls_global(:) => NULL()
+     integer, pointer :: scounts_cat(:) => NULL()
+     integer, pointer :: rdispls_cat(:) => NULL()
+ 
      real,    pointer :: runoff_save(:) => NULL()
      real,    pointer :: areacat(:) => NULL() !m2
      real,    pointer :: lengsc(:) => NULL() !m
+
+     real,    pointer :: wstream(:) => NULL() !m3
+     real,    pointer :: wriver(:)  => NULL() !m3
+     integer, pointer :: downid(:) => NULL()
 
   end type T_RROUTE_STATE
 
@@ -401,8 +409,13 @@ contains
     integer,pointer :: subi_global(:,:)=> NULL(),subi(:,:)=> NULL()
     integer,pointer :: nsub_global(:)=> NULL(),nsub(:)=> NULL()
     real,pointer :: area_cat_global(:)=> NULL(),area_cat(:)=> NULL()
-    integer,pointer :: scounts(:)=>NULL(), scounts_global(:)=>NULL(),rdispls(:)=>NULL()
+    integer,pointer :: scounts(:)=>NULL()
+    integer,pointer :: scounts_global(:)=>NULL(),rdispls_global(:)=>NULL()
+    integer,pointer :: scounts_cat(:)=>NULL(),rdispls_cat(:)=>NULL()    
+
     real,pointer :: runoff_save(:)=>NULL(), areacat(:)=>NULL()
+    real,pointer :: lengsc_global(:)=>NULL(), lengsc(:)=>NULL()
+    integer,pointer :: downid_global(:)=>NULL(), downid(:)=>NULL()
     
     type (T_RROUTE_STATE), pointer         :: route => null()
     type (RROUTE_wrap)                     :: wrap
@@ -413,13 +426,11 @@ contains
     ! ------------------
     ! begin
 
-    if (mapl_am_I_root()) print *, "debug 1"
     
     call ESMF_UserCompGetInternalState ( GC, 'RiverRoute_state',wrap,status )
     VERIFY_(STATUS)
 
     route => wrap%ptr
-    if (mapl_am_I_root()) print *, "debug 2"
 
     ! get vm
     ! extract comm
@@ -430,15 +441,13 @@ contains
     call ESMF_VMGet       (VM, localpet=MYPE, petcount=nDEs,  RC=STATUS)
     VERIFY_(STATUS)
 
-    if (mapl_am_I_root()) print *, "debug 3"
     call MAPL_GetObjectFromGC ( GC, MAPL, RC=STATUS)
     VERIFY_(STATUS)
 
     route%comm = comm
     route%ndes = ndes
     route%mype = mype
-
-    if (mapl_am_I_root()) print *, "debug 4"    
+ 
     allocate(ims(1:ndes))
     ! define minCatch, maxCatch
     call MAPL_DecomposeDim ( n_catg,ims,ndes ) ! ims(mype+1) gives the size of my partition
@@ -447,18 +456,15 @@ contains
     minCatch = beforeMe + 1
     maxCatch = beforeMe + ims(myPe+1)
     print *, "my PE is:",mype,", minCatch is:",minCatch,", maxCatch is:",maxCatch
-
-    if (mapl_am_I_root()) print *, "debug 5"    
+ 
     ! get LocStream
     call MAPL_Get(MAPL, LocStream = locstream, RC=status)
-    VERIFY_(STATUS)
-    if (mapl_am_I_root()) print *, "debug 6"   
+    VERIFY_(STATUS) 
     ! extract Pfaf (TILEI on the "other" grid)    
     call MAPL_LocStreamGet(locstream, &
          tileGrid=tilegrid, nt_global=nt_global, RC=status)
     route%nt_global = nt_global
-    if (mapl_am_I_root()) print *, "nt_global=",nt_global     
-    if (mapl_am_I_root()) print *, "debug 6.1"       
+    if (mapl_am_I_root()) print *, "nt_global=",nt_global           
     allocate(pfaf(nt_global))
     open(77,file="../input/pfaf_input.txt",status="old",action="read")
     read(77,*)pfaf
@@ -466,14 +472,7 @@ contains
     !call MAPL_LocStreamGet(locstream, GRIDIM=pfaf, &
     !     tileGrid=tilegrid, nt_global=nt_global, RC=status)            
     !VERIFY_(STATUS)
-    if (mapl_am_I_root()) print *, "debug 7"   
     ! exchange Pfaf across PEs
-
-if (mapl_am_I_root())then
-    open(88,file="pfaf.txt",action="write")
-    write(88,*)pfaf
-    close(88)
-endif
 
     ntiles = 0
     !loop over total_n_tiles
@@ -491,14 +490,12 @@ endif
     allocate(arbSeq(ntiles))
     arbSeq=arbSeq_ori(1:ntiles)
     deallocate(arbSeq_ori)
-
-    if (mapl_am_I_root()) print *, "debug 8"   
+  
     distgrid = ESMF_DistGridCreate(arbSeqIndexList=arbSeq, rc=status)
     VERIFY_(STATUS)
 
     newTileGRID = ESMF_GridEmptyCreate(rc=status)
-    VERIFY_(STATUS)
-    if (mapl_am_I_root()) print *, "debug 9"        
+    VERIFY_(STATUS)       
     allocate(arbIndex(nTiles,1), stat=status)
     VERIFY_(STATUS)
 
@@ -518,17 +515,14 @@ endif
     VERIFY_(STATUS)
 
     deallocate(arbIndex)
-    if (mapl_am_I_root()) print *, "debug 10"   
 
     call ESMF_GridCommit(newTileGrid, rc=status)
-    VERIFY_(STATUS)
-    if (mapl_am_I_root()) print *, "debug 11"   
+    VERIFY_(STATUS)   
 
     ! now create a "catch" grid to be the "native" grid for this component
     distgrid = ESMF_DistGridCreate(arbSeqIndexList=(/minCatch:maxCatch/), &
          rc=status)
-    VERIFY_(STATUS)
-    if (mapl_am_I_root()) print *, "debug 12"   
+    VERIFY_(STATUS)  
     catchGRID = ESMF_GridEmptyCreate(rc=status)
     VERIFY_(STATUS)
 
@@ -551,13 +545,10 @@ endif
     VERIFY_(STATUS)
 
     deallocate(arbIndex)
-    if (mapl_am_I_root()) print *, "debug 13"   
     call ESMF_GridCommit(catchGrid, rc=status)
     VERIFY_(STATUS)
-    if (mapl_am_I_root()) print *, "debug 14"   
     call ESMF_GridCompSet(gc, grid=catchGrid, RC=status)
-    VERIFY_(STATUS)
-    if (mapl_am_I_root()) print *, "debug 15"   
+    VERIFY_(STATUS)   
     call MAPL_LocStreamGet(locstream, TILEAREA = tile_area_src, LOCAL_ID=local_id, RC=status)
 
     !if (mapl_am_I_root()) then
@@ -565,15 +556,13 @@ endif
     !  print *,"local_id:",local_id
     !endif
     !stop
-    VERIFY_(STATUS)
-    if (mapl_am_I_root()) print *, "debug 16"   
+    VERIFY_(STATUS) 
     field0 = ESMF_FieldCreate(grid=tilegrid, datacopyflag=ESMF_DATACOPY_VALUE, &
          farrayPtr=tile_area_src, name='TILE_AREA_SRC', RC=STATUS)
     VERIFY_(STATUS)
     ! create field on the "new" tile grid
     allocate(tile_area(ntiles), stat=status)
     VERIFY_(STATUS)
-    if (mapl_am_I_root()) print *, "debug 17"   
     field = ESMF_FieldCreate(grid=newtilegrid, datacopyflag=ESMF_DATACOPY_VALUE, &
          farrayPtr=tile_area, name='TILE_AREA', RC=STATUS)  
     !if (mapl_am_I_root()) then
@@ -581,12 +570,10 @@ endif
     !  print *,"tile_area:",tile_area
     !endif    
     VERIFY_(STATUS)
-    if (mapl_am_I_root()) print *, "debug 18"   
     ! create routehandle
     call ESMF_FieldRedistStore(srcField=field0, dstField=field, &
                 routehandle=route%routehandle, rc=status)
-    VERIFY_(STATUS)
-    if (mapl_am_I_root()) print *, "debug 19"    
+    VERIFY_(STATUS)  
     ! redist tile_area
     call ESMF_FieldRedist(srcField=FIELD0, dstField=FIELD, &
          routehandle=route%routehandle, rc=status)
@@ -628,12 +615,11 @@ endif
 
 !stop
 
-    if (mapl_am_I_root()) print *, "debug 20"   
     !call ESMF_FieldDestroy(field, rc=status)
     !VERIFY_(STATUS)
     !call ESMF_FieldDestroy(field0, rc=status)
     !VERIFY_(STATUS)
-    if (mapl_am_I_root()) print *, "debug 20.1"  
+
 
     ntiles = 0
     !loop over total_n_tiles
@@ -659,8 +645,7 @@ endif
     route%pfaf => arbSeq_pf
     route%ntiles = ntiles  
     route%minCatch = minCatch
-    route%maxCatch = maxCatch
-    if (mapl_am_I_root()) print *, "debug 21"   
+    route%maxCatch = maxCatch 
     allocate(ptr2(ntiles), stat=status)
     VERIFY_(STATUS)
     route%field = ESMF_FieldCreate(grid=catchGrid, datacopyflag=ESMF_DATACOPY_VALUE, &
@@ -686,17 +671,31 @@ endif
     deallocate(subi_global)
 
     nt_local=size(tile_area_src,1)
-    allocate(scounts(ndes),scounts_global(ndes),rdispls(ndes))
+
+    allocate(scounts(ndes),scounts_global(ndes),rdispls_global(ndes))
     scounts=0
     scounts(mype+1)=nt_local  
     call MPI_Allgather(scounts(mype+1), 1, MPI_INTEGER, scounts_global, 1, MPI_INTEGER, MPI_COMM_WORLD, mpierr) 
-    rdispls(1)=0
+    rdispls_global(1)=0
     do i=2,nDes
-      rdispls(i)=rdispls(i-1)+scounts_global(i-1)
+      rdispls_global(i)=rdispls_global(i-1)+scounts_global(i-1)
     enddo
     deallocate(scounts)
     route%scounts_global=>scounts_global
-    route%rdispls=>rdispls
+    route%rdispls_global=>rdispls_global
+
+    allocate(scounts(ndes),scounts_cat(ndes),rdispls_cat(ndes))
+    scounts=0
+    scounts(mype+1)=ntiles  
+    call MPI_Allgather(scounts(mype+1), 1, MPI_INTEGER, scounts_cat, 1, MPI_INTEGER, MPI_COMM_WORLD, mpierr) 
+    rdispls_cat(1)=0
+    do i=2,nDes
+      rdispls_cat(i)=rdispls_cat(i-1)+scounts_cat(i-1)
+    enddo
+    deallocate(scounts)
+    route%scounts_cat=>scounts_cat
+    route%rdispls_cat=>rdispls_cat
+
     route%nt_local=nt_local
     allocate(route%runoff_save(1:nt_local))
     route%runoff_save=0.
@@ -720,7 +719,22 @@ endif
     enddo  
     route%areacat=>areacat
 
+    allocate(lengsc_global(n_catg),lengsc(ntiles))   
+    open(77,file="../input/Pfaf_lriv_PR.txt",status="old",action="read");read(77,*)lengsc_global;close(77)
+    lengsc=lengsc_global(minCatch:maxCatch)*1.e3 !km->m
+    route%lengsc=>lengsc
+    deallocate(lengsc_global)
 
+    allocate(downid_global(n_catg),downid(ntiles))
+    open(77,file="../input/downstream_1D_new_noadj.txt",status="old",action="read");read(77,*)downid_global;close(77)    
+    downid=downid_global(minCatch:maxCatch)
+    route%downid=>downid
+    deallocate(downid_global)
+
+    allocate(route%wstream(ntiles),route%wriver(ntiles))
+    !This should be read from restart file
+    route%wstream=0.
+    route%wriver=0.
 
     !if (mapl_am_I_root())then
     !  open(88,file="nsub.txt",action="write")
@@ -735,14 +749,12 @@ endif
     !  enddo
     !  stop
     !endif
-
-    if (mapl_am_I_root()) print *, "debug 22"       
+   
     deallocate(ims)
     call MAPL_GenericInitialize ( GC, import, export, clock, rc=status )
     VERIFY_(STATUS)
 
-    RETURN_(ESMF_SUCCESS)
-    if (mapl_am_I_root()) print *, "debug 23"       
+    RETURN_(ESMF_SUCCESS)      
   end subroutine INITIALIZE
   
 ! -----------------------------------------------------------
@@ -840,7 +852,7 @@ endif
     integer                                  :: K, N, I, req
     REAL                                     :: mm2m3, rbuff, HEARTBEAT 
     REAL, ALLOCATABLE, DIMENSION(:)          :: RUNOFF_CATCH, RUNOFF_ACT,AREACAT_ACT,& 
-         LENGSC_ACT, WSTREAM_ACT,WRIVER_ACT, QSFLOW_ACT,QOUTFLOW_ACT
+         LENGSC_ACT, QSFLOW_ACT,QOUTFLOW_ACT
     INTEGER, ALLOCATABLE, DIMENSION(:)       :: tmp_index
     type(ESMF_Field) :: runoff_src
 
@@ -852,6 +864,7 @@ endif
 
     integer :: mpierr, nt_global,nt_local, it, j
     real,pointer :: runoff_save(:)=>NULL()
+    real,pointer :: WSTREAM_ACT(:)=>NULL(),WRIVER_ACT=>NULL()
     real,allocatable :: runoff_save_m3(:),runoff_global_m3(:)
 
     ! ------------------
@@ -1105,20 +1118,7 @@ endif
        allocate(runoff_global(nt_global))
        call MPI_allgatherv  (                          &
           runoff_save,  route%scounts_global(mype+1)      ,MPI_REAL, &
-          runoff_global, route%scounts_global, route%rdispls,MPI_REAL, &
-          MPI_COMM_WORLD, mpierr) 
-
-       allocate(runoff_save_m3(nt_local),runoff_global_m3(nt_global))
-       runoff_save_m3=runoff_save*route%tile_area/1000.
-       if(mapl_am_I_root())then 
-          open(88,file="tile_area.txt",action="write")
-          do i=1,nt_local
-            write(88,*)route%tile_area(i)
-          enddo   
-       endif      
-       call MPI_allgatherv  (                          &
-          runoff_save_m3,  route%scounts_global(mype+1)      ,MPI_REAL, &
-          runoff_global_m3, route%scounts_global, route%rdispls,MPI_REAL, &
+          runoff_global, route%scounts_global, route%rdispls_global,MPI_REAL, &
           MPI_COMM_WORLD, mpierr) 
 
        allocate(RUNOFF_ACT(1:ntiles))
@@ -1136,30 +1136,26 @@ endif
 
        deallocate(runoff_global) 
 
+    allocate(runoff_save_m3(nt_local),runoff_global_m3(nt_global))
+    runoff_save_m3=runoff_save*route%tile_area/1000. 
+    call MPI_allgatherv  (                          &
+       runoff_save_m3,  route%scounts_global(mype+1)      ,MPI_REAL, &
+       runoff_global_m3, route%scounts_global, route%rdispls_global,MPI_REAL, &
+       MPI_COMM_WORLD, mpierr) 
 
-    allocate(scounts(ndes),scounts_global(ndes),rdispls(ndes))
-    scounts=0
-    scounts(mype+1)=ntiles     
-    call MPI_Allgather(scounts(mype+1), 1, MPI_INTEGER, scounts_global, 1, MPI_INTEGER, MPI_COMM_WORLD, mpierr)     
-    rdispls(1)=0
-    do i=2,nDes
-      rdispls(i)=rdispls(i-1)+scounts_global(i-1)
-    enddo
     allocate(runoff_cat_global(n_catg) )  
     call MPI_allgatherv  (                          &
-         RUNOFF_ACT,  scounts(mype+1)      ,MPI_REAL, &
-         runoff_cat_global, scounts_global, rdispls,MPI_REAL, &
+         RUNOFF_ACT,  route%scounts_cat(mype+1)      ,MPI_REAL, &
+         runoff_cat_global, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
          MPI_COMM_WORLD, mpierr)     
     if(mapl_am_I_root())then 
       print *,"sum(runoff_global_m3)=",sum(runoff_global_m3)
       print *,"sum(runoff_cat_global)=",sum(runoff_cat_global)
-      !open(88,file="runoff_cat_global.txt",action="write")
-      !do i=1,n_catg
-      !  write(88,*)runoff_cat_global(i)*86400.
-      !enddo     
       stop      
     endif   
-    call MPI_Barrier(MPI_COMM_WORLD, mpierr)
+    deallocate(runoff_save_m3,runoff_global_m3,runoff_cat_global)
+
+
        ! Here we aggreagate GEOS_Catch/GEOS_CatchCN produced RUNOFF from TILES to CATCHMENTS
        ! Everything is local to the parallel block. Units: RUNOFF [kg m-2 s-1], 
        !        RUNOFF_CATCH [m3 s-1]
@@ -1233,12 +1229,23 @@ endif
        !QSFLOW       = 0.
        !QOUTFLOW     = 0.
        !QINFLOW      = 0.
-       
+
+       allocate (AREACAT_ACT (1:ntiles))       
+       allocate (LENGSC_ACT  (1:ntiles))
+       allocate (QSFLOW_ACT  (1:ntiles))
+       allocate (QOUTFLOW_ACT(1:ntiles))     
+
+       LENGSC_ACT=route%lengsc/1.e3 !m->km
+       AREACAT_ACT=route%areacat/1.e6 !m2->km2
+
+       WSTREAM_ACT => route%wstream
+       WRIVER_ACT => route%wriver
        ! Call river_routing_model
        ! ------------------------     
        CALL RIVER_ROUTING  (ntiles, RUNOFF_ACT,AREACAT_ACT,LENGSC_ACT,  &
             WSTREAM_ACT,WRIVER_ACT, QSFLOW_ACT,QOUTFLOW_ACT) 
 
+       deallocate(RUNOFF_ACT,AREACAT_ACT,LENGSC_ACT)
 
        DO N = 1, size (GlbActive)
           
