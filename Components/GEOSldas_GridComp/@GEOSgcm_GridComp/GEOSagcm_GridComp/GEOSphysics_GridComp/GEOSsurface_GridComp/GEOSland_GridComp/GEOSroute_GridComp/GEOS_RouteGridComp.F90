@@ -830,7 +830,7 @@ contains
     real,pointer :: WSTREAM_ACT(:)=>NULL()
     real,pointer :: WRIVER_ACT(:)=>NULL()
     real,allocatable :: runoff_save_m3(:),runoff_global_m3(:),QOUTFLOW_GLOBAL(:)
-    real,allocatable :: WTOT_BEFORE(:),WTOT_AFTER(:),QINFLOW_LOCAL(:),UNBALANCE(:),UNBALANCE_GLOBAL(:)
+    real,allocatable :: WTOT_BEFORE(:),WTOT_AFTER(:),QINFLOW_LOCAL(:),UNBALANCE(:),UNBALANCE_GLOBAL(:),ERROR(:)
 
     ! ------------------
     ! begin    
@@ -1001,8 +1001,8 @@ contains
 
       !---check water balance------
        WTOT_AFTER=WRIVER_ACT+WSTREAM_ACT
-       UNBALANCE = WTOT_AFTER - (WTOT_BEFORE + RUNOFF_ACT*route_dt + QINFLOW_LOCAL*route_dt - QOUTFLOW_ACT*route_dt)
-       where(QOUTFLOW_ACT>0.) UNBALANCE = abs(UNBALANCE)/(QOUTFLOW_ACT*route_dt)
+       ERROR = WTOT_AFTER - (WTOT_BEFORE + RUNOFF_ACT*route_dt + QINFLOW_LOCAL*route_dt - QOUTFLOW_ACT*route_dt)
+       where(QOUTFLOW_ACT>0.) UNBALANCE = abs(ERROR)/(QOUTFLOW_ACT*route_dt)
        where(QOUTFLOW_ACT<=0.) UNBALANCE = 0.
        call MPI_allgatherv  (                          &
             UNBALANCE,  route%scounts_cat(mype+1)      ,MPI_REAL, &
@@ -1014,9 +1014,9 @@ contains
        if(mapl_am_I_root()) print *,"max value of UNBALANCE=", UNBALANCE_GLOBAL(cid), " at catid:",cid
        if(cid>=route%minCatch.and.cid<=route%maxCatch)then
          tid=cid-route%minCatch+1
-         print *,"my PE is:",mype,", max absolute value of UNBALANCE:", UNBALANCE(tid)," at pfafid: ",route%minCatch+tid-1,", W_BEFORE:",WTOT_BEFORE(tid),", RUNOFF:",RUNOFF_ACT(tid)*route_dt,", QINFLOW:",QINFLOW_LOCAL(tid)*route_dt,", QOUTFLOW:",QOUTFLOW_ACT(tid)*route_dt,", W_AFTER:",WTOT_AFTER(tid)
+         print *,"my PE is:",mype,", max absolute value of ERROR:", ERROR(tid)," at pfafid: ",route%minCatch+tid-1,", W_BEFORE:",WTOT_BEFORE(tid),", RUNOFF:",RUNOFF_ACT(tid)*route_dt,", QINFLOW:",QINFLOW_LOCAL(tid)*route_dt,", QOUTFLOW:",QOUTFLOW_ACT(tid)*route_dt,", W_AFTER:",WTOT_AFTER(tid)
        endif
-       deallocate(WTOT_BEFORE,WTOT_AFTER,QINFLOW_LOCAL,UNBALANCE,UNBALANCE_GLOBAL)
+       deallocate(WTOT_BEFORE,WTOT_AFTER,QINFLOW_LOCAL,UNBALANCE,UNBALANCE_GLOBAL,ERROR)
       !----------------------------
        deallocate(RUNOFF_ACT,AREACAT_ACT,LENGSC_ACT,QSFLOW_ACT,QOUTFLOW_ACT,QOUTFLOW_GLOBAL)
 
