@@ -1001,8 +1001,8 @@ contains
 
       !---check water balance------
        WTOT_AFTER=WRIVER_ACT+WSTREAM_ACT
-       UNBALANCE = WTOT_AFTER - (WTOT_BEFORE + RUNOFF_ACT*route_dt + QINFLOW_LOCAL*route_dt - QOUTFLOW_ACT_LOCAL*route_dt)
-       print *,"my PE is:",mype,"max absolute value of UNBALANCE:", maxval(abs(UNBALANCE))
+       UNBALANCE = WTOT_AFTER - (WTOT_BEFORE + RUNOFF_ACT*route_dt + QINFLOW_LOCAL*route_dt - QOUTFLOW_ACT*route_dt)
+       print *,"my PE is:",mype,", max absolute value of UNBALANCE:", maxval(abs(UNBALANCE))
        deallocate(WTOT_BEFORE,WTOT_AFTER,UNBALANCE,QINFLOW_LOCAL)
       !----------------------------
        deallocate(RUNOFF_ACT,AREACAT_ACT,LENGSC_ACT,QSFLOW_ACT,QOUTFLOW_ACT,QOUTFLOW_GLOBAL)
