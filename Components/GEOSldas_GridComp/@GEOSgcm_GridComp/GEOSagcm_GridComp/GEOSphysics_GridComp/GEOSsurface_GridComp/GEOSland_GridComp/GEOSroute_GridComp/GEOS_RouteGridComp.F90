@@ -831,6 +831,7 @@ contains
     real,pointer :: WRIVER_ACT(:)=>NULL()
     real,allocatable :: runoff_save_m3(:),runoff_global_m3(:),QOUTFLOW_GLOBAL(:)
     real,allocatable :: WTOT_BEFORE(:),WTOT_AFTER(:),QINFLOW_LOCAL(:),UNBALANCE(:),UNBALANCE_GLOBAL(:),ERROR(:)
+    real,allocatable :: QFLOW_SINK(:),QFLOW_SINK_GLOBAL(:),WTOT_BEFORE_GLOBAL(:),WTOT_AFTER_GLOBAL(:)
 
     ! ------------------
     ! begin    
@@ -936,26 +937,26 @@ contains
 
        deallocate(runoff_global) 
 
-!    allocate(runoff_save_m3(nt_local),runoff_global_m3(nt_global))
-!    runoff_save_m3=runoff_save*route%tile_area/1000. 
-!    call MPI_allgatherv  (                          &
-!       runoff_save_m3,  route%scounts_global(mype+1)      ,MPI_REAL, &
-!       runoff_global_m3, route%scounts_global, route%rdispls_global,MPI_REAL, &
-!       MPI_COMM_WORLD, mpierr) 
-!    allocate(runoff_cat_global(n_catg) )  
-!    call MPI_allgatherv  (                          &
-!         RUNOFF_ACT,  route%scounts_cat(mype+1)      ,MPI_REAL, &
-!         runoff_cat_global, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
-!         MPI_COMM_WORLD, mpierr)     
-!    if(mapl_am_I_root())then 
-!      open(88,file="runoff_global_m3.txt",status="unknown", position="append")
-!      write(88,*)sum(runoff_global_m3)
-!      close(88)
-!      open(88,file="runoff_cat_global.txt",status="unknown", position="append")
-!      write(88,*)sum(runoff_cat_global)
-!      close(88)      
-!    endif   
-!    deallocate(runoff_save_m3,runoff_global_m3,runoff_cat_global)
+    !allocate(runoff_save_m3(nt_local),runoff_global_m3(nt_global))
+    !runoff_save_m3=runoff_save*route%tile_area/1000. 
+    !call MPI_allgatherv  (                          &
+    !   runoff_save_m3,  route%scounts_global(mype+1)      ,MPI_REAL, &
+    !   runoff_global_m3, route%scounts_global, route%rdispls_global,MPI_REAL, &
+    !   MPI_COMM_WORLD, mpierr) 
+    !allocate(runoff_cat_global(n_catg) )  
+    !call MPI_allgatherv  (                          &
+    !     RUNOFF_ACT,  route%scounts_cat(mype+1)      ,MPI_REAL, &
+    !     runoff_cat_global, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
+    !     MPI_COMM_WORLD, mpierr)     
+    !if(mapl_am_I_root())then 
+    !  open(88,file="runoff_global_m3.txt",status="unknown", position="append")
+    !  write(88,*)sum(runoff_global_m3)
+    !  close(88)
+    !  open(88,file="runoff_cat_global.txt",status="unknown", position="append")
+    !  write(88,*)sum(runoff_cat_global)
+    !  close(88)      
+    !endif   
+    !deallocate(runoff_save_m3,runoff_global_m3,runoff_cat_global)
 
 
        allocate (AREACAT_ACT (1:ntiles))       
@@ -971,6 +972,8 @@ contains
 
        !---check water balance------      
        allocate(WTOT_BEFORE(ntiles),WTOT_AFTER(ntiles),QINFLOW_LOCAL(ntiles),UNBALANCE(ntiles),UNBALANCE_GLOBAL(n_catg))
+       allocate(QFLOW_SINK(ntiles),QFLOW_SINK_GLOBAL(n_catg),WTOT_BEFORE_GLOBAL(n_catg),WTOT_AFTER_GLOBAL(n_catg))
+       allocate(runoff_save_m3(nt_local),runoff_global_m3(nt_global))
        WTOT_BEFORE=WSTREAM_ACT+WRIVER_ACT
        !----------------------------
 
@@ -1016,8 +1019,43 @@ contains
          tid=cid-route%minCatch+1
          print *,"my PE is:",mype,", max absolute value of ERROR:", ERROR(tid)," at pfafid: ",route%minCatch+tid-1,", W_BEFORE:",WTOT_BEFORE(tid),", RUNOFF:",RUNOFF_ACT(tid)*route_dt,", QINFLOW:",QINFLOW_LOCAL(tid)*route_dt,", QOUTFLOW:",QOUTFLOW_ACT(tid)*route_dt,", W_AFTER:",WTOT_AFTER(tid)
        endif
-       deallocate(WTOT_BEFORE,WTOT_AFTER,QINFLOW_LOCAL,UNBALANCE,UNBALANCE_GLOBAL,ERROR)
+
+       QFLOW_SINK=0.
+       do i=1,nTiles
+         if(route%downid(i)==-1)then
+            QFLOW_SINK(i) = QOUTFLOW_ACT(i)
+         endif
+       enddo
+       call MPI_allgatherv  (                          &
+            QFLOW_SINK,  route%scounts_cat(mype+1)      ,MPI_REAL, &
+            QFLOW_SINK_GLOBAL, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
+            MPI_COMM_WORLD, mpierr)
+       call MPI_allgatherv  (                          &
+            WTOT_BEFORE,  route%scounts_cat(mype+1)      ,MPI_REAL, &
+            WTOT_BEFORE_GLOBAL, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
+            MPI_COMM_WORLD, mpierr)   
+       call MPI_allgatherv  (                          &
+            WTOT_AFTER,  route%scounts_cat(mype+1)      ,MPI_REAL, &
+            WTOT_AFTER_GLOBAL, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
+            MPI_COMM_WORLD, mpierr) 
+       runoff_save_m3=runoff_save*route%tile_area/1000. 
+       call MPI_allgatherv  (                          &
+            runoff_save_m3,  route%scounts_global(mype+1)      ,MPI_REAL, &
+            runoff_global_m3, route%scounts_global, route%rdispls_global,MPI_REAL, &
+            MPI_COMM_WORLD, mpierr) 
+       if(mapl_am_I_root())then 
+         open(88,file="WTOT_AFTER.txt",status="unknown", position="append")
+         write(88,*)sum(WTOT_AFTER_GLOBAL)
+         close(88)
+         open(88,file="WTOT_BEFORE_RUNOFF_QSINK.txt",status="unknown", position="append")
+         write(88,*) sum(WTOT_BEFORE_GLOBAL)+sum(runoff_global_m3)-sum(QFLOW_SINK_GLOBAL)
+         close(88)      
+       endif                     
+
+       deallocate(WTOT_BEFORE,WTOT_AFTER,QINFLOW_LOCAL,UNBALANCE,UNBALANCE_GLOBAL,ERROR,QFLOW_SINK,QFLOW_SINK_GLOBAL,WTOT_BEFORE_GLOBAL,WTOT_AFTER_GLOBAL)
+       deallocate(runoff_save_m3,runoff_global_m3)
       !----------------------------
+
        deallocate(RUNOFF_ACT,AREACAT_ACT,LENGSC_ACT,QSFLOW_ACT,QOUTFLOW_ACT,QOUTFLOW_GLOBAL)
 
        WSTREAM_ACT=>NULL()
