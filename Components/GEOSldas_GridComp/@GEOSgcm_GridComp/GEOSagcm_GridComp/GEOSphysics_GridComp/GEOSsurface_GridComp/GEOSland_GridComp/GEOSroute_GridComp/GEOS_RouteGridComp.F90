@@ -1004,7 +1004,7 @@ contains
        UNBALANCE = WTOT_AFTER - (WTOT_BEFORE + RUNOFF_ACT*route_dt + QINFLOW_LOCAL*route_dt - QOUTFLOW_ACT*route_dt)
        temp = maxloc(abs(UNBALANCE))
        cid = temp(1)
-       print *,"my PE is:",mype,", max absolute value of UNBALANCE:", UNBALANCE(cid)," at pfafid: ",route%minCatch+cid-1,", W_BEFORE:",WTOT_BEFORE(cid),", RUNOFF:",RUNOFF_ACT*route_dt,", QINFLOW:",QINFLOW_LOCAL*route_dt,", QOUTFLOW:",QOUTFLOW_ACT*route_dt,", W_AFTER:",WTOT_AFTER
+       print *,"my PE is:",mype,", max absolute value of UNBALANCE:", UNBALANCE(cid)," at pfafid: ",route%minCatch+cid-1,", W_BEFORE:",WTOT_BEFORE(cid),", RUNOFF:",RUNOFF_ACT(cid)*route_dt,", QINFLOW:",QINFLOW_LOCAL(cid)*route_dt,", QOUTFLOW:",QOUTFLOW_ACT(cid)*route_dt,", W_AFTER:",WTOT_AFTER(cid)
        deallocate(WTOT_BEFORE,WTOT_AFTER,UNBALANCE,QINFLOW_LOCAL)
       !----------------------------
        deallocate(RUNOFF_ACT,AREACAT_ACT,LENGSC_ACT,QSFLOW_ACT,QOUTFLOW_ACT,QOUTFLOW_GLOBAL)
