@@ -994,8 +994,8 @@ contains
          do j=1,upmax
            if(route%upid(j,i)>0)then
              upid=route%upid(j,i)
-             WRIVER_ACT(i)=WRIVER_ACT(i)+QOUTFLOW_GLOBAL(upid)*real(route_dt)
-             QINFLOW_LOCAL(i)=QINFLOW_LOCAL(i)+QOUTFLOW_GLOBAL(upid)
+             !WRIVER_ACT(i)=WRIVER_ACT(i)+QOUTFLOW_GLOBAL(upid)*real(route_dt)
+             !QINFLOW_LOCAL(i)=QINFLOW_LOCAL(i)+QOUTFLOW_GLOBAL(upid)
            else
              exit
            endif
@@ -1022,9 +1022,9 @@ contains
 
        QFLOW_SINK=0.
        do i=1,nTiles
-         if(route%downid(i)==-1)then
+         !if(route%downid(i)==-1)then
             QFLOW_SINK(i) = QOUTFLOW_ACT(i)
-         endif
+         !endif
        enddo
        call MPI_allgatherv  (                          &
             QFLOW_SINK,  route%scounts_cat(mype+1)      ,MPI_REAL, &
@@ -1071,6 +1071,7 @@ contains
             enddo
          endif
          FirstTime=.False.
+         stop
        endif
        deallocate(WTOT_BEFORE,WTOT_AFTER,QINFLOW_LOCAL,UNBALANCE,UNBALANCE_GLOBAL,ERROR,QFLOW_SINK,QFLOW_SINK_GLOBAL,WTOT_BEFORE_GLOBAL,WTOT_AFTER_GLOBAL)
        deallocate(runoff_save_m3,runoff_global_m3,ERROR_GLOBAL)
