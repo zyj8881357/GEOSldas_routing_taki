@@ -973,7 +973,7 @@ contains
        !---check water balance------      
        allocate(WTOT_BEFORE(ntiles),WTOT_AFTER(ntiles),QINFLOW_LOCAL(ntiles),UNBALANCE(ntiles),UNBALANCE_GLOBAL(n_catg))
        allocate(QFLOW_SINK(ntiles),QFLOW_SINK_GLOBAL(n_catg),WTOT_BEFORE_GLOBAL(n_catg),WTOT_AFTER_GLOBAL(n_catg))
-       allocate(runoff_save_m3(nt_local),runoff_global_m3(nt_global))
+       allocate(runoff_save_m3(nt_local),runoff_global_m3(nt_global),ERROR(ntiles))
        WTOT_BEFORE=WSTREAM_ACT+WRIVER_ACT
        !----------------------------
 
