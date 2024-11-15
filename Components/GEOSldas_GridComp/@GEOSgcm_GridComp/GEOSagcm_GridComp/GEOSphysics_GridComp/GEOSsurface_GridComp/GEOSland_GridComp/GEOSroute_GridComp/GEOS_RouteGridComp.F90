@@ -830,7 +830,7 @@ contains
     real,pointer :: WSTREAM_ACT(:)=>NULL()
     real,pointer :: WRIVER_ACT(:)=>NULL()
     real,allocatable :: runoff_save_m3(:),runoff_global_m3(:),QOUTFLOW_GLOBAL(:)
-    real,allocatable :: WTOT_BEFORE(:),WTOT_AFTER(:),QINFLOW_LOCAL(:),UNBALANCE(:)
+    real,allocatable :: WTOT_BEFORE(:),WTOT_AFTER(:),QINFLOW_LOCAL(:),UNBALANCE(:),UNBALANCE_GLOBAL(:)
 
     ! ------------------
     ! begin    
@@ -970,7 +970,7 @@ contains
        WRIVER_ACT => route%wriver
 
        !---check water balance------      
-       allocate(WTOT_BEFORE(ntiles),WTOT_AFTER(ntiles),UNBALANCE(ntiles),QINFLOW_LOCAL(ntiles))
+       allocate(WTOT_BEFORE(ntiles),WTOT_AFTER(ntiles),QINFLOW_LOCAL(ntiles),UNBALANCE(ntiles),UNBALANCE_GLOBAL(n_catg))
        WTOT_BEFORE=WSTREAM_ACT+WRIVER_ACT
        !----------------------------
 
@@ -1002,10 +1002,19 @@ contains
       !---check water balance------
        WTOT_AFTER=WRIVER_ACT+WSTREAM_ACT
        UNBALANCE = WTOT_AFTER - (WTOT_BEFORE + RUNOFF_ACT*route_dt + QINFLOW_LOCAL*route_dt - QOUTFLOW_ACT*route_dt)
-       temp = maxloc(abs(UNBALANCE))
-       cid = temp(1)
-       print *,"my PE is:",mype,", max absolute value of UNBALANCE:", UNBALANCE(cid)," at pfafid: ",route%minCatch+cid-1,", W_BEFORE:",WTOT_BEFORE(cid),", RUNOFF:",RUNOFF_ACT(cid)*route_dt,", QINFLOW:",QINFLOW_LOCAL(cid)*route_dt,", QOUTFLOW:",QOUTFLOW_ACT(cid)*route_dt,", W_AFTER:",WTOT_AFTER(cid)
-       deallocate(WTOT_BEFORE,WTOT_AFTER,UNBALANCE,QINFLOW_LOCAL)
+       where(QOUTFLOW_ACT>0.) UNBALANCE = abs(UNBALANCE)/(QOUTFLOW_ACT*route_dt)
+       where(QOUTFLOW_ACT<=0.) UNBALANCE = 0.
+       call MPI_allgatherv  (                          &
+            UNBALANCE,  route%scounts_cat(mype+1)      ,MPI_REAL, &
+            UNBALANCE_GLOBAL, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
+            MPI_COMM_WORLD, mpierr)  
+       if(mapl_am_I_root())then           
+         temp = maxloc(UNBALANCE_GLOBAL)
+         cid = temp(1)
+         !print *,"my PE is:",mype,", max absolute value of UNBALANCE:", UNBALANCE(cid)," at pfafid: ",route%minCatch+cid-1,", W_BEFORE:",WTOT_BEFORE(cid),", RUNOFF:",RUNOFF_ACT(cid)*route_dt,", QINFLOW:",QINFLOW_LOCAL(cid)*route_dt,", QOUTFLOW:",QOUTFLOW_ACT(cid)*route_dt,", W_AFTER:",WTOT_AFTER(cid)
+         print *,"max value of UNBALANCE=", UNBALANCE_GLOBAL(cid), " at catid:",cid
+       endif
+       deallocate(WTOT_BEFORE,WTOT_AFTER,QINFLOW_LOCAL,UNBALANCE,UNBALANCE_GLOBAL)
       !----------------------------
        deallocate(RUNOFF_ACT,AREACAT_ACT,LENGSC_ACT,QSFLOW_ACT,QOUTFLOW_ACT,QOUTFLOW_GLOBAL)
 
