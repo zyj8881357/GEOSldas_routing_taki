@@ -825,7 +825,7 @@ contains
     INTEGER, DIMENSION(:)  ,ALLOCATABLE  :: scounts, scounts_global,rdispls, rcounts  
     real, dimension(:), pointer :: runoff_global,runoff_local,area_local,runoff_cat_global    
 
-    integer :: mpierr, nt_global,nt_local, it, j, upid,cid,temp(1)
+    integer :: mpierr, nt_global,nt_local, it, j, upid,cid,temp(1),tid
     real,pointer :: runoff_save(:)=>NULL()
     real,pointer :: WSTREAM_ACT(:)=>NULL()
     real,pointer :: WRIVER_ACT(:)=>NULL()
@@ -1007,12 +1007,14 @@ contains
        call MPI_allgatherv  (                          &
             UNBALANCE,  route%scounts_cat(mype+1)      ,MPI_REAL, &
             UNBALANCE_GLOBAL, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
-            MPI_COMM_WORLD, mpierr)  
-       if(mapl_am_I_root())then           
-         temp = maxloc(UNBALANCE_GLOBAL)
-         cid = temp(1)
+            MPI_COMM_WORLD, mpierr)           
+       temp = maxloc(UNBALANCE_GLOBAL)
+       cid = temp(1)
          !print *,"my PE is:",mype,", max absolute value of UNBALANCE:", UNBALANCE(cid)," at pfafid: ",route%minCatch+cid-1,", W_BEFORE:",WTOT_BEFORE(cid),", RUNOFF:",RUNOFF_ACT(cid)*route_dt,", QINFLOW:",QINFLOW_LOCAL(cid)*route_dt,", QOUTFLOW:",QOUTFLOW_ACT(cid)*route_dt,", W_AFTER:",WTOT_AFTER(cid)
-         print *,"max value of UNBALANCE=", UNBALANCE_GLOBAL(cid), " at catid:",cid
+       if(mapl_am_I_root()) print *,"max value of UNBALANCE=", UNBALANCE_GLOBAL(cid), " at catid:",cid
+       if(cid>=route%minCatch.and.cid<=route%maxCatch)then
+         tid=cid-route%minCatch+1
+         print *,"my PE is:",mype,", max absolute value of UNBALANCE:", UNBALANCE(tid)," at pfafid: ",route%minCatch+tid-1,", W_BEFORE:",WTOT_BEFORE(tid),", RUNOFF:",RUNOFF_ACT(tid)*route_dt,", QINFLOW:",QINFLOW_LOCAL(tid)*route_dt,", QOUTFLOW:",QOUTFLOW_ACT(tid)*route_dt,", W_AFTER:",WTOT_AFTER(tid)
        endif
        deallocate(WTOT_BEFORE,WTOT_AFTER,QINFLOW_LOCAL,UNBALANCE,UNBALANCE_GLOBAL)
       !----------------------------
