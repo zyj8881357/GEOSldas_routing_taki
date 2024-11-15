@@ -937,28 +937,28 @@ contains
 
        deallocate(runoff_global) 
 
-    allocate(runoff_save_m3(nt_local),runoff_global_m3(nt_global))
-    runoff_save_m3=runoff_save*route%tile_area/1000. 
-    call MPI_allgatherv  (                          &
-       runoff_save_m3,  route%scounts_global(mype+1)      ,MPI_REAL, &
-       runoff_global_m3, route%scounts_global, route%rdispls_global,MPI_REAL, &
-       MPI_COMM_WORLD, mpierr) 
-    allocate(runoff_cat_global(n_catg) )  
-    call MPI_allgatherv  (                          &
-         RUNOFF_ACT,  route%scounts_cat(mype+1)      ,MPI_REAL, &
-         runoff_cat_global, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
-         MPI_COMM_WORLD, mpierr)     
-    if(mapl_am_I_root())then 
+    !allocate(runoff_save_m3(nt_local),runoff_global_m3(nt_global))
+    !runoff_save_m3=runoff_save*route%tile_area/1000. 
+    !call MPI_allgatherv  (                          &
+    !   runoff_save_m3,  route%scounts_global(mype+1)      ,MPI_REAL, &
+    !   runoff_global_m3, route%scounts_global, route%rdispls_global,MPI_REAL, &
+    !   MPI_COMM_WORLD, mpierr) 
+    !allocate(runoff_cat_global(n_catg) )  
+    !call MPI_allgatherv  (                          &
+    !     RUNOFF_ACT,  route%scounts_cat(mype+1)      ,MPI_REAL, &
+    !     runoff_cat_global, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
+    !     MPI_COMM_WORLD, mpierr)     
+    !if(mapl_am_I_root())then 
     !  open(88,file="runoff_global_m3.txt",status="unknown", position="append")
     !  write(88,*)sum(runoff_global_m3)
     !  close(88)
     !  open(88,file="runoff_cat_global.txt",status="unknown", position="append")
     !  write(88,*)sum(runoff_cat_global)
     !  close(88)  
-      print *,"sum(runoff_global_m3)=",sum(runoff_global_m3)
-      print *,"sum(runoff_cat_global)",sum(runoff_cat_global)   
-    endif   
-    deallocate(runoff_save_m3,runoff_global_m3,runoff_cat_global)
+    !  print *,"sum(runoff_global_m3)=",sum(runoff_global_m3)
+    !  print *,"sum(runoff_cat_global)",sum(runoff_cat_global)   
+    !endif   
+    !deallocate(runoff_save_m3,runoff_global_m3,runoff_cat_global)
 
 
        allocate (AREACAT_ACT (1:ntiles))       
@@ -1072,7 +1072,6 @@ contains
             enddo
          endif
          FirstTime=.False.
-         stop
        endif
        deallocate(WTOT_BEFORE,WTOT_AFTER,QINFLOW_LOCAL,UNBALANCE,UNBALANCE_GLOBAL,ERROR,QFLOW_SINK,QFLOW_SINK_GLOBAL,WTOT_BEFORE_GLOBAL,WTOT_AFTER_GLOBAL)
        deallocate(runoff_save_m3,runoff_global_m3,ERROR_GLOBAL)
