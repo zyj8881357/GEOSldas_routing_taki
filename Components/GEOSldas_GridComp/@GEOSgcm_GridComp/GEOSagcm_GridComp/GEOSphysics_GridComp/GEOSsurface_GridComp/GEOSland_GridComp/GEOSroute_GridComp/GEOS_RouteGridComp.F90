@@ -830,6 +830,7 @@ contains
     real,pointer :: WSTREAM_ACT(:)=>NULL()
     real,pointer :: WRIVER_ACT(:)=>NULL()
     real,allocatable :: runoff_save_m3(:),runoff_global_m3(:),QOUTFLOW_GLOBAL(:)
+    real,allocatable :: WTOT_BEFORE(:),WTOT_AFTER(:),QINFLOW_LOCAL(:),UNBALANCE(:)
 
     ! ------------------
     ! begin    
@@ -921,7 +922,7 @@ contains
           runoff_global, route%scounts_global, route%rdispls_global,MPI_REAL, &
           MPI_COMM_WORLD, mpierr) 
 
-       allocate(RUNOFF_ACT(1:ntiles))
+       allocate(RUNOFF_ACT(ntiles))
        RUNOFF_ACT=0.
        do i=1,ntiles
          do j=1,nmax
@@ -967,6 +968,12 @@ contains
 
        WSTREAM_ACT => route%wstream
        WRIVER_ACT => route%wriver
+
+       !---check water balance------      
+       allocate(WTOT_BEFORE(ntiles),WTOT_AFTER(ntiles),UNBALANCE(ntiles),QINFLOW_LOCAL(ntiles))
+       WTOT_BEFORE=WSTREAM_ACT+WRIVER_ACT
+       !----------------------------
+
        ! Call river_routing_model
        ! ------------------------     
        CALL RIVER_ROUTING  (ntiles, RUNOFF_ACT,AREACAT_ACT,LENGSC_ACT,  &
@@ -979,17 +986,25 @@ contains
             QOUTFLOW_GLOBAL, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
             MPI_COMM_WORLD, mpierr) 
 
+       QINFLOW_LOCAL=0.
        do i=1,nTiles
          do j=1,upmax
            if(route%upid(j,i)>0)then
              upid=route%upid(j,i)
              WRIVER_ACT(i)=WRIVER_ACT(i)+QOUTFLOW_GLOBAL(upid)*real(route_dt)
+             QINFLOW_LOCAL(i)=QINFLOW_LOCAL(i)+QOUTFLOW_GLOBAL(upid)
            else
              exit
            endif
          enddo
        enddo
 
+      !---check water balance------
+       WTOT_AFTER=WRIVER_ACT+WSTREAM_ACT
+       UNBALANCE = WTOT_AFTER - (WTOT_BEFORE + RUNOFF_ACT*route_dt + QINFLOW_LOCAL*route_dt - QOUTFLOW_ACT_LOCAL*route_dt)
+       print *,"my PE is:",mype,"max absolute value of UNBALANCE:", maxval(abs(UNBALANCE))
+       deallocate(WTOT_BEFORE,WTOT_AFTER,UNBALANCE,QINFLOW_LOCAL)
+      !----------------------------
        deallocate(RUNOFF_ACT,AREACAT_ACT,LENGSC_ACT,QSFLOW_ACT,QOUTFLOW_ACT,QOUTFLOW_GLOBAL)
 
        WSTREAM_ACT=>NULL()
