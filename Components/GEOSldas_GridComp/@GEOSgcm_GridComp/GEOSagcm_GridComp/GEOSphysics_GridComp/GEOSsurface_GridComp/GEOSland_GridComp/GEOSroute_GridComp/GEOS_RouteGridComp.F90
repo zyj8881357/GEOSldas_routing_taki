@@ -937,26 +937,28 @@ contains
 
        deallocate(runoff_global) 
 
-    !allocate(runoff_save_m3(nt_local),runoff_global_m3(nt_global))
-    !runoff_save_m3=runoff_save*route%tile_area/1000. 
-    !call MPI_allgatherv  (                          &
-    !   runoff_save_m3,  route%scounts_global(mype+1)      ,MPI_REAL, &
-    !   runoff_global_m3, route%scounts_global, route%rdispls_global,MPI_REAL, &
-    !   MPI_COMM_WORLD, mpierr) 
-    !allocate(runoff_cat_global(n_catg) )  
-    !call MPI_allgatherv  (                          &
-    !     RUNOFF_ACT,  route%scounts_cat(mype+1)      ,MPI_REAL, &
-    !     runoff_cat_global, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
-    !     MPI_COMM_WORLD, mpierr)     
-    !if(mapl_am_I_root())then 
+    allocate(runoff_save_m3(nt_local),runoff_global_m3(nt_global))
+    runoff_save_m3=runoff_save*route%tile_area/1000. 
+    call MPI_allgatherv  (                          &
+       runoff_save_m3,  route%scounts_global(mype+1)      ,MPI_REAL, &
+       runoff_global_m3, route%scounts_global, route%rdispls_global,MPI_REAL, &
+       MPI_COMM_WORLD, mpierr) 
+    allocate(runoff_cat_global(n_catg) )  
+    call MPI_allgatherv  (                          &
+         RUNOFF_ACT,  route%scounts_cat(mype+1)      ,MPI_REAL, &
+         runoff_cat_global, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
+         MPI_COMM_WORLD, mpierr)     
+    if(mapl_am_I_root())then 
     !  open(88,file="runoff_global_m3.txt",status="unknown", position="append")
     !  write(88,*)sum(runoff_global_m3)
     !  close(88)
     !  open(88,file="runoff_cat_global.txt",status="unknown", position="append")
     !  write(88,*)sum(runoff_cat_global)
-    !  close(88)      
-    !endif   
-    !deallocate(runoff_save_m3,runoff_global_m3,runoff_cat_global)
+    !  close(88)  
+      print *,"sum(runoff_global_m3)=",sum(runoff_global_m3)
+      print *,"sum(runoff_cat_global)",sum(runoff_cat_global)   
+    endif   
+    deallocate(runoff_save_m3,runoff_global_m3,runoff_cat_global)
 
 
        allocate (AREACAT_ACT (1:ntiles))       
@@ -979,9 +981,8 @@ contains
 
        ! Call river_routing_model
        ! ------------------------     
-       !CALL RIVER_ROUTING  (ntiles, RUNOFF_ACT,AREACAT_ACT,LENGSC_ACT,  &
-       !     WSTREAM_ACT,WRIVER_ACT, QSFLOW_ACT,QOUTFLOW_ACT) 
-       WSTREAM_ACT = WSTREAM_ACT + RUNOFF_ACT*ROUTE_DT
+       CALL RIVER_ROUTING  (ntiles, RUNOFF_ACT,AREACAT_ACT,LENGSC_ACT,  &
+            WSTREAM_ACT,WRIVER_ACT, QSFLOW_ACT,QOUTFLOW_ACT) 
 
        allocate(QOUTFLOW_GLOBAL(n_catg))
        call MPI_allgatherv  (                          &
@@ -1048,7 +1049,7 @@ contains
          write(88,*)sum(WTOT_AFTER_GLOBAL)
          close(88)
          open(88,file="WTOT_BEFORE_RUNOFF_QSINK.txt",status="unknown", position="append")
-         write(88,*) sum(WTOT_BEFORE_GLOBAL)+sum(runoff_global_m3)-sum(QFLOW_SINK_GLOBAL)
+         write(88,*) sum(WTOT_BEFORE_GLOBAL)+sum(runoff_global_m3)*route_dt-sum(QFLOW_SINK_GLOBAL)*route_dt
          close(88)      
        endif                     
 
