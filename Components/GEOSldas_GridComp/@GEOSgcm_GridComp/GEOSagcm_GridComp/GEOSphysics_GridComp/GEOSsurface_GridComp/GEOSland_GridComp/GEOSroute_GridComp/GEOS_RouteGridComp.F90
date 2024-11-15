@@ -937,6 +937,7 @@ contains
 
        deallocate(runoff_global) 
 
+      !--------------------------------------------
        IF(1==0)THEN
        allocate(runoff_save_m3(nt_local),runoff_global_m3(nt_global))
        runoff_save_m3=runoff_save*route%tile_area/1000. 
@@ -961,7 +962,7 @@ contains
        endif   
        deallocate(runoff_save_m3,runoff_global_m3,runoff_cat_global)
        ENDIF 
-
+       !--------------------------------------------
 
        allocate (AREACAT_ACT (1:ntiles))       
        allocate (LENGSC_ACT  (1:ntiles))
@@ -980,7 +981,7 @@ contains
        allocate(QFLOW_SINK(ntiles),QFLOW_SINK_GLOBAL(n_catg),WTOT_BEFORE_GLOBAL(n_catg),WTOT_AFTER_GLOBAL(n_catg))
        allocate(runoff_save_m3(nt_local),runoff_global_m3(nt_global),ERROR(ntiles),ERROR_GLOBAL(n_catg))
        WTOT_BEFORE=WSTREAM_ACT+WRIVER_ACT
-       ENDIF
+       !ENDIF
        !----------------------------
 
        ! Call river_routing_model
@@ -1008,7 +1009,7 @@ contains
        enddo
 
       !---check water balance------
-       IF(1==0)THEN
+       !IF(1==0)THEN
        WTOT_AFTER=WRIVER_ACT+WSTREAM_ACT
        ERROR = WTOT_AFTER - (WTOT_BEFORE + RUNOFF_ACT*route_dt + QINFLOW_LOCAL*route_dt - QOUTFLOW_ACT*route_dt)
        where(QOUTFLOW_ACT>0.) UNBALANCE = abs(ERROR)/(QOUTFLOW_ACT*route_dt)
