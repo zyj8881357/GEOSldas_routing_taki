@@ -825,7 +825,7 @@ contains
     INTEGER, DIMENSION(:)  ,ALLOCATABLE  :: scounts, scounts_global,rdispls, rcounts  
     real, dimension(:), pointer :: runoff_global,runoff_local,area_local,runoff_cat_global    
 
-    integer :: mpierr, nt_global,nt_local, it, j, upid
+    integer :: mpierr, nt_global,nt_local, it, j, upid,cid
     real,pointer :: runoff_save(:)=>NULL()
     real,pointer :: WSTREAM_ACT(:)=>NULL()
     real,pointer :: WRIVER_ACT(:)=>NULL()
@@ -1002,7 +1002,8 @@ contains
       !---check water balance------
        WTOT_AFTER=WRIVER_ACT+WSTREAM_ACT
        UNBALANCE = WTOT_AFTER - (WTOT_BEFORE + RUNOFF_ACT*route_dt + QINFLOW_LOCAL*route_dt - QOUTFLOW_ACT*route_dt)
-       print *,"my PE is:",mype,", max absolute value of UNBALANCE:", maxval(abs(UNBALANCE))
+       cid = maxloc(abs(UNBALANCE))
+       print *,"my PE is:",mype,", max absolute value of UNBALANCE:", UNBALANCE(cid)," at pfafid: ",route%minCatch+cid-1,", W_BEFORE:",WTOT_BEFORE(cid),", RUNOFF:",RUNOFF_ACT*route_dt,", QINFLOW:",QINFLOW_LOCAL*route_dt,", QOUTFLOW:",QOUTFLOW_ACT*route_dt,", W_AFTER:",WTOT_AFTER
        deallocate(WTOT_BEFORE,WTOT_AFTER,UNBALANCE,QINFLOW_LOCAL)
       !----------------------------
        deallocate(RUNOFF_ACT,AREACAT_ACT,LENGSC_ACT,QSFLOW_ACT,QOUTFLOW_ACT,QOUTFLOW_GLOBAL)
