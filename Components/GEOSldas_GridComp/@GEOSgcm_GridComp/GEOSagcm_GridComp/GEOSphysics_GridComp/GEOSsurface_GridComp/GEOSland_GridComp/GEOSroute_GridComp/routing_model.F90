@@ -57,7 +57,7 @@ MODULE routing_model
               
        ! Updating WSTREAM
        
-       WSTREAM(N)    = WSTREAM(N) ! + RUNCATCH(N) * REAL (ROUTE_DT)
+       WSTREAM(N)    = WSTREAM(N)  + RUNCATCH(N) * REAL (ROUTE_DT)
        LS            = AREACAT(N) / (AMAX1(1.,LENGSC (N)))
        ROFF          = RUNCATCH(N) * AREACAT(N)
        IF(ROFF < 2. ) THEN
@@ -73,8 +73,8 @@ MODULE routing_model
        IF(COEFF > K_RES_MAX) COEFF = K_SIMPLE
  
        QSFLOW(N)     = COEFF * WSTREAM(N)
-       !WSTREAM(N)    = WSTREAM(N) - QSFLOW(N)
-       !WRIVER(N)     = WRIVER(N)  + QSFLOW(N)
+       WSTREAM(N)    = WSTREAM(N) - QSFLOW(N)
+       WRIVER(N)     = WRIVER(N)  + QSFLOW(N)
        QSFLOW(N)     = QSFLOW(N) / REAL (ROUTE_DT) 
 
        ! Updating WRIVER

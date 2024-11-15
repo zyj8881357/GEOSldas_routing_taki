@@ -979,9 +979,9 @@ contains
 
        ! Call river_routing_model
        ! ------------------------     
-       CALL RIVER_ROUTING  (ntiles, RUNOFF_ACT,AREACAT_ACT,LENGSC_ACT,  &
-            WSTREAM_ACT,WRIVER_ACT, QSFLOW_ACT,QOUTFLOW_ACT) 
-
+       !CALL RIVER_ROUTING  (ntiles, RUNOFF_ACT,AREACAT_ACT,LENGSC_ACT,  &
+       !     WSTREAM_ACT,WRIVER_ACT, QSFLOW_ACT,QOUTFLOW_ACT) 
+       WSTREAM_ACT = WSTREAM_ACT + RUNOFF_ACT*ROUTE_DT
 
        allocate(QOUTFLOW_GLOBAL(n_catg))
        call MPI_allgatherv  (                          &
