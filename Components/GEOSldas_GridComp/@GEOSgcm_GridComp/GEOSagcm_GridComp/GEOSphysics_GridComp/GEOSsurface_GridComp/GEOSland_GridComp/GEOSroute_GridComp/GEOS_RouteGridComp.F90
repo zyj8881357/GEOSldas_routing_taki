@@ -460,7 +460,7 @@ contains
     beforeMe = sum(ims(1:mype))
     minCatch = beforeMe + 1
     maxCatch = beforeMe + ims(myPe+1)
-    print *, "my PE is:",mype,", minCatch is:",minCatch,", maxCatch is:",maxCatch
+    !print *, "my PE is:",mype,", minCatch is:",minCatch,", maxCatch is:",maxCatch
  
     ! get LocStream
     call MAPL_Get(MAPL, LocStream = locstream, RC=status)
@@ -469,7 +469,7 @@ contains
     call MAPL_LocStreamGet(locstream, &
          tileGrid=tilegrid, nt_global=nt_global, RC=status)
     route%nt_global = nt_global
-    if (mapl_am_I_root()) print *, "nt_global=",nt_global           
+    !if (mapl_am_I_root()) print *, "nt_global=",nt_global           
     allocate(pfaf(nt_global))
     open(77,file="../input/pfaf_input.txt",status="old",action="read")
     read(77,*)pfaf
@@ -488,7 +488,7 @@ contains
           arbSeq_ori(ntiles) = i
        end if
     end do ! global tile loop
-    if (mapl_am_I_root()) print *, "ntiles:",ntiles
+    !if (mapl_am_I_root()) print *, "ntiles:",ntiles
     allocate(arbSeq(ntiles))
     arbSeq=arbSeq_ori(1:ntiles)
     deallocate(arbSeq_ori)
@@ -587,7 +587,7 @@ contains
        end if
     end do ! global tile loop
     ntiles = maxCatch-minCatch+1
-    if (mapl_am_I_root()) print *, "ntiles:",ntiles
+    !if (mapl_am_I_root()) print *, "ntiles:",ntiles
 !    allocate(arbSeq_pf(ntiles))
     allocate(arbSeq_pf(maxCatch-minCatch+1))
     arbSeq_pf = [(i, i = minCatch, maxCatch)]
@@ -1059,7 +1059,7 @@ contains
             MPI_COMM_WORLD, mpierr)
        temp = maxloc(abs(ERROR_GLOBAL))
        cid = temp(1)
-       if(mapl_am_I_root()) print *,"max abs value of ERROR_GLOBAL=", ERROR_GLOBAL(cid), " at catid:",cid
+       !if(mapl_am_I_root()) print *,"max abs value of ERROR_GLOBAL=", ERROR_GLOBAL(cid), " at catid:",cid
        if(cid>=route%minCatch.and.cid<=route%maxCatch)then
          tid=cid-route%minCatch+1
          print *,"my PE is:",mype,", max abs value of ERROR=", ERROR(tid)," at pfafid: ",route%minCatch+tid-1,", W_BEFORE=",WTOT_BEFORE(tid),", RUNOFF=",RUNOFF_ACT(tid)*route_dt,", QINFLOW=",QINFLOW_LOCAL(tid)*route_dt,", QOUTFLOW=",QOUTFLOW_ACT(tid)*route_dt,", W_AFTER=",WTOT_AFTER(tid)
