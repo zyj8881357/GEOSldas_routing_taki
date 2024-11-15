@@ -57,7 +57,7 @@ MODULE routing_model
               
        ! Updating WSTREAM
        
-       WSTREAM(N)    = WSTREAM(N)  + RUNCATCH(N) * REAL (ROUTE_DT)
+       WSTREAM(N)    = WSTREAM(N) ! + RUNCATCH(N) * REAL (ROUTE_DT)
        LS            = AREACAT(N) / (AMAX1(1.,LENGSC (N)))
        ROFF          = RUNCATCH(N) * AREACAT(N)
        IF(ROFF < 2. ) THEN
