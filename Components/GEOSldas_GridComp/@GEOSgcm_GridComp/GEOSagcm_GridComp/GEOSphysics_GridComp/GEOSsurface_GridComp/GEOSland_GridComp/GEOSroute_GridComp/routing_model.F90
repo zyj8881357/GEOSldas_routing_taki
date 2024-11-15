@@ -73,8 +73,8 @@ MODULE routing_model
        IF(COEFF > K_RES_MAX) COEFF = K_SIMPLE
  
        QSFLOW(N)     = COEFF * WSTREAM(N)
-       WSTREAM(N)    = WSTREAM(N) - QSFLOW(N)
-       WRIVER(N)     = WRIVER(N)  + QSFLOW(N)
+       !WSTREAM(N)    = WSTREAM(N) - QSFLOW(N)
+       !WRIVER(N)     = WRIVER(N)  + QSFLOW(N)
        QSFLOW(N)     = QSFLOW(N) / REAL (ROUTE_DT) 
 
        ! Updating WRIVER
