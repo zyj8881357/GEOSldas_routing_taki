@@ -77,13 +77,14 @@ module GEOS_RouteGridCompMod
 
 
   interface
-        function mkdir(path, mode) bind(C, name="mkdir")
-            import :: c_char, c_int
-            integer(c_int) :: mkdir
-            character(kind=c_char), intent(in) :: path(*)
-            integer(c_int), intent(in) :: mode
-        end function mkdir
-
+interface
+  function mkdir(path,mode) bind(c,name="mkdir")
+    use iso_c_binding
+    integer(c_int) :: mkdir
+    character(kind=c_char,len=1) :: path(*)
+    integer(c_int16_t), value :: mode
+  end function mkdir
+end interface
         function chmod(path, mode) bind(C, name="chmod")
             import :: c_char, c_int
             integer(c_int) :: chmod
@@ -1140,13 +1141,8 @@ contains
               qsflow_global, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
               MPI_COMM_WORLD, mpierr)         
          if(mapl_am_I_root())then
-              c_status = mkdir(trim(dirname) // char(0), int(o'755', c_int))
-              if (c_status == 0) then
-                 print *, "Directory created successfully: ", trim(dirname)
-              else
-                 print *, "Failed to create directory: ", trim(dirname)
-              end if
-              call chmod('../river','u+rwx',istat)
+              c_status = mkdir("../river", int(o'755',c_int16_t))
+              !istat=chmod('../river','u+rwx')
               !c_status = chmod(trim(dirname) // char(0), int(o'777', c_int))  
               !c_status = chmod("../river",777)            
               write(yr_s,'(I4.4)')YY
