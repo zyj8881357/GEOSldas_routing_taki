@@ -32,6 +32,7 @@ module GEOS_RouteGridCompMod
   USE catch_constants, ONLY:          &
        N_CatG => N_Pfaf_Catchs  
 #endif
+  use, intrinsic :: iso_c_binding
   
   implicit none
   integer, parameter :: N_CatG = 291284
