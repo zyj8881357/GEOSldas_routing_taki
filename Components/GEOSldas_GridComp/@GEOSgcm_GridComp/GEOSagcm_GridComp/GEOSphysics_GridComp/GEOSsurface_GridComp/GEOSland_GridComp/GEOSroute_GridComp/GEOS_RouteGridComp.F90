@@ -1094,7 +1094,7 @@ contains
 
        call ESMF_ClockGet(clock, currTime=CurrentTime, rc=status)
        VERIFY_(status)
-       call ESMF_TimeGet(CurrentTime, yy=YY, mm=MM, dd=DD, h=HH, m=MM, s=SS, rc=rc)        
+       call ESMF_TimeGet(CurrentTime, yy=YY, mm=MM, dd=DD, h=HH, m=MMM, s=SS, rc=rc)        
        if(mapl_am_I_root())print *, "The clock's final current time is ", YY, "/", MM, "/", DD, " ", HH, ":", MMM, ":", SS
 
        deallocate(WTOT_BEFORE,WTOT_AFTER,QINFLOW_LOCAL,UNBALANCE,UNBALANCE_GLOBAL,ERROR,QFLOW_SINK,QFLOW_SINK_GLOBAL,WTOT_BEFORE_GLOBAL,WTOT_AFTER_GLOBAL)
