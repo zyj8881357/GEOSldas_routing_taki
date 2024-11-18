@@ -691,13 +691,20 @@ contains
     route%upid=>upid
     deallocate(upid_global)
 
-
-    allocate(wstream(1:ntiles),wriver(1:ntiles))
+    allocate(wriver(ntiles),wstream(ntiles))
+!    allocate(wriver_global(n_catg),wstream_global(n_catg))
+!    open(77,file="../input/restart/wriver_global_.txt",status="old",action="read");read(77,*)wriver_global;close(77)    
+!    open(77,file="../input/restart/wstream_global_.txt",status="old",action="read");read(77,*)wstream_global;close(77) 
+!    wriver=wriver_global(minCatch:maxCatch)
+!    wstream=wstream_global(minCatch:maxCatch)
+!    deallocate(wriver_global,wstream_global)
+    wriver=0.
+    wstream=0.
     route%wstream=>wstream
     route%wriver=>wriver
     !This should be read from restart file
-    route%wstream=0.
-    route%wriver=0.
+!    route%wstream=0.
+!    route%wriver=0.
 
     !if (mapl_am_I_root())then
     !  open(88,file="nsub.txt",action="write")
@@ -802,6 +809,7 @@ contains
 
     type(ESMF_Grid)                    :: TILEGRID
     type (MAPL_LocStream)              :: LOCSTREAM
+    type(ESMF_Time) :: CurrentTime    
     integer                            :: NTILES, N_CatL, N_CYC
     logical, save                      :: FirstTime=.true.
     real, pointer, dimension(:)    :: tile_area
@@ -826,6 +834,7 @@ contains
     real, dimension(:), pointer :: runoff_global,runoff_local,area_local,runoff_cat_global    
 
     integer :: mpierr, nt_global,nt_local, it, j, upid,cid,temp(1),tid
+    integer :: YY,MM,DD,HH,MM,SS
     real,pointer :: runoff_save(:)=>NULL()
     real,pointer :: WSTREAM_ACT(:)=>NULL()
     real,pointer :: WRIVER_ACT(:)=>NULL()
@@ -1082,6 +1091,12 @@ contains
          endif
          FirstTime=.False.
        endif
+
+       call ESMF_ClockGet(clock, currTime=CurrentTime, rc=status)
+       VERIFY_(status)
+       call ESMF_TimeGet(currTime, yy=YY, mm=MM, dd=DD, h=HH, m=MM, s=SS, rc=rc)        
+       if(mapl_am_I_root())print *, "The clock's final current time is ", YY, "/", MM, "/", DD, " ", HH, ":", MM, ":", SS
+
        deallocate(WTOT_BEFORE,WTOT_AFTER,QINFLOW_LOCAL,UNBALANCE,UNBALANCE_GLOBAL,ERROR,QFLOW_SINK,QFLOW_SINK_GLOBAL,WTOT_BEFORE_GLOBAL,WTOT_AFTER_GLOBAL)
        deallocate(runoff_save_m3,runoff_global_m3,ERROR_GLOBAL)
        !ENDIF 
