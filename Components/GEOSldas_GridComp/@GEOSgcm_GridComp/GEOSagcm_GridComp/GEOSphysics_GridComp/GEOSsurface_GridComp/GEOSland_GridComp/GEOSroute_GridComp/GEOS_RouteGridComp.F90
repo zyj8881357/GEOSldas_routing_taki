@@ -998,12 +998,12 @@ contains
        WRIVER_ACT => route%wriver
 
        !---check water balance------    
-       IF(1==0)THEN  
+       !IF(1==0)THEN  
          allocate(WTOT_BEFORE(ntiles),WTOT_AFTER(ntiles),QINFLOW_LOCAL(ntiles),UNBALANCE(ntiles),UNBALANCE_GLOBAL(n_catg))
          allocate(QFLOW_SINK(ntiles),QFLOW_SINK_GLOBAL(n_catg),WTOT_BEFORE_GLOBAL(n_catg),WTOT_AFTER_GLOBAL(n_catg))
          allocate(runoff_save_m3(nt_local),runoff_global_m3(nt_global),ERROR(ntiles),ERROR_GLOBAL(n_catg))
          WTOT_BEFORE=WSTREAM_ACT+WRIVER_ACT
-       ENDIF
+       !ENDIF
        !----------------------------
 
        ! Call river_routing_model
@@ -1031,7 +1031,7 @@ contains
        enddo
 
       !---check water balance------
-       IF(1==0)THEN
+       !IF(1==0)THEN
          WTOT_AFTER=WRIVER_ACT+WSTREAM_ACT
          ERROR = WTOT_AFTER - (WTOT_BEFORE + RUNOFF_ACT*route_dt + QINFLOW_LOCAL*route_dt - QOUTFLOW_ACT*route_dt)
          where(QOUTFLOW_ACT>0.) UNBALANCE = abs(ERROR)/(QOUTFLOW_ACT*route_dt)
@@ -1109,14 +1109,14 @@ contains
 
          deallocate(WTOT_BEFORE,WTOT_AFTER,QINFLOW_LOCAL,UNBALANCE,UNBALANCE_GLOBAL,ERROR,QFLOW_SINK,QFLOW_SINK_GLOBAL,WTOT_BEFORE_GLOBAL,WTOT_AFTER_GLOBAL)
          deallocate(runoff_save_m3,runoff_global_m3,ERROR_GLOBAL)
-         
-       ENDIF 
+
+       !ENDIF 
       !----------------------------
 
        deallocate(RUNOFF_ACT,AREACAT_ACT,LENGSC_ACT,QOUTFLOW_ACT)
 
        ! output
-       IF(1==0)THEN
+       !IF(1==0)THEN
        if(HH==0)then
          allocate(wriver_global(n_catg),wstream_global(n_catg),qsflow_global(n_catg))       
          call MPI_allgatherv  (                          &
@@ -1149,7 +1149,7 @@ contains
          endif           
          deallocate(wriver_global,wstream_global,qsflow_global)
        endif
-       ENDIF
+       !ENDIF
 
        deallocate(QOUTFLOW_GLOBAL,QSFLOW_ACT)
 
