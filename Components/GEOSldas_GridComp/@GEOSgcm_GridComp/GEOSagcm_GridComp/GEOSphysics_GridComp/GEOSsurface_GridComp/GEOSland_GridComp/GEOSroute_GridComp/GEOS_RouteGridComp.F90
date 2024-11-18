@@ -1123,6 +1123,11 @@ contains
               MPI_COMM_WORLD, mpierr)         
          if(mapl_am_I_root())then
               if(FirstTime) call system("mkdir -p ../river", istat)
+              if (istat /= 0) then
+                 print *, "Failed to create river directory."
+              else
+                 print *, "River directory created successfully."
+              end if
               write(yr_s,'(I4.4)')YY
               write(mon_s,'(I2.2)')MM
               write(day_s,'(I2.2)')DD        
