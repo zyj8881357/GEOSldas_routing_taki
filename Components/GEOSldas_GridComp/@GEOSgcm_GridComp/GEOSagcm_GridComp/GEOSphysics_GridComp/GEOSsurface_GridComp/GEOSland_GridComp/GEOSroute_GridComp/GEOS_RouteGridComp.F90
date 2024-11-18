@@ -1122,14 +1122,14 @@ contains
               qsflow_global, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
               MPI_COMM_WORLD, mpierr)         
          if(mapl_am_I_root())then
-              if(FirstTime) call system("mkdir -p ../river/river_storage ../river/stream_storage ../river/river_flow ../river/stream_flow", istat)
+              if(FirstTime) call system("mkdir -p ../river", istat)
               write(yr_s,'(I4.4)')YY
               write(mon_s,'(I2.2)')MM
               write(day_s,'(I2.2)')DD        
-              open(88,file="../river/river_storage/river_storage_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",action="write")
-              open(89,file="../river/stream_storage/stream_storage_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",action="write")
-              open(90,file="../river/river_flow/river_flow_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",action="write")              
-              open(91,file="../river/stream_flow/stream_flow_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",action="write")
+              open(88,file="../river/river_storage_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",action="write")
+              open(89,file="../river/stream_storage_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",action="write")
+              open(90,file="../river/river_flow_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",action="write")              
+              open(91,file="../river/stream_flow_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",action="write")
               do i=1,n_catg
                 write(88,*)wriver_global(i)
                 write(89,*)wstream_global(i)
