@@ -1140,7 +1140,7 @@ contains
               qsflow_global, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
               MPI_COMM_WORLD, mpierr)         
          if(mapl_am_I_root())then
-              c_status = mkdir(trim(dirname) // char(0), int(o'777', c_int))
+              c_status = mkdir(trim(dirname) // char(0), int(o'555', c_int))
               if (c_status == 0) then
                  print *, "Directory created successfully: ", trim(dirname)
               else
