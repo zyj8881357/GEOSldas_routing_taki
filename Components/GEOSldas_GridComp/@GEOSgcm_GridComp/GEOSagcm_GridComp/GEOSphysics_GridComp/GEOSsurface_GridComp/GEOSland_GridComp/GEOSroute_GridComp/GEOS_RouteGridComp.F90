@@ -38,7 +38,7 @@ module GEOS_RouteGridCompMod
   integer, parameter :: N_CatG = 291284
   integer,parameter :: nmax=150  
   integer,parameter :: upmax=34
-  !integer, parameter :: nt_all = 112573
+
   private
 
   type T_RROUTE_STATE
@@ -73,17 +73,22 @@ module GEOS_RouteGridCompMod
      integer, pointer :: downid(:) => NULL()
      integer, pointer :: upid(:,:) => NULL()
 
+     real,    pointer :: wriver_acc(:)  => NULL()
+     real,    pointer :: wstream_acc(:) => NULL()     
+     real,    pointer :: qoutflow_acc(:) => NULL()
+     real,    pointer :: qsflow_acc(:)  => NULL()
+
   end type T_RROUTE_STATE
 
 
-interface
-  function mkdir(path,mode) bind(c,name="mkdir")
-    use iso_c_binding
-    integer(c_int) :: mkdir
-    character(kind=c_char,len=1) :: path(*)
-    integer(c_int16_t), value :: mode
-  end function mkdir
-end interface
+  interface
+    function mkdir(path,mode) bind(c,name="mkdir")
+      use iso_c_binding
+      integer(c_int) :: mkdir
+      character(kind=c_char,len=1) :: path(*)
+      integer(c_int16_t), value :: mode
+    end function mkdir
+  end interface
 
   ! Wrapper for extracting internal state
   ! -------------------------------------
@@ -712,6 +717,12 @@ contains
     wstream=0.
     route%wstream=>wstream
     route%wriver=>wriver
+
+    allocate(route%wriver_acc(ntiles),route%wstream_acc(ntiles),route%qoutflow_acc(ntiles),route%qsflow_acc(ntiles))
+    route%wriver_acc=0.
+    route%wstream_acc=0.
+    route%qoutflow_acc=0.
+    route%qsflow_acc=0.
     !This should be read from restart file
 !    route%wstream=0.
 !    route%wriver=0.
@@ -844,6 +855,7 @@ contains
     real, dimension(:), pointer :: runoff_global,runoff_local,area_local,runoff_cat_global    
 
     integer :: mpierr, nt_global,nt_local, it, j, upid,cid,temp(1),tid,istat
+    integer,save :: nstep_per_day
 
     type(ESMF_Time) :: CurrentTime   
     integer :: YY,MM,DD,HH,MMM,SS
@@ -1104,63 +1116,75 @@ contains
              enddo
            endif
          endif
-    
-         if(mapl_am_I_root())print *, "The clock's final current time is ", YY, "/", MM, "/", DD, " ", HH, ":", MMM, ":", SS
 
          deallocate(WTOT_BEFORE,WTOT_AFTER,UNBALANCE,UNBALANCE_GLOBAL,ERROR,QFLOW_SINK,QFLOW_SINK_GLOBAL,WTOT_BEFORE_GLOBAL,WTOT_AFTER_GLOBAL)
          deallocate(runoff_save_m3,runoff_global_m3,ERROR_GLOBAL)
 
        ENDIF 
       !----------------------------
+       if(FirstTime) nstep_per_day = 86400/route_dt
+       route%wriver_acc = route%wriver_acc + WRIVER_ACT/real(nstep_per_day)
+       route%wstream_acc = route%wstream_acc + WSTREAM_ACT/real(nstep_per_day)
+       route%qoutflow_acc = route%qoutflow_acc + QOUTFLOW_ACT/real(nstep_per_day)
+       route%qsflow_acc = route%qsflow_acc + QSFLOW_ACT/real(nstep_per_day)
 
-       deallocate(RUNOFF_ACT,AREACAT_ACT,LENGSC_ACT,QOUTFLOW_ACT,QINFLOW_LOCAL)
-
-       ! output
-       if(HH==0)then
-         allocate(wriver_global(n_catg),wstream_global(n_catg),qsflow_global(n_catg))       
-         call MPI_allgatherv  (                          &
-              WSTREAM_ACT,  route%scounts_cat(mype+1)      ,MPI_REAL, &
-              wstream_global, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
-              MPI_COMM_WORLD, mpierr)
-         call MPI_allgatherv  (                          &
-              WRIVER_ACT,  route%scounts_cat(mype+1)      ,MPI_REAL, &
-              wriver_global, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
-              MPI_COMM_WORLD, mpierr)       
-         call MPI_allgatherv  (                          &
-              QSFLOW_ACT,  route%scounts_cat(mype+1)      ,MPI_REAL, &
-              qsflow_global, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
-              MPI_COMM_WORLD, mpierr)         
-         if(mapl_am_I_root())then
-              istat = mkdir("../river", int(o'755',c_int16_t))
-              !istat=chmod('../river','u+rwx')
-              !c_status = chmod(trim(dirname) // char(0), int(o'777', c_int))  
-              !c_status = chmod("../river",777)            
-              write(yr_s,'(I4.4)')YY
-              write(mon_s,'(I2.2)')MM
-              write(day_s,'(I2.2)')DD        
-              open(88,file="../river/river_storage_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",action="write")
-              open(89,file="../river/stream_storage_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",action="write")
-              open(90,file="../river/river_flow_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",action="write")              
-              open(91,file="../river/stream_flow_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",action="write")
-              do i=1,n_catg
-                write(88,*)wriver_global(i)
-                write(89,*)wstream_global(i)
-                write(90,*)QOUTFLOW_GLOBAL(i)
-                write(91,*)qsflow_global(i)
-              enddo
-              close(88);close(89);close(90);close(91)
-         endif           
-         deallocate(wriver_global,wstream_global,qsflow_global)
-       endif
-
-       deallocate(QOUTFLOW_GLOBAL,QSFLOW_ACT)
-
-    ! initialize the cycle counter and sum (runoff_tile)       
+       deallocate(RUNOFF_ACT,AREACAT_ACT,LENGSC_ACT,QOUTFLOW_ACT,QINFLOW_LOCAL,QOUTFLOW_GLOBAL,QSFLOW_ACT)
+      !initialize the cycle counter and sum (runoff_tile)       
        WSTREAM_ACT=>NULL()
        WRIVER_ACT=>NULL()      
 
        runoff_save = 0.
        ThisCycle   = 1           
+
+      ! output
+       if(mapl_am_I_root())print *, "nstep_per_day=",nstep_per_day
+       if(mapl_am_I_root())print *, "The clock's final current time is ", YY, "/", MM, "/", DD, " ", HH, ":", MMM, ":", SS
+       if(FirstTime)then
+         if(mapl_am_I_root()) istat = mkdir("../river/output", int(o'755',c_int16_t))  
+       endif
+       
+       if(HH==0)then
+
+         allocate(wriver_global(n_catg),wstream_global(n_catg),qoutflow_global(n_catg),qsflow_global(n_catg))       
+         call MPI_allgatherv  (                          &
+              route%wstream_acc,  route%scounts_cat(mype+1)      ,MPI_REAL, &
+              wstream_global, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
+              MPI_COMM_WORLD, mpierr)
+         call MPI_allgatherv  (                          &
+              route%wriver_acc,  route%scounts_cat(mype+1)      ,MPI_REAL, &
+              wriver_global, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
+              MPI_COMM_WORLD, mpierr)       
+         call MPI_allgatherv  (                          &
+              route%qsflow_acc,  route%scounts_cat(mype+1)      ,MPI_REAL, &
+              qsflow_global, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
+              MPI_COMM_WORLD, mpierr)  
+         call MPI_allgatherv  (                          &
+              route%qoutflow_acc,  route%scounts_cat(mype+1)      ,MPI_REAL, &
+              qoutflow_global, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
+              MPI_COMM_WORLD, mpierr)                       
+         if(mapl_am_I_root())then   
+              write(yr_s,'(I4.4)')YY
+              write(mon_s,'(I2.2)')MM
+              write(day_s,'(I2.2)')DD        
+              open(88,file="../river/output/river_storage_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",action="write")
+              open(89,file="../river/output/stream_storage_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",action="write")
+              open(90,file="../river/output/river_flow_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",action="write")              
+              open(91,file="../river/output/stream_flow_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",action="write")
+              do i=1,n_catg
+                write(88,*)wriver_global(i)
+                write(89,*)wstream_global(i)
+                write(90,*)qoutflow_global(i)
+                write(91,*)qsflow_global(i)
+              enddo
+              close(88);close(89);close(90);close(91)
+         endif           
+         deallocate(wriver_global,wstream_global,qoutflow_global,qsflow_global)
+         route%wriver_acc = 0.
+         route%wstream_acc = 0.
+         route%qoutflow_acc = 0.
+         route%qsflow_acc = 0.
+
+       endif
 
        if(FirstTime) FirstTime=.False.
 
