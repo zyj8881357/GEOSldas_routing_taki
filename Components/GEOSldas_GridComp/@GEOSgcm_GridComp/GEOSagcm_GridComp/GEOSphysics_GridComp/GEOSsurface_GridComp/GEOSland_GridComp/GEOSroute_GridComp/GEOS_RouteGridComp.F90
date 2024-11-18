@@ -75,6 +75,16 @@ module GEOS_RouteGridCompMod
 
   end type T_RROUTE_STATE
 
+
+  interface
+        function mkdir(path, mode) bind(C, name="mkdir")
+            import :: c_char, c_int
+            integer(c_int) :: mkdir
+            character(kind=c_char), intent(in) :: path(*)
+            integer(c_int), intent(in) :: mode
+        end function mkdir
+  end interface  
+
   ! Wrapper for extracting internal state
   ! -------------------------------------
   type RROUTE_WRAP
@@ -426,9 +436,8 @@ contains
     type (T_RROUTE_STATE), pointer         :: route => null()
     type (RROUTE_wrap)                     :: wrap
 
-
     real, pointer :: dataPtr(:)
-    integer :: j,nt_local,mpierr,it
+    integer :: j,nt_local,mpierr,it    
     ! ------------------
     ! begin
 
@@ -849,7 +858,8 @@ contains
     real,allocatable :: QFLOW_SINK(:),QFLOW_SINK_GLOBAL(:),WTOT_BEFORE_GLOBAL(:),WTOT_AFTER_GLOBAL(:)
     real,allocatable :: wriver_global(:),wstream_global(:),qsflow_global(:)
     
-
+    character(len=100) :: dirname="../river"
+    integer(c_int) :: c_status
     ! ------------------
     ! begin    
     call ESMF_UserCompGetInternalState ( GC, 'RiverRoute_state',wrap,status )
@@ -1123,11 +1133,11 @@ contains
               qsflow_global, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
               MPI_COMM_WORLD, mpierr)         
          if(mapl_am_I_root())then
-              if(FirstTime) call system("mkdir -p ../river", istat)
-              if (istat /= 0) then
-                 print *, "Failed to create river directory."
+              c_status = mkdir(trim(dirname) // char(0), int(o'755', c_int))
+              if (c_status == 0) then
+                 print *, "Directory created successfully: ", trim(dirname)
               else
-                 print *, "River directory created successfully."
+                 print *, "Failed to create directory: ", trim(dirname)
               end if
               write(yr_s,'(I4.4)')YY
               write(mon_s,'(I2.2)')MM
