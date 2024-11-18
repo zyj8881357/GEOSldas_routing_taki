@@ -857,8 +857,8 @@ contains
     integer :: mpierr, nt_global,nt_local, it, j, upid,cid,temp(1),tid,istat
     integer,save :: nstep_per_day
 
-    type(ESMF_Time) :: CurrentTime   
-    integer :: YY,MM,DD,HH,MMM,SS
+    type(ESMF_Time) :: CurrentTime, nextTime
+    integer :: YY,MM,DD,HH,MMM,SS,YY_next,MM_next,DD_next
     character(len=4) :: yr_s
     character(len=2) :: mon_s,day_s
 
@@ -957,8 +957,9 @@ contains
        runoff_save = runoff_save + RUNOFF_SRC0/real (N_CYC)
 
        call ESMF_ClockGet(clock, currTime=CurrentTime, rc=status)
-       VERIFY_(status)
        call ESMF_TimeGet(CurrentTime, yy=YY, mm=MM, dd=DD, h=HH, m=MMM, s=SS, rc=rc)  
+       call ESMF_ClockGetNextTime(clock, nextTime=nextTime, rc=status)
+       call ESMF_TimeGet(nextTime, yy=YY_next, mm=MM_next, dd=DD_next, rc=rc) 
 
        allocate(runoff_global(nt_global))
        call MPI_allgatherv  (                          &
@@ -1138,11 +1139,11 @@ contains
 
       ! output
        !if(mapl_am_I_root())print *, "nstep_per_day=",nstep_per_day
-       if(mapl_am_I_root())print *, "The clock's final current time is ", YY, "/", MM, "/", DD, " ", HH, ":", MMM, ":", SS
+       if(mapl_am_I_root())print *, "The clock's final current time is ", YY, "/", MM, "/", DD, " ", HH, ":", MMM, ":", SS, ", next MM_next:",MM_next
        if(FirstTime)then
          if(mapl_am_I_root()) istat = mkdir("../river", int(o'755',c_int16_t))  
        endif
-       if(HH==0)then
+       if(HH==23)then
          allocate(wriver_global(n_catg),wstream_global(n_catg),qoutflow_global(n_catg),qsflow_global(n_catg))       
          call MPI_allgatherv  (                          &
               route%wstream_acc,  route%scounts_cat(mype+1)      ,MPI_REAL, &
@@ -1183,6 +1184,31 @@ contains
          route%qsflow_acc = 0.
        endif
  
+       !restart
+       if(MM_next/=MM)then
+         allocate(wriver_global(n_catg),wstream_global(n_catg))
+         call MPI_allgatherv  (                          &
+              route%wstream,  route%scounts_cat(mype+1)      ,MPI_REAL, &
+              wstream_global, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
+              MPI_COMM_WORLD, mpierr)
+         call MPI_allgatherv  (                          &
+              route%wriver,  route%scounts_cat(mype+1)      ,MPI_REAL, &
+              wriver_global, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
+              MPI_COMM_WORLD, mpierr)    
+         if(mapl_am_I_root())then
+              write(yr_s,'(I4.4)')YY_next
+              write(mon_s,'(I2.2)')MM_next
+              write(day_s,'(I2.2)')DD_next
+              open(88,file="../input/restart/river_storage_rs_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",action="write")
+              open(89,file="../input/restart/stream_storage_rs_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",action="write")   
+              do i=1,n_catg
+                write(88,*)wriver_global(i)
+                write(89,*)wstream_global(i)
+              enddo   
+              close(88);close(89)                    
+         endif
+         deallocate(wriver_global,wstream_global)
+       endif
 
        if(FirstTime) FirstTime=.False.
 
