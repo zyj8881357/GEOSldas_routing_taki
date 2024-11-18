@@ -84,10 +84,12 @@ module GEOS_RouteGridCompMod
             integer(c_int), intent(in) :: mode
         end function mkdir
 
-        subroutine umask(mask) bind(C, name="umask")
-            import :: c_int
-            integer(c_int), intent(in) :: mask
-        end subroutine umask        
+        function chmod(path, mode) bind(C, name="chmod")
+            import :: c_char, c_int
+            integer(c_int) :: chmod
+            character(kind=c_char), intent(in) :: path(*)
+            integer(c_int), intent(in) :: mode
+        end function chmod   
   end interface  
 
   ! Wrapper for extracting internal state
@@ -1138,13 +1140,13 @@ contains
               qsflow_global, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
               MPI_COMM_WORLD, mpierr)         
          if(mapl_am_I_root())then
-              call umask(int(o'000', c_int))
               c_status = mkdir(trim(dirname) // char(0), int(o'755', c_int))
               if (c_status == 0) then
                  print *, "Directory created successfully: ", trim(dirname)
               else
                  print *, "Failed to create directory: ", trim(dirname)
               end if
+              c_status = chmod(trim(dirname) // char(0), int(o'755', c_int))              
               write(yr_s,'(I4.4)')YY
               write(mon_s,'(I2.2)')MM
               write(day_s,'(I2.2)')DD        
