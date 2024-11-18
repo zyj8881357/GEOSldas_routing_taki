@@ -1138,7 +1138,7 @@ contains
 
       ! output
        !if(mapl_am_I_root())print *, "nstep_per_day=",nstep_per_day
-       !if(mapl_am_I_root())print *, "The clock's final current time is ", YY, "/", MM, "/", DD, " ", HH, ":", MMM, ":", SS
+       if(mapl_am_I_root())print *, "The clock's final current time is ", YY, "/", MM, "/", DD, " ", HH, ":", MMM, ":", SS
        if(FirstTime)then
          if(mapl_am_I_root()) istat = mkdir("../river", int(o'755',c_int16_t))  
        endif
@@ -1163,7 +1163,7 @@ contains
          if(mapl_am_I_root())then   
               write(yr_s,'(I4.4)')YY
               write(mon_s,'(I2.2)')MM
-              write(day_s,'(I2.2)')DD        
+              write(day_s,'(I2.2)')DD-1        
               open(88,file="../river/river_storage_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",action="write")
               open(89,file="../river/stream_storage_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",action="write")
               open(90,file="../river/river_flow_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",action="write")              
