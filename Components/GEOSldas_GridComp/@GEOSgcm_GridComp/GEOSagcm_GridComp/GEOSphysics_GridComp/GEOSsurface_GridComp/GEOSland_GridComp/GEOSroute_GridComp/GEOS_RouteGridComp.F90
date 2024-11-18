@@ -834,7 +834,7 @@ contains
     real, dimension(:), pointer :: runoff_global,runoff_local,area_local,runoff_cat_global    
 
     integer :: mpierr, nt_global,nt_local, it, j, upid,cid,temp(1),tid
-    integer :: YY,MM,DD,HH,MM,SS
+    integer :: YY,MM,DD,HH,MMM,SS
     real,pointer :: runoff_save(:)=>NULL()
     real,pointer :: WSTREAM_ACT(:)=>NULL()
     real,pointer :: WRIVER_ACT(:)=>NULL()
@@ -1095,7 +1095,7 @@ contains
        call ESMF_ClockGet(clock, currTime=CurrentTime, rc=status)
        VERIFY_(status)
        call ESMF_TimeGet(currTime, yy=YY, mm=MM, dd=DD, h=HH, m=MM, s=SS, rc=rc)        
-       if(mapl_am_I_root())print *, "The clock's final current time is ", YY, "/", MM, "/", DD, " ", HH, ":", MM, ":", SS
+       if(mapl_am_I_root())print *, "The clock's final current time is ", YY, "/", MM, "/", DD, " ", HH, ":", MMM, ":", SS
 
        deallocate(WTOT_BEFORE,WTOT_AFTER,QINFLOW_LOCAL,UNBALANCE,UNBALANCE_GLOBAL,ERROR,QFLOW_SINK,QFLOW_SINK_GLOBAL,WTOT_BEFORE_GLOBAL,WTOT_AFTER_GLOBAL)
        deallocate(runoff_save_m3,runoff_global_m3,ERROR_GLOBAL)
