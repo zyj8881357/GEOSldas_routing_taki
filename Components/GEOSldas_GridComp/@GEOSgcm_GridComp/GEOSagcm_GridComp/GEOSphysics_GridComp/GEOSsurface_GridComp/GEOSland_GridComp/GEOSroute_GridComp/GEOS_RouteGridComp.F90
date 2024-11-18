@@ -1140,9 +1140,9 @@ contains
        if(mapl_am_I_root())print *, "nstep_per_day=",nstep_per_day
        if(mapl_am_I_root())print *, "The clock's final current time is ", YY, "/", MM, "/", DD, " ", HH, ":", MMM, ":", SS
        if(FirstTime)then
-         if(mapl_am_I_root()) istat = mkdir("../river/output", int(o'755',c_int16_t))  
+         if(mapl_am_I_root()) istat = mkdir("../river", int(o'755',c_int16_t))  
        endif
-       
+
        if(HH==0)then
 
          allocate(wriver_global(n_catg),wstream_global(n_catg),qoutflow_global(n_catg),qsflow_global(n_catg))       
@@ -1166,10 +1166,10 @@ contains
               write(yr_s,'(I4.4)')YY
               write(mon_s,'(I2.2)')MM
               write(day_s,'(I2.2)')DD        
-              open(88,file="../river/output/river_storage_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",action="write")
-              open(89,file="../river/output/stream_storage_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",action="write")
-              open(90,file="../river/output/river_flow_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",action="write")              
-              open(91,file="../river/output/stream_flow_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",action="write")
+              open(88,file="../river/river_storage_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",action="write")
+              open(89,file="../river/stream_storage_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",action="write")
+              open(90,file="../river/river_flow_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",action="write")              
+              open(91,file="../river/stream_flow_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",action="write")
               do i=1,n_catg
                 write(88,*)wriver_global(i)
                 write(89,*)wstream_global(i)
