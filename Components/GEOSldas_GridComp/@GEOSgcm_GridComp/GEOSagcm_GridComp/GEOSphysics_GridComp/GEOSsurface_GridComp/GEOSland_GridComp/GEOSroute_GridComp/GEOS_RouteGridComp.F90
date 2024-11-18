@@ -1001,7 +1001,7 @@ contains
            write(88,*)sum(runoff_cat_global)
            close(88)  
            print *,"sum(runoff_global_m3)=",sum(runoff_global_m3)
-           print *,"sum(runoff_cat_global)",sum(runoff_cat_global)   
+           print *,"sum(runoff_cat_global)=",sum(runoff_cat_global)   
          endif   
          deallocate(runoff_save_m3,runoff_global_m3,runoff_cat_global)
        ENDIF 
@@ -1137,14 +1137,12 @@ contains
        ThisCycle   = 1           
 
       ! output
-       if(mapl_am_I_root())print *, "nstep_per_day=",nstep_per_day
-       if(mapl_am_I_root())print *, "The clock's final current time is ", YY, "/", MM, "/", DD, " ", HH, ":", MMM, ":", SS
+       !if(mapl_am_I_root())print *, "nstep_per_day=",nstep_per_day
+       !if(mapl_am_I_root())print *, "The clock's final current time is ", YY, "/", MM, "/", DD, " ", HH, ":", MMM, ":", SS
        if(FirstTime)then
          if(mapl_am_I_root()) istat = mkdir("../river", int(o'755',c_int16_t))  
        endif
-
        if(HH==0)then
-
          allocate(wriver_global(n_catg),wstream_global(n_catg),qoutflow_global(n_catg),qsflow_global(n_catg))       
          call MPI_allgatherv  (                          &
               route%wstream_acc,  route%scounts_cat(mype+1)      ,MPI_REAL, &
@@ -1183,8 +1181,9 @@ contains
          route%wstream_acc = 0.
          route%qoutflow_acc = 0.
          route%qsflow_acc = 0.
-
        endif
+
+       
 
        if(FirstTime) FirstTime=.False.
 

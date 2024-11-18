@@ -24,8 +24,9 @@ MODULE routing_model
     REAL,    INTENT(OUT),  DIMENSION (NCAT) :: QSFLOW,QOUTFLOW
 
     REAL,   PARAMETER    :: K_SIMPLE = 0.111902, K_RES_MAX = 0.8                       ! m1_r2com_c1
+    REAL,   PARAMETER    :: CUR_AVG = 1.4
     REAL,   PARAMETER    :: P1 = 0.010611, P2 = 0.188556, P3 = 0.096864,   &
-                            P4 = 0.691310, P5 = 0.365747, P6 = 0.009831    ! m5_calib_240
+                            P4 = 0.691310, P5 = 0.1, P6 = 0.009831    ! m5_calib_240, ori P5 = 0.365747,
 
     INTEGER :: N,I,J 
     REAL    :: COEFF, LS, COEFF1, COEFF2,ROFF 
@@ -58,7 +59,7 @@ MODULE routing_model
        ! Updating WSTREAM
        
        WSTREAM(N)    = WSTREAM(N)  + RUNCATCH(N) * REAL (ROUTE_DT)
-       LS            = AREACAT(N) / (AMAX1(1.,LENGSC (N)))
+       LS            = AREACAT(N) / (AMAX1(1.,LENGSC (N))) /4. * CUR_AVG
        ROFF          = RUNCATCH(N) * AREACAT(N)
        IF(ROFF < 2. ) THEN
              COEFF = RESCONST (LS, P1, P2)
