@@ -1146,8 +1146,9 @@ contains
               else
                  print *, "Failed to create directory: ", trim(dirname)
               end if
+              call chmod('../river','u+rwx',istat)
               !c_status = chmod(trim(dirname) // char(0), int(o'777', c_int))  
-              c_status = chmod("../river",777)            
+              !c_status = chmod("../river",777)            
               write(yr_s,'(I4.4)')YY
               write(mon_s,'(I2.2)')MM
               write(day_s,'(I2.2)')DD        
