@@ -76,7 +76,6 @@ module GEOS_RouteGridCompMod
   end type T_RROUTE_STATE
 
 
-  interface
 interface
   function mkdir(path,mode) bind(c,name="mkdir")
     use iso_c_binding
@@ -85,13 +84,6 @@ interface
     integer(c_int16_t), value :: mode
   end function mkdir
 end interface
-        function chmod(path, mode) bind(C, name="chmod")
-            import :: c_char, c_int
-            integer(c_int) :: chmod
-            character(kind=c_char), intent(in) :: path(*)
-            integer(c_int), intent(in) :: mode
-        end function chmod   
-  end interface  
 
   ! Wrapper for extracting internal state
   ! -------------------------------------
@@ -866,8 +858,6 @@ contains
     real,allocatable :: QFLOW_SINK(:),QFLOW_SINK_GLOBAL(:),WTOT_BEFORE_GLOBAL(:),WTOT_AFTER_GLOBAL(:)
     real,allocatable :: wriver_global(:),wstream_global(:),qsflow_global(:)
     
-    character(len=100) :: dirname="../river"
-    integer(c_int) :: c_status
     ! ------------------
     ! begin    
     call ESMF_UserCompGetInternalState ( GC, 'RiverRoute_state',wrap,status )
@@ -1141,7 +1131,7 @@ contains
               qsflow_global, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
               MPI_COMM_WORLD, mpierr)         
          if(mapl_am_I_root())then
-              c_status = mkdir("../river", int(o'755',c_int16_t))
+              istat = mkdir("../river", int(o'755',c_int16_t))
               !istat=chmod('../river','u+rwx')
               !c_status = chmod(trim(dirname) // char(0), int(o'777', c_int))  
               !c_status = chmod("../river",777)            
