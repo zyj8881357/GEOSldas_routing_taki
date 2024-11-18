@@ -839,7 +839,7 @@ contains
     INTEGER, DIMENSION(:,:), POINTER, SAVE   :: AllActive,DstCatchID 
     INTEGER, DIMENSION(:), ALLOCATABLE, SAVE :: srcProcsID, LocDstCatchID  
     integer, dimension (:),allocatable, SAVE :: GlbActive
-    INTEGER, SAVE                            :: N_Active, ThisCycle   
+    INTEGER, SAVE                            :: N_Active, ThisCycle=1  
     INTEGER                                  :: Local_Min, Local_Max
     integer                                  :: K, N, I, req
     REAL                                     :: mm2m3, rbuff, HEARTBEAT 
@@ -1163,7 +1163,7 @@ contains
          if(mapl_am_I_root())then   
               write(yr_s,'(I4.4)')YY
               write(mon_s,'(I2.2)')MM
-              write(day_s,'(I2.2)')DD-1        
+              write(day_s,'(I2.2)')DD
               open(88,file="../river/river_storage_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",action="write")
               open(89,file="../river/stream_storage_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",action="write")
               open(90,file="../river/river_flow_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",action="write")              
