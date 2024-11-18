@@ -1122,7 +1122,7 @@ contains
               qsflow_global, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
               MPI_COMM_WORLD, mpierr)         
          if(mapl_am_I_root())then
-              if(FirstTime) system("mkdir -p ../river/river_storage ../river/stream_storage ../river/river_flow ../river/stream_flow", istat)
+              if(FirstTime) call system("mkdir -p ../river/river_storage ../river/stream_storage ../river/river_flow ../river/stream_flow", istat)
               write(yr_s,'(I4.4)')YY
               write(mon_s,'(I2.2)')MM
               write(day_s,'(I2.2)')DD        
