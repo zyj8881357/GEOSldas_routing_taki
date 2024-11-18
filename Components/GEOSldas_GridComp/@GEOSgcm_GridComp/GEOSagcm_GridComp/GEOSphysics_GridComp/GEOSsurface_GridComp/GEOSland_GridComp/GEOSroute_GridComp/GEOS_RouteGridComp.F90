@@ -809,7 +809,7 @@ contains
 
     type(ESMF_Grid)                    :: TILEGRID
     type (MAPL_LocStream)              :: LOCSTREAM
-    type(ESMF_Time) :: CurrentTime    
+ 
     integer                            :: NTILES, N_CatL, N_CYC
     logical, save                      :: FirstTime=.true.
     real, pointer, dimension(:)    :: tile_area
@@ -834,13 +834,20 @@ contains
     real, dimension(:), pointer :: runoff_global,runoff_local,area_local,runoff_cat_global    
 
     integer :: mpierr, nt_global,nt_local, it, j, upid,cid,temp(1),tid
+
+    type(ESMF_Time) :: CurrentTime   
     integer :: YY,MM,DD,HH,MMM,SS
+    character(len=4) :: yr_s
+    character(len=2) :: mon_s,day_s
+
     real,pointer :: runoff_save(:)=>NULL()
     real,pointer :: WSTREAM_ACT(:)=>NULL()
     real,pointer :: WRIVER_ACT(:)=>NULL()
     real,allocatable :: runoff_save_m3(:),runoff_global_m3(:),QOUTFLOW_GLOBAL(:)
     real,allocatable :: WTOT_BEFORE(:),WTOT_AFTER(:),QINFLOW_LOCAL(:),UNBALANCE(:),UNBALANCE_GLOBAL(:),ERROR(:),ERROR_GLOBAL(:)
     real,allocatable :: QFLOW_SINK(:),QFLOW_SINK_GLOBAL(:),WTOT_BEFORE_GLOBAL(:),WTOT_AFTER_GLOBAL(:)
+    real,allocatable :: wriver_global(:),wstream_global(:),qsflow_global(:)
+    
 
     ! ------------------
     ! begin    
@@ -925,7 +932,13 @@ contains
 
     N_CYC = ROUTE_DT/HEARTBEAT    
     RUN_MODEL : if (ThisCycle == N_CYC) then   
+
        runoff_save = runoff_save + RUNOFF_SRC0/real (N_CYC)
+
+       call ESMF_ClockGet(clock, currTime=CurrentTime, rc=status)
+       VERIFY_(status)
+       call ESMF_TimeGet(CurrentTime, yy=YY, mm=MM, dd=DD, h=HH, m=MMM, s=SS, rc=rc)  
+
        allocate(runoff_global(nt_global))
        call MPI_allgatherv  (                          &
           runoff_save,  route%scounts_global(mype+1)      ,MPI_REAL, &
@@ -985,12 +998,12 @@ contains
        WRIVER_ACT => route%wriver
 
        !---check water balance------    
-       !IF(1==0)THEN  
+       IF(1==0)THEN  
        allocate(WTOT_BEFORE(ntiles),WTOT_AFTER(ntiles),QINFLOW_LOCAL(ntiles),UNBALANCE(ntiles),UNBALANCE_GLOBAL(n_catg))
        allocate(QFLOW_SINK(ntiles),QFLOW_SINK_GLOBAL(n_catg),WTOT_BEFORE_GLOBAL(n_catg),WTOT_AFTER_GLOBAL(n_catg))
        allocate(runoff_save_m3(nt_local),runoff_global_m3(nt_global),ERROR(ntiles),ERROR_GLOBAL(n_catg))
        WTOT_BEFORE=WSTREAM_ACT+WRIVER_ACT
-       !ENDIF
+       ENDIF
        !----------------------------
 
        ! Call river_routing_model
@@ -1018,7 +1031,7 @@ contains
        enddo
 
       !---check water balance------
-       !IF(1==0)THEN
+       IF(1==0)THEN
        WTOT_AFTER=WRIVER_ACT+WSTREAM_ACT
        ERROR = WTOT_AFTER - (WTOT_BEFORE + RUNOFF_ACT*route_dt + QINFLOW_LOCAL*route_dt - QOUTFLOW_ACT*route_dt)
        where(QOUTFLOW_ACT>0.) UNBALANCE = abs(ERROR)/(QOUTFLOW_ACT*route_dt)
@@ -1091,25 +1104,58 @@ contains
          endif
          FirstTime=.False.
        endif
-
-       call ESMF_ClockGet(clock, currTime=CurrentTime, rc=status)
-       VERIFY_(status)
-       call ESMF_TimeGet(CurrentTime, yy=YY, mm=MM, dd=DD, h=HH, m=MMM, s=SS, rc=rc)        
+    
        if(mapl_am_I_root())print *, "The clock's final current time is ", YY, "/", MM, "/", DD, " ", HH, ":", MMM, ":", SS
 
        deallocate(WTOT_BEFORE,WTOT_AFTER,QINFLOW_LOCAL,UNBALANCE,UNBALANCE_GLOBAL,ERROR,QFLOW_SINK,QFLOW_SINK_GLOBAL,WTOT_BEFORE_GLOBAL,WTOT_AFTER_GLOBAL)
        deallocate(runoff_save_m3,runoff_global_m3,ERROR_GLOBAL)
-       !ENDIF 
+       ENDIF 
       !----------------------------
 
-       deallocate(RUNOFF_ACT,AREACAT_ACT,LENGSC_ACT,QSFLOW_ACT,QOUTFLOW_ACT,QOUTFLOW_GLOBAL)
+       deallocate(RUNOFF_ACT,AREACAT_ACT,LENGSC_ACT,QOUTFLOW_ACT)
 
+       ! output
+       if(HH==0)then
+         allocate(wriver_global(n_catg),wstream_global(n_catg),qsflow_global(n_catg))       
+         call MPI_allgatherv  (                          &
+              WSTREAM_ACT,  route%scounts_cat(mype+1)      ,MPI_REAL, &
+              wstream_global, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
+              MPI_COMM_WORLD, mpierr)
+         call MPI_allgatherv  (                          &
+              WRIVER_ACT,  route%scounts_cat(mype+1)      ,MPI_REAL, &
+              wriver_global, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
+              MPI_COMM_WORLD, mpierr)       
+         call MPI_allgatherv  (                          &
+              QSFLOW_ACT,  route%scounts_cat(mype+1)      ,MPI_REAL, &
+              qsflow_global, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
+              MPI_COMM_WORLD, mpierr)         
+         if(mapl_am_I_root())then
+              write(yr_s,'(I4.4)')YY
+              write(mon_s,'(I2.2)')MM
+              write(day_s,'(I2.2)')DD        
+              open(88,file="river_storage_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",action="write")
+              open(89,file="stream_storage_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",action="write")
+              open(90,file="river_flow_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",action="write")              
+              open(91,file="stream_flow_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",action="write")
+              do i=1,n_catg
+                write(88,*)wriver_global(i)
+                write(89,*)wstream_global(i)
+                write(90,*)QOUTFLOW_GLOBAL(i)
+                write(91,*)qsflow_global(i)
+              enddo
+              close(88);close(89);close(90);close(91)
+         endif           
+         deallocate(wriver_global,wstream_global,qsflow_global)
+       endif
+
+       deallocate(QOUTFLOW_GLOBAL,QSFLOW_ACT)
+
+    ! initialize the cycle counter and sum (runoff_tile)       
        WSTREAM_ACT=>NULL()
        WRIVER_ACT=>NULL()      
-       ! initialize the cycle counter and sum (runoff_tile) 
 
        runoff_save = 0.
-       ThisCycle   = 1         
+       ThisCycle   = 1           
 
     else
        
