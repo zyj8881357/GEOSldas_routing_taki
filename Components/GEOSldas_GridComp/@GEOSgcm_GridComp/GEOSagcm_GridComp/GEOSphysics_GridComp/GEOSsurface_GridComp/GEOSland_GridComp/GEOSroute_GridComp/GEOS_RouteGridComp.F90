@@ -441,8 +441,13 @@ contains
     type (T_RROUTE_STATE), pointer         :: route => null()
     type (RROUTE_wrap)                     :: wrap
 
+    type(ESMF_Time) :: CurrentTime
+    integer :: YY,MM,DD,HH,MMM,SS
+    character(len=4) :: yr_s
+    character(len=2) :: mon_s,day_s    
+
     real, pointer :: dataPtr(:)
-    integer :: j,nt_local,mpierr,it    
+    integer :: j,nt_local,mpierr,it   
     ! ------------------
     ! begin
 
@@ -706,15 +711,57 @@ contains
     route%upid=>upid
     deallocate(upid_global)
 
+    call ESMF_ClockGet(clock, currTime=CurrentTime, rc=status)
+    call ESMF_TimeGet(CurrentTime, yy=YY, mm=MM, dd=DD, h=HH, m=MMM, s=SS, rc=status) 
+    write(yr_s,'(I4.4)')YY
+    write(mon_s,'(I2.2)')MM
+    write(day_s,'(I2.2)')DD    
+    if(mapl_am_I_root())print *, "init time is ", YY, "/", MM, "/", DD, " ", HH, ":", MMM, ":", SS    
     allocate(wriver(ntiles),wstream(ntiles))
-!    allocate(wriver_global(n_catg),wstream_global(n_catg))
-!    open(77,file="../input/restart/wriver_global_.txt",status="old",action="read");read(77,*)wriver_global;close(77)    
-!    open(77,file="../input/restart/wstream_global_.txt",status="old",action="read");read(77,*)wstream_global;close(77) 
-!    wriver=wriver_global(minCatch:maxCatch)
-!    wstream=wstream_global(minCatch:maxCatch)
-!    deallocate(wriver_global,wstream_global)
-    wriver=0.
-    wstream=0.
+    allocate(wriver_global(n_catg),wstream_global(n_catg))
+    open(77,file="../input/restart/river_storage_rs_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",status="old",action="read",iostat=status)
+    if(status==0)then
+      read(77,*)wriver_global;close(77)
+    else
+      close(77)
+      open(78,file="../input/river_storage_rs_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",status="old",action="read",iostat=status)
+      if(status==0)then   
+        read(78,*)wriver_global;close(78)  
+      else
+        close(78)      
+        open(79,file="../input/river_storage_rs.txt",status="old",action="read",iostat=status)      
+        if(status==0)then 
+          read(79,*)wriver_global;close(79) 
+        else
+          close(79)    
+          wriver_global=0.
+        endif
+      endif
+    endif
+    open(77,file="../input/restart/stream_storage_rs_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",status="old",action="read",iostat=status)
+    if(status==0)then
+      read(77,*)wstream_global;close(77)
+    else
+      close(77)
+      open(78,file="../input/stream_storage_rs_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",status="old",action="read",iostat=status)
+      if(status==0)then   
+        read(78,*)wstream_global;close(78)  
+      else
+        close(78)      
+        open(79,file="../input/stream_storage_rs.txt",status="old",action="read",iostat=status)      
+        if(status==0)then 
+          read(79,*)wstream_global;close(79) 
+        else
+          close(79)    
+          wstream_global=0.
+        endif
+      endif
+    endif
+    if(mapl_am_I_root())print *, "init river storage is: ",sum(wriver_global)/1.e9
+    if(mapl_am_I_root())print *, "init stream storage is: ",sum(wstream_global)/1.e9        
+    wriver=wriver_global(minCatch:maxCatch)
+    wstream=wstream_global(minCatch:maxCatch)
+    deallocate(wriver_global,wstream_global)
     route%wstream=>wstream
     route%wriver=>wriver
 
@@ -957,9 +1004,9 @@ contains
        runoff_save = runoff_save + RUNOFF_SRC0/real (N_CYC)
 
        call ESMF_ClockGet(clock, currTime=CurrentTime, rc=status)
-       call ESMF_TimeGet(CurrentTime, yy=YY, mm=MM, dd=DD, h=HH, m=MMM, s=SS, rc=rc)  
+       call ESMF_TimeGet(CurrentTime, yy=YY, mm=MM, dd=DD, h=HH, m=MMM, s=SS, rc=status)  
        call ESMF_ClockGetNextTime(clock, nextTime=nextTime, rc=status)
-       call ESMF_TimeGet(nextTime, yy=YY_next, mm=MM_next, dd=DD_next, rc=rc) 
+       call ESMF_TimeGet(nextTime, yy=YY_next, mm=MM_next, dd=DD_next, rc=status) 
 
        allocate(runoff_global(nt_global))
        call MPI_allgatherv  (                          &
@@ -981,32 +1028,6 @@ contains
 
        deallocate(runoff_global) 
 
-      !----check runoff balance----------------------------------------
-       IF(1==0)THEN
-         allocate(runoff_save_m3(nt_local),runoff_global_m3(nt_global))
-         runoff_save_m3=runoff_save*route%tile_area/1000. 
-         call MPI_allgatherv  (                          &
-              runoff_save_m3,  route%scounts_global(mype+1)      ,MPI_REAL, &
-              runoff_global_m3, route%scounts_global, route%rdispls_global,MPI_REAL, &
-              MPI_COMM_WORLD, mpierr) 
-         allocate(runoff_cat_global(n_catg) )  
-         call MPI_allgatherv  (                          &
-              RUNOFF_ACT,  route%scounts_cat(mype+1)      ,MPI_REAL, &
-              runoff_cat_global, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
-              MPI_COMM_WORLD, mpierr)     
-         if(mapl_am_I_root())then 
-           open(88,file="runoff_global_m3.txt",status="unknown", position="append")
-           write(88,*)sum(runoff_global_m3)
-           close(88)
-           open(88,file="runoff_cat_global.txt",status="unknown", position="append")
-           write(88,*)sum(runoff_cat_global)
-           close(88)  
-           print *,"sum(runoff_global_m3)=",sum(runoff_global_m3)
-           print *,"sum(runoff_cat_global)=",sum(runoff_cat_global)   
-         endif   
-         deallocate(runoff_save_m3,runoff_global_m3,runoff_cat_global)
-       ENDIF 
-       !--------------------------------------------
 
        allocate (AREACAT_ACT (1:ntiles))       
        allocate (LENGSC_ACT  (1:ntiles))
@@ -1019,14 +1040,9 @@ contains
        WSTREAM_ACT => route%wstream
        WRIVER_ACT => route%wriver
 
-       !---check water balance------    
-       !IF(1==0)THEN  
-         allocate(WTOT_BEFORE(ntiles),WTOT_AFTER(ntiles),UNBALANCE(ntiles),UNBALANCE_GLOBAL(n_catg))
-         allocate(QFLOW_SINK(ntiles),QFLOW_SINK_GLOBAL(n_catg),WTOT_BEFORE_GLOBAL(n_catg),WTOT_AFTER_GLOBAL(n_catg))
-         allocate(runoff_save_m3(nt_local),runoff_global_m3(nt_global),ERROR(ntiles),ERROR_GLOBAL(n_catg))
-         WTOT_BEFORE=WSTREAM_ACT+WRIVER_ACT
-       !ENDIF
-       !----------------------------
+      
+       allocate(WTOT_BEFORE(ntiles))
+       WTOT_BEFORE=WSTREAM_ACT+WRIVER_ACT
 
        ! Call river_routing_model
        ! ------------------------     
@@ -1055,6 +1071,10 @@ contains
 
       !---check water balance------
        !IF(1==0)THEN
+
+         allocate(WTOT_AFTER(ntiles),UNBALANCE(ntiles),UNBALANCE_GLOBAL(n_catg),runoff_cat_global(n_catg))
+         allocate(QFLOW_SINK(ntiles),QFLOW_SINK_GLOBAL(n_catg),WTOT_BEFORE_GLOBAL(n_catg),WTOT_AFTER_GLOBAL(n_catg))
+         allocate(runoff_save_m3(nt_local),runoff_global_m3(nt_global),ERROR(ntiles),ERROR_GLOBAL(n_catg))
 
          WTOT_AFTER=WRIVER_ACT+WSTREAM_ACT
          ERROR = WTOT_AFTER - (WTOT_BEFORE + RUNOFF_ACT*route_dt + QINFLOW_LOCAL*route_dt - QOUTFLOW_ACT*route_dt)
@@ -1086,17 +1106,32 @@ contains
          call MPI_allgatherv  (                          &
               runoff_save_m3,  route%scounts_global(mype+1)      ,MPI_REAL, &
               runoff_global_m3, route%scounts_global, route%rdispls_global,MPI_REAL, &
-              MPI_COMM_WORLD, mpierr)        
+              MPI_COMM_WORLD, mpierr)     
+         call MPI_allgatherv  (                          &
+              RUNOFF_ACT,  route%scounts_cat(mype+1)      ,MPI_REAL, &
+              runoff_cat_global, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
+              MPI_COMM_WORLD, mpierr)     
          if(mapl_am_I_root())then 
-           open(88,file="WTOT_AFTER.txt",status="unknown", position="append")
-           write(88,*)sum(WTOT_AFTER_GLOBAL)
-           close(88)
-           open(88,file="WTOT_BEFORE_RUNOFF_QSINK.txt",status="unknown", position="append")
-           write(88,*) sum(WTOT_BEFORE_GLOBAL)+sum(runoff_global_m3)*route_dt-sum(QFLOW_SINK_GLOBAL)*route_dt
-           close(88)  
-           open(88,file="WTOT_ERROR_2_RUNOFF.txt",status="unknown", position="append")
-           write(88,*) (sum(WTOT_AFTER_GLOBAL)-(sum(WTOT_BEFORE_GLOBAL)+sum(runoff_global_m3)*route_dt-sum(QFLOW_SINK_GLOBAL)*route_dt))/(sum(runoff_global_m3)*route_dt)
-           close(88)              
+             !open(88,file="runoff_global_m3.txt",status="unknown", position="append")
+             !write(88,*)sum(runoff_global_m3)
+             !close(88)
+             !open(88,file="runoff_cat_global.txt",status="unknown", position="append")
+             !write(88,*)sum(runoff_cat_global)
+             !close(88)  
+             print *,"sum(runoff_global_m3)=",sum(runoff_global_m3)
+             print *,"sum(runoff_cat_global)=",sum(runoff_cat_global)   
+         endif                   
+         if(mapl_am_I_root())then 
+             !open(88,file="WTOT_AFTER.txt",status="unknown", position="append")
+             !write(88,*)sum(WTOT_AFTER_GLOBAL)
+             !close(88)
+             !open(88,file="WTOT_BEFORE_RUNOFF_QSINK.txt",status="unknown", position="append")
+             !write(88,*) sum(WTOT_BEFORE_GLOBAL)+sum(runoff_global_m3)*route_dt-sum(QFLOW_SINK_GLOBAL)*route_dt
+             !close(88)  
+             !open(88,file="WTOT_ERROR_2_RUNOFF.txt",status="unknown", position="append")
+             !write(88,*) (sum(WTOT_AFTER_GLOBAL)-(sum(WTOT_BEFORE_GLOBAL)+sum(runoff_global_m3)*route_dt-sum(QFLOW_SINK_GLOBAL)*route_dt))/(sum(runoff_global_m3)*route_dt)
+             !close(88)    
+             print *,"WTOT_ERROR_2_RUNOFF:",(sum(WTOT_AFTER_GLOBAL)-(sum(WTOT_BEFORE_GLOBAL)+sum(runoff_global_m3)*route_dt-sum(QFLOW_SINK_GLOBAL)*route_dt))/(sum(runoff_global_m3)*route_dt)          
          endif                     
 
          call MPI_allgatherv  (                          &
@@ -1105,21 +1140,21 @@ contains
               MPI_COMM_WORLD, mpierr)
          temp = maxloc(abs(ERROR_GLOBAL))
          cid = temp(1)
-         if(cid>=route%minCatch.and.cid<=route%maxCatch)then
-           tid=cid-route%minCatch+1
-           print *,"my PE is:",mype,", max abs value of ERROR=", ERROR(tid)," at pfafid: ",route%minCatch+tid-1,", W_BEFORE=",WTOT_BEFORE(tid),", RUNOFF=",RUNOFF_ACT(tid)*route_dt,", QINFLOW=",QINFLOW_LOCAL(tid)*route_dt,", QOUTFLOW=",QOUTFLOW_ACT(tid)*route_dt,", W_AFTER=",WTOT_AFTER(tid)
-         endif  
-         if(FirstTime)then     
-           if(mapl_am_I_root())then  
-             open(88,file="ERROR_TOTAL.txt",action="write")
-             do i=1,n_catg
-                write(88,*)ERROR_GLOBAL(i)
-             enddo
-           endif
+         !if(cid>=route%minCatch.and.cid<=route%maxCatch)then
+           !tid=cid-route%minCatch+1
+           !print *,"my PE is:",mype,", max abs value of ERROR=", ERROR(tid)," at pfafid: ",route%minCatch+tid-1,", W_BEFORE=",WTOT_BEFORE(tid),", RUNOFF=",RUNOFF_ACT(tid)*route_dt,", QINFLOW=",QINFLOW_LOCAL(tid)*route_dt,", QOUTFLOW=",QOUTFLOW_ACT(tid)*route_dt,", W_AFTER=",WTOT_AFTER(tid)
+         !endif  
+         !if(FirstTime)then     
+         !  if(mapl_am_I_root())then  
+         !    open(88,file="ERROR_TOTAL.txt",action="write")
+         !    do i=1,n_catg
+         !       write(88,*)ERROR_GLOBAL(i)
+         !    enddo
+         !  endif
          endif
 
-         deallocate(WTOT_BEFORE,WTOT_AFTER,UNBALANCE,UNBALANCE_GLOBAL,ERROR,QFLOW_SINK,QFLOW_SINK_GLOBAL,WTOT_BEFORE_GLOBAL,WTOT_AFTER_GLOBAL)
-         deallocate(runoff_save_m3,runoff_global_m3,ERROR_GLOBAL)
+         deallocate(WTOT_AFTER,UNBALANCE,UNBALANCE_GLOBAL,ERROR,QFLOW_SINK,QFLOW_SINK_GLOBAL,WTOT_BEFORE_GLOBAL,WTOT_AFTER_GLOBAL)
+         deallocate(runoff_save_m3,runoff_global_m3,ERROR_GLOBAL,runoff_cat_global)
 
        !ENDIF 
       !----------------------------
@@ -1129,7 +1164,7 @@ contains
        route%qoutflow_acc = route%qoutflow_acc + QOUTFLOW_ACT/real(nstep_per_day)
        route%qsflow_acc = route%qsflow_acc + QSFLOW_ACT/real(nstep_per_day)
 
-       deallocate(RUNOFF_ACT,AREACAT_ACT,LENGSC_ACT,QOUTFLOW_ACT,QINFLOW_LOCAL,QOUTFLOW_GLOBAL,QSFLOW_ACT)
+       deallocate(RUNOFF_ACT,AREACAT_ACT,LENGSC_ACT,QOUTFLOW_ACT,QINFLOW_LOCAL,QOUTFLOW_GLOBAL,QSFLOW_ACT,WTOT_BEFORE)
       !initialize the cycle counter and sum (runoff_tile)       
        WSTREAM_ACT=>NULL()
        WRIVER_ACT=>NULL()      
@@ -1139,7 +1174,7 @@ contains
 
       ! output
        !if(mapl_am_I_root())print *, "nstep_per_day=",nstep_per_day
-       if(mapl_am_I_root())print *, "The clock's final current time is ", YY, "/", MM, "/", DD, " ", HH, ":", MMM, ":", SS, ", next MM_next:",MM_next
+       if(mapl_am_I_root())print *, "Current time is ", YY, "/", MM, "/", DD, " ", HH, ":", MMM, ":", SS, ", next MM_next:",MM_next
        if(FirstTime)then
          if(mapl_am_I_root()) istat = mkdir("../river", int(o'755',c_int16_t))  
        endif
@@ -1176,6 +1211,8 @@ contains
                 write(91,*)qsflow_global(i)
               enddo
               close(88);close(89);close(90);close(91)
+              print *, "output river storage is: ",sum(wriver_global)/1.e9
+              print *, "output stream storage is: ",sum(wstream_global)/1.e9                
          endif           
          deallocate(wriver_global,wstream_global,qoutflow_global,qsflow_global)
          route%wriver_acc = 0.
@@ -1205,7 +1242,9 @@ contains
                 write(88,*)wriver_global(i)
                 write(89,*)wstream_global(i)
               enddo   
-              close(88);close(89)                    
+              close(88);close(89) 
+              print *, "saved river storage is: ",sum(wriver_global)/1.e9
+              print *, "saved stream storage is: ",sum(wstream_global)/1.e9                                  
          endif
          deallocate(wriver_global,wstream_global)
        endif
