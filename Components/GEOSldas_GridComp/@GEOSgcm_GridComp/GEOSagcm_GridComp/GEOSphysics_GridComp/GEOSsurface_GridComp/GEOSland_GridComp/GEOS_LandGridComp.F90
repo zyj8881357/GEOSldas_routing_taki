@@ -1338,13 +1338,6 @@ contains
                               CHILD_ID = VEGDYN,&
                               RC=STATUS  )
     VERIFY_(STATUS) 
-    IF(RUN_ROUTE == 1) THEN
-       call MAPL_AddExportSpec ( GC, &
-            SHORT_NAME = 'QOUTFLOW', &
-            CHILD_ID = ROUTE(1),     &
-            RC=STATUS  )
-       VERIFY_(STATUS)       
-    ENDIF
 
 !EOS
     

@@ -18,8 +18,6 @@ module GEOS_RouteGridCompMod
 !   All of its calculations are done on Pfafstetter watershed space. {\tt GEOS\_Route} has no children. \\
 !
 !   IMPORTS   : RUNOFF \\
-!   INTERNALS : AREACAT, LENGSC2, DNSTR, WSTREAM, WRIVER, LRIVERMOUTH, ORIVERMOUTH \\
-!   EXPORTS   : QSFLOW, QINFLOW, QOUTFLOW \\
 
 ! !USES: 
 
@@ -230,106 +228,8 @@ contains
          RC=STATUS  ) 
     VERIFY_(STATUS)
 
-! -----------------------------------------------------------
-!   INTERNAL STATE
-! -----------------------------------------------------------
-
-    call MAPL_AddInternalSpec(GC                     ,&
-         LONG_NAME          = 'area_of_catchment'        ,&
-         UNITS              = 'km+2'                     ,&
-         SHORT_NAME         = 'AREACAT'                  ,&
-         DIMS               = MAPL_DimsCatchOnly          ,&
-         VLOCATION          = MAPL_VLocationNone         ,&
-         RESTART            = MAPL_RestartRequired       ,&
-         RC=STATUS  ) 
- 
-    call MAPL_AddInternalSpec(GC                     ,&
-         LONG_NAME          = 'length_of_channel_segment',&
-         UNITS              = 'km+2'                     ,&
-         SHORT_NAME         = 'LENGSC'                   ,&
-         DIMS               = MAPL_DimsCatchOnly          ,&
-         VLOCATION          = MAPL_VLocationNone         ,&
-         RESTART            = MAPL_RestartRequired       ,&
-         RC=STATUS  ) 
-
-    call MAPL_AddInternalSpec(GC                     ,&
-         LONG_NAME          = 'index_of_downtream_catchment',&
-         UNITS              = '1'                        ,&
-         SHORT_NAME         = 'DNSTR'                    ,&
-         DIMS               = MAPL_DimsCatchOnly          ,&
-         VLOCATION          = MAPL_VLocationNone         ,&
-         RESTART            = MAPL_RestartRequired       ,&
-         RC=STATUS  ) 
-
-    call MAPL_AddInternalSpec(GC                     ,&
-         LONG_NAME          = 'volume_of_water_in_local_stream',&
-         UNITS              = 'm+3'                      ,&
-         SHORT_NAME         = 'WSTREAM'                  ,&
-         DIMS               = MAPL_DimsCatchOnly          ,&
-         VLOCATION          = MAPL_VLocationNone         ,&
-         RESTART            = MAPL_RestartRequired       ,&
-         RC=STATUS  )
-    
-    call MAPL_AddInternalSpec(GC                     ,&
-         LONG_NAME          = 'volume_of_water_in_river' ,&
-         UNITS              = 'm+3'                      ,&
-         SHORT_NAME         = 'WRIVER'                   ,&
-         DIMS               = MAPL_DimsCatchOnly          ,&
-         VLOCATION          = MAPL_VLocationNone         ,&
-         RESTART            = MAPL_RestartRequired       ,&
-                                         RC=STATUS  )   
-
-    call MAPL_AddInternalSpec(GC                     ,&
-         LONG_NAME          = 'TileID_of_the_lake_tile_at_the_river_mouth' ,&
-         UNITS              = '1'                        ,&
-         SHORT_NAME         = 'LRIVERMOUTH'              ,&
-         DIMS               = MAPL_DimsCatchOnly          ,&
-         VLOCATION          = MAPL_VLocationNone         ,&
-         RESTART            = MAPL_RestartRequired       ,&
-                                         RC=STATUS  )   
-
-    call MAPL_AddInternalSpec(GC                     ,&
-         LONG_NAME          = 'TileID_of_the_ocean_tile_at_the_river_mouth' ,&
-         UNITS              = '1'                        ,&
-         SHORT_NAME         = 'ORIVERMOUTH'              ,&
-         DIMS               = MAPL_DimsCatchOnly          ,&
-         VLOCATION          = MAPL_VLocationNone         ,&
-         RESTART            = MAPL_RestartRequired       ,&
-                                         RC=STATUS  )   
-! -----------------------------------------------------------
-!  EXPORT STATE:
-! -----------------------------------------------------------
-
-    call MAPL_AddExportSpec(GC,                        &
-         LONG_NAME          = 'transfer_of_moisture_from_stream_variable_to_river_variable' ,&
-         UNITS              = 'm+3 s-1'                  ,&
-         SHORT_NAME         = 'QSFLOW'                   ,&
-         DIMS               = MAPL_DimsCatchOnly          ,&
-         VLOCATION          = MAPL_VLocationNone         ,&
-                                         RC=STATUS  ) 
-
-    call MAPL_AddExportSpec(GC,                    &
-         LONG_NAME          = 'transfer_of_river_water_from_upstream_catchments' ,&
-         UNITS              = 'm+3 s-1'                   ,&
-         SHORT_NAME         = 'QINFLOW'                   ,&
-         DIMS               = MAPL_DimsCatchOnly           ,&
-         VLOCATION          = MAPL_VLocationNone          ,&
-                                          RC=STATUS  ) 
-
-    call MAPL_AddExportSpec(GC,                    &
-         LONG_NAME          = 'transfer_of_river_water_to_downstream_catchments' ,&
-         UNITS              = 'm+3 s-1'                  ,&
-         SHORT_NAME         = 'QOUTFLOW'                 ,&
-         DIMS               = MAPL_DimsCatchOnly          ,&
-         VLOCATION          = MAPL_VLocationNone         ,&
-                                         RC=STATUS  ) 
-
 !EOS
 
-    !call MAPL_TimerAdd(GC,    name="RUN1"  ,RC=STATUS)
-    !VERIFY_(STATUS)
-    !call MAPL_TimerAdd(GC,    name="RUN2"  ,RC=STATUS)
-    !VERIFY_(STATUS)    
     call MAPL_TimerAdd(GC,    name="-RRM" ,RC=STATUS)
     VERIFY_(STATUS)
 
@@ -458,7 +358,6 @@ contains
     VERIFY_(STATUS)
 
     route => wrap%ptr
-
     ! get vm
     ! extract comm
     call ESMF_VMGetCurrent(VM,                                RC=STATUS)
@@ -482,7 +381,6 @@ contains
     beforeMe = sum(ims(1:mype))
     minCatch = beforeMe + 1
     maxCatch = beforeMe + ims(myPe+1)
-    !print *, "my PE is:",mype,", minCatch is:",minCatch,", maxCatch is:",maxCatch
  
     ! get LocStream
     call MAPL_Get(MAPL, LocStream = locstream, RC=status)
@@ -490,130 +388,18 @@ contains
     ! extract Pfaf (TILEI on the "other" grid)    
     call MAPL_LocStreamGet(locstream, &
          tileGrid=tilegrid, nt_global=nt_global, RC=status)
+    VERIFY_(STATUS)     
     route%nt_global = nt_global
-    !if (mapl_am_I_root()) print *, "nt_global=",nt_global           
-    allocate(pfaf(nt_global))
-    open(77,file=trim(inputdir)//"/pfaf_input.txt",status="old",action="read")
-    read(77,*)pfaf
-    close(77)
     ! exchange Pfaf across PEs
 
-    ntiles = 0
-    !loop over total_n_tiles
-    allocate(arbSeq_ori(1:nt_global))
-    do i = 1, nt_global
-       pf = pfaf(i)
-       if (pf >= minCatch .and. pf <= maxCatch) then ! I want this!
-          !print *,"my PE is:",mype,"pf=",pf
-          ntiles = ntiles+1
-          !realloc if needed
-          arbSeq_ori(ntiles) = i
-       end if
-    end do ! global tile loop
-    !if (mapl_am_I_root()) print *, "ntiles:",ntiles
-    allocate(arbSeq(ntiles))
-    arbSeq=arbSeq_ori(1:ntiles)
-    deallocate(arbSeq_ori)
-  
-    distgrid = ESMF_DistGridCreate(arbSeqIndexList=arbSeq, rc=status)
-    VERIFY_(STATUS)
-
-    newTileGRID = ESMF_GridEmptyCreate(rc=status)
-    VERIFY_(STATUS)       
-    allocate(arbIndex(nTiles,1), stat=status)
-    VERIFY_(STATUS)
-
-    arbIndex(:,1) = arbSeq
-
-    call ESMF_GridSet(newTileGrid,  &
-         name='redist_tile_grid_for_'//trim(COMP_NAME),    &
-         distgrid=distgrid, & 
-         gridMemLBound=(/1/), &
-         indexFlag=ESMF_INDEX_USER, &
-         distDim = (/1/), &
-         localArbIndexCount=ntiles, &
-         localArbIndex=arbIndex, &
-         minIndex=(/1/), &
-         maxIndex=(/NT_GLOBAL/), &
-         rc=status)
-    VERIFY_(STATUS)
-
-    deallocate(arbIndex)
-
-    call ESMF_GridCommit(newTileGrid, rc=status)
-    VERIFY_(STATUS)   
-
-    ! now create a "catch" grid to be the "native" grid for this component
-    distgrid = ESMF_DistGridCreate(arbSeqIndexList=(/minCatch:maxCatch/), &
-         rc=status)
-    VERIFY_(STATUS)  
-    catchGRID = ESMF_GridEmptyCreate(rc=status)
-    VERIFY_(STATUS)
-
-    allocate(arbIndex(ims(myPE+1),1), stat=status)
-    VERIFY_(STATUS)
-
-    arbIndex(:,1) = (/minCatch:maxCatch/)
-         
-    call ESMF_GridSet(catchGrid,  &
-         name='catch_grid_for_'//trim(COMP_NAME),    &
-         distgrid=distgrid, & 
-         gridMemLBound=(/1/), &
-         indexFlag=ESMF_INDEX_USER, &
-         distDim = (/1/), &
-         localArbIndexCount=ims(myPE+1), &
-         localArbIndex=arbIndex, &
-         minIndex=(/1/), &
-         maxIndex=(/N_CatG/), &
-         rc=status)
-    VERIFY_(STATUS)
-
-    deallocate(arbIndex)
-    call ESMF_GridCommit(catchGrid, rc=status)
-    VERIFY_(STATUS)
-    call ESMF_GridCompSet(gc, grid=catchGrid, RC=status)
-    VERIFY_(STATUS)   
     call MAPL_LocStreamGet(locstream, TILEAREA = tile_area_src, LOCAL_ID=local_id, RC=status)
-
     VERIFY_(STATUS) 
-    field0 = ESMF_FieldCreate(grid=tilegrid, datacopyflag=ESMF_DATACOPY_VALUE, &
-         farrayPtr=tile_area_src, name='TILE_AREA_SRC', RC=STATUS)
-    VERIFY_(STATUS)
-    ! create field on the "new" tile grid
-    allocate(tile_area(ntiles), stat=status)
-    VERIFY_(STATUS)
-    field = ESMF_FieldCreate(grid=newtilegrid, datacopyflag=ESMF_DATACOPY_VALUE, &
-         farrayPtr=tile_area, name='TILE_AREA', RC=STATUS)  
-  
-    VERIFY_(STATUS)
-    ! create routehandle
-    call ESMF_FieldRedistStore(srcField=field0, dstField=field, &
-                routehandle=route%routehandle, rc=status)
-    VERIFY_(STATUS)  
-    ! redist tile_area
-    call ESMF_FieldRedist(srcField=FIELD0, dstField=FIELD, &
-         routehandle=route%routehandle, rc=status)
-    VERIFY_(STATUS)
+    nt_local=size(tile_area_src,1) 
+    route%nt_local=nt_local       
 
-
-    ntiles = 0
-    !loop over total_n_tiles
-    allocate(arbSeq_ori(1:nt_global))
-    do i = 1, nt_global
-       pf = pfaf(i)
-       if (pf >= minCatch .and. pf <= maxCatch) then ! I want this!
-          !print *,"my PE is:",mype,"pf=",pf
-          ntiles = ntiles+1
-          !realloc if needed
-          arbSeq_ori(ntiles) = pf
-       end if
-    end do ! global tile loop
     ntiles = maxCatch-minCatch+1
-    !if (mapl_am_I_root()) print *, "ntiles:",ntiles
-!    allocate(arbSeq_pf(ntiles))
     allocate(arbSeq_pf(maxCatch-minCatch+1))
     arbSeq_pf = [(i, i = minCatch, maxCatch)]
-    deallocate(arbSeq_ori)
    
     ! redist pfaf (NOTE: me might need a second routehandle for integers)
 
@@ -621,11 +407,6 @@ contains
     route%ntiles = ntiles  
     route%minCatch = minCatch
     route%maxCatch = maxCatch 
-    allocate(ptr2(ntiles), stat=status)
-    VERIFY_(STATUS)
-    route%field = ESMF_FieldCreate(grid=catchGrid, datacopyflag=ESMF_DATACOPY_VALUE, &
-        farrayPtr=ptr2, name='RUNOFF', RC=STATUS)
-    VERIFY_(STATUS)
   ! Read sub-area data from text files
     allocate(nsub_global(N_CatG),subarea_global(nmax,N_CatG))
     open(77,file=trim(inputdir)//"/Pfaf_nsub_M36.txt",status="old",action="read"); read(77,*)nsub_global; close(77)
@@ -645,7 +426,6 @@ contains
     route%subi => subi
     deallocate(subi_global)
 
-    nt_local=size(tile_area_src,1)
 
     allocate(scounts(ndes),scounts_global(ndes),rdispls_global(ndes))
     scounts=0
@@ -671,7 +451,6 @@ contains
     route%scounts_cat=>scounts_cat
     route%rdispls_cat=>rdispls_cat
 
-    route%nt_local=nt_local
     allocate(runoff_save(1:nt_local))
     route%runoff_save => runoff_save
     route%runoff_save=0.
@@ -772,9 +551,7 @@ contains
     route%wstream_acc=0.
     route%qoutflow_acc=0.
     route%qsflow_acc=0.
-    !This should be read from restart file
-!    route%wstream=0.
-!    route%wriver=0.
+
 
     !if (mapl_am_I_root())then
     !  open(88,file="nsub.txt",action="write")
@@ -947,8 +724,8 @@ contains
 ! Get parameters from generic state
 ! ---------------------------------
 
-    call MAPL_Get(MAPL, INTERNAL_ESMF_STATE=INTERNAL, RC=STATUS)
-    VERIFY_(STATUS) 
+ !   call MAPL_Get(MAPL, INTERNAL_ESMF_STATE=INTERNAL, RC=STATUS)
+ !   VERIFY_(STATUS) 
 ! get pointers to inputs variables
 ! ----------------------------------
 
@@ -964,33 +741,6 @@ contains
     VERIFY_(STATUS)    
     call ESMF_FieldGet(runoff_src, farrayPtr=RUNOFF_SRC0, rc=status)   
     VERIFY_(STATUS) 
-
-
-! get pointers to internal variables
-! ---------------------------------- 
-    call MAPL_GetPointer(INTERNAL, AREACAT , 'AREACAT', RC=STATUS)
-    VERIFY_(STATUS)    
-    call MAPL_GetPointer(INTERNAL, LENGSC  , 'LENGSC',  RC=STATUS)
-    VERIFY_(STATUS)        
-    call MAPL_GetPointer(INTERNAL, DNSTR   , 'DNSTR'  , RC=STATUS)
-    VERIFY_(STATUS)         
-    call MAPL_GetPointer(INTERNAL, WSTREAM , 'WSTREAM', RC=STATUS)
-    VERIFY_(STATUS)     
-    call MAPL_GetPointer(INTERNAL, WRIVER  , 'WRIVER' , RC=STATUS)
-    VERIFY_(STATUS)         
-    call MAPL_GetPointer(INTERNAL, LRIVERMOUTH, 'LRIVERMOUTH' , RC=STATUS)
-    VERIFY_(STATUS)        
-    call MAPL_GetPointer(INTERNAL, ORIVERMOUTH, 'ORIVERMOUTH' , RC=STATUS)
-    VERIFY_(STATUS)  
-! get pointers to EXPORTS
-! -----------------------
-
-    call MAPL_GetPointer(EXPORT, QSFLOW,   'QSFLOW'  , RC=STATUS)
-    VERIFY_(STATUS)
-    call MAPL_GetPointer(EXPORT, QINFLOW,  'QINFLOW' , RC=STATUS)
-    VERIFY_(STATUS)
-    call MAPL_GetPointer(EXPORT, QOUTFLOW, 'QOUTFLOW', RC=STATUS)
-    VERIFY_(STATUS)
 
     call MAPL_Get(MAPL, LocStream=LOCSTREAM, RC=STATUS)
     VERIFY_(STATUS)   
@@ -1071,95 +821,8 @@ contains
          enddo
        enddo
 
-      !---check water balance------
-       IF(1==0)THEN
+       call check_balance(route,ntiles,WRIVER_ACT,WSTREAM_ACT,WTOT_BEFORE,RUNOFF_ACT,QINFLOW_LOCAL,QOUTFLOW_ACT,FirstTime)
 
-         allocate(WTOT_AFTER(ntiles),UNBALANCE(ntiles),UNBALANCE_GLOBAL(n_catg),runoff_cat_global(n_catg))
-         allocate(QFLOW_SINK(ntiles),QFLOW_SINK_GLOBAL(n_catg),WTOT_BEFORE_GLOBAL(n_catg),WTOT_AFTER_GLOBAL(n_catg))
-         allocate(runoff_save_m3(nt_local),runoff_global_m3(nt_global),ERROR(ntiles),ERROR_GLOBAL(n_catg))
-
-         WTOT_AFTER=WRIVER_ACT+WSTREAM_ACT
-         ERROR = WTOT_AFTER - (WTOT_BEFORE + RUNOFF_ACT*route_dt + QINFLOW_LOCAL*route_dt - QOUTFLOW_ACT*route_dt)
-         where(QOUTFLOW_ACT>0.) UNBALANCE = abs(ERROR)/(QOUTFLOW_ACT*route_dt)
-         where(QOUTFLOW_ACT<=0.) UNBALANCE = 0.
-         call MPI_allgatherv  (                          &
-              UNBALANCE,  route%scounts_cat(mype+1)      ,MPI_REAL, &
-              UNBALANCE_GLOBAL, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
-              MPI_COMM_WORLD, mpierr)           
-         QFLOW_SINK=0.
-         do i=1,nTiles
-           if(route%downid(i)==-1)then
-              QFLOW_SINK(i) = QOUTFLOW_ACT(i)
-           endif
-         enddo
-         call MPI_allgatherv  (                          &
-              QFLOW_SINK,  route%scounts_cat(mype+1)      ,MPI_REAL, &
-              QFLOW_SINK_GLOBAL, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
-              MPI_COMM_WORLD, mpierr)
-         call MPI_allgatherv  (                          &
-              WTOT_BEFORE,  route%scounts_cat(mype+1)      ,MPI_REAL, &
-              WTOT_BEFORE_GLOBAL, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
-              MPI_COMM_WORLD, mpierr)   
-         call MPI_allgatherv  (                          &
-              WTOT_AFTER,  route%scounts_cat(mype+1)      ,MPI_REAL, &
-              WTOT_AFTER_GLOBAL, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
-              MPI_COMM_WORLD, mpierr) 
-         runoff_save_m3=runoff_save*route%tile_area/1000. 
-         call MPI_allgatherv  (                          &
-              runoff_save_m3,  route%scounts_global(mype+1)      ,MPI_REAL, &
-              runoff_global_m3, route%scounts_global, route%rdispls_global,MPI_REAL, &
-              MPI_COMM_WORLD, mpierr)     
-         call MPI_allgatherv  (                          &
-              RUNOFF_ACT,  route%scounts_cat(mype+1)      ,MPI_REAL, &
-              runoff_cat_global, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
-              MPI_COMM_WORLD, mpierr)     
-         if(mapl_am_I_root())then 
-             !open(88,file="runoff_global_m3.txt",status="unknown", position="append")
-             !write(88,*)sum(runoff_global_m3)
-             !close(88)
-             !open(88,file="runoff_cat_global.txt",status="unknown", position="append")
-             !write(88,*)sum(runoff_cat_global)
-             !close(88)  
-             print *,"sum(runoff_global_m3)=",sum(runoff_global_m3)
-             print *,"sum(runoff_cat_global)=",sum(runoff_cat_global)   
-         endif                   
-         if(mapl_am_I_root())then 
-             !open(88,file="WTOT_AFTER.txt",status="unknown", position="append")
-             !write(88,*)sum(WTOT_AFTER_GLOBAL)
-             !close(88)
-             !open(88,file="WTOT_BEFORE_RUNOFF_QSINK.txt",status="unknown", position="append")
-             !write(88,*) sum(WTOT_BEFORE_GLOBAL)+sum(runoff_global_m3)*route_dt-sum(QFLOW_SINK_GLOBAL)*route_dt
-             !close(88)  
-             !open(88,file="WTOT_ERROR_2_RUNOFF.txt",status="unknown", position="append")
-             !write(88,*) (sum(WTOT_AFTER_GLOBAL)-(sum(WTOT_BEFORE_GLOBAL)+sum(runoff_global_m3)*route_dt-sum(QFLOW_SINK_GLOBAL)*route_dt))/(sum(runoff_global_m3)*route_dt)
-             !close(88)    
-             print *,"WTOT_ERROR_2_RUNOFF:",(sum(WTOT_AFTER_GLOBAL)-(sum(WTOT_BEFORE_GLOBAL)+sum(runoff_global_m3)*route_dt-sum(QFLOW_SINK_GLOBAL)*route_dt))/(sum(runoff_global_m3)*route_dt)          
-         endif                     
-
-         call MPI_allgatherv  (                          &
-              ERROR,  route%scounts_cat(mype+1)      ,MPI_REAL, &
-              ERROR_GLOBAL, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
-              MPI_COMM_WORLD, mpierr)
-         temp = maxloc(abs(ERROR_GLOBAL))
-         cid = temp(1)
-         !if(cid>=route%minCatch.and.cid<=route%maxCatch)then
-           !tid=cid-route%minCatch+1
-           !print *,"my PE is:",mype,", max abs value of ERROR=", ERROR(tid)," at pfafid: ",route%minCatch+tid-1,", W_BEFORE=",WTOT_BEFORE(tid),", RUNOFF=",RUNOFF_ACT(tid)*route_dt,", QINFLOW=",QINFLOW_LOCAL(tid)*route_dt,", QOUTFLOW=",QOUTFLOW_ACT(tid)*route_dt,", W_AFTER=",WTOT_AFTER(tid)
-         !endif  
-         !if(FirstTime)then     
-         !  if(mapl_am_I_root())then  
-         !    open(88,file="ERROR_TOTAL.txt",action="write")
-         !    do i=1,n_catg
-         !       write(88,*)ERROR_GLOBAL(i)
-         !    enddo
-         !  endif
-         !endif
-
-         deallocate(WTOT_AFTER,UNBALANCE,UNBALANCE_GLOBAL,ERROR,QFLOW_SINK,QFLOW_SINK_GLOBAL,WTOT_BEFORE_GLOBAL,WTOT_AFTER_GLOBAL)
-         deallocate(runoff_save_m3,runoff_global_m3,ERROR_GLOBAL,runoff_cat_global)
-
-       ENDIF 
-      !----------------------------
        if(FirstTime) nstep_per_day = 86400/route_dt
        route%wriver_acc = route%wriver_acc + WRIVER_ACT/real(nstep_per_day)
        route%wstream_acc = route%wstream_acc + WSTREAM_ACT/real(nstep_per_day)
@@ -1274,124 +937,110 @@ contains
     RETURN_(ESMF_SUCCESS)
   end subroutine RUN2
 
-! ---------------------------------------------------------------------------
+! --------------------------------------------------------
 
-  subroutine InitializeRiverRouting(MYPE, numprocs, root_proc,           &
-       pfaf_code, AllActive, AlldstCatchID, srcProcsID, LocDstCatchID, rc)
+
+  subroutine check_balance(route,ntiles,WRIVER_ACT,WSTREAM_ACT,WTOT_BEFORE,RUNOFF_ACT,QINFLOW_LOCAL,QOUTFLOW_ACT,FirstTime)
+      
+      type(T_RROUTE_STATE), intent(in) :: route 
+      integer, intent(in) :: ntiles
+      real,intent(in) :: WRIVER_ACT(ntiles),WSTREAM_ACT(ntiles),WTOT_BEFORE(ntiles),RUNOFF_ACT(ntiles)
+      real,intent(in) :: QINFLOW_LOCAL(ntiles),QOUTFLOW_ACT(ntiles)
+      logical,intent(in) :: FirstTime
+
+      integer :: i, nt_global,mype,cid,temp(1),tid
+
+      nt_global = route%nt_global
+      mype = route%mype   
+
+         allocate(WTOT_AFTER(ntiles),UNBALANCE(ntiles),UNBALANCE_GLOBAL(n_catg),runoff_cat_global(n_catg))
+         allocate(QFLOW_SINK(ntiles),QFLOW_SINK_GLOBAL(n_catg),WTOT_BEFORE_GLOBAL(n_catg),WTOT_AFTER_GLOBAL(n_catg))
+         allocate(runoff_save_m3(nt_local),runoff_global_m3(nt_global),ERROR(ntiles),ERROR_GLOBAL(n_catg))
+
     
-    implicit none
-    INTEGER, INTENT (IN)                             :: MYPE, numprocs
-    LOGICAL, INTENT (IN)                             :: root_proc
-    INTEGER, DIMENSION (:),  INTENT (IN)             :: pfaf_code
-    INTEGER, DIMENSION (N_CatG),          INTENT (INOUT) :: srcProcsID, LocDstCatchID
-    INTEGER, DIMENSION (N_CatG,numprocs), INTENT (INOUT) :: Allactive,  AlldstCatchID
 
-    INTEGER, DIMENSION(:)  ,ALLOCATABLE  :: global_buff, scounts, rdispls, rcounts, LocalActive
-    INTEGER                              :: N_active, I,J,K,N,i1,i2,NProcs, Local_Min, Local_Max
+         WTOT_AFTER=WRIVER_ACT+WSTREAM_ACT
+         ERROR = WTOT_AFTER - (WTOT_BEFORE + RUNOFF_ACT*route_dt + QINFLOW_LOCAL*route_dt - QOUTFLOW_ACT*route_dt)
+         where(QOUTFLOW_ACT>0.) UNBALANCE = abs(ERROR)/(QOUTFLOW_ACT*route_dt)
+         where(QOUTFLOW_ACT<=0.) UNBALANCE = 0.
+         call MPI_allgatherv  (                          &
+              UNBALANCE,  route%scounts_cat(mype+1)      ,MPI_REAL, &
+              UNBALANCE_GLOBAL, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
+              MPI_COMM_WORLD, mpierr)           
+         QFLOW_SINK=0.
+         do i=1,ntiles
+           if(route%downid(i)==-1)then
+              QFLOW_SINK(i) = QOUTFLOW_ACT(i)
+           endif
+         enddo
+         call MPI_allgatherv  (                          &
+              QFLOW_SINK,  route%scounts_cat(mype+1)      ,MPI_REAL, &
+              QFLOW_SINK_GLOBAL, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
+              MPI_COMM_WORLD, mpierr)
+         call MPI_allgatherv  (                          &
+              WTOT_BEFORE,  route%scounts_cat(mype+1)      ,MPI_REAL, &
+              WTOT_BEFORE_GLOBAL, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
+              MPI_COMM_WORLD, mpierr)   
+         call MPI_allgatherv  (                          &
+              WTOT_AFTER,  route%scounts_cat(mype+1)      ,MPI_REAL, &
+              WTOT_AFTER_GLOBAL, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
+              MPI_COMM_WORLD, mpierr) 
+         runoff_save_m3=runoff_save*route%tile_area/1000. 
+         call MPI_allgatherv  (                          &
+              runoff_save_m3,  route%scounts_global(mype+1)      ,MPI_REAL, &
+              runoff_global_m3, route%scounts_global, route%rdispls_global,MPI_REAL, &
+              MPI_COMM_WORLD, mpierr)     
+         call MPI_allgatherv  (                          &
+              RUNOFF_ACT,  route%scounts_cat(mype+1)      ,MPI_REAL, &
+              runoff_cat_global, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
+              MPI_COMM_WORLD, mpierr)     
+         if(mapl_am_I_root())then 
+             open(88,file="runoff_global_m3.txt",status="unknown", position="append")
+             write(88,*)sum(runoff_global_m3)
+             close(88)
+             open(88,file="runoff_cat_global.txt",status="unknown", position="append")
+             write(88,*)sum(runoff_cat_global)
+             close(88)  
+             print *,"sum(runoff_global_m3)=",sum(runoff_global_m3)
+             print *,"sum(runoff_cat_global)=",sum(runoff_cat_global)   
+         endif                   
+         if(mapl_am_I_root())then 
+             open(88,file="WTOT_AFTER.txt",status="unknown", position="append")
+             write(88,*)sum(WTOT_AFTER_GLOBAL)
+             close(88)
+             open(88,file="WTOT_BEFORE_RUNOFF_QSINK.txt",status="unknown", position="append")
+             write(88,*) sum(WTOT_BEFORE_GLOBAL)+sum(runoff_global_m3)*route_dt-sum(QFLOW_SINK_GLOBAL)*route_dt
+             close(88)  
+             open(88,file="WTOT_ERROR_2_RUNOFF.txt",status="unknown", position="append")
+             write(88,*) (sum(WTOT_AFTER_GLOBAL)-(sum(WTOT_BEFORE_GLOBAL)+sum(runoff_global_m3)*route_dt-sum(QFLOW_SINK_GLOBAL)*route_dt))/(sum(runoff_global_m3)*route_dt)
+             close(88)    
+             print *,"WTOT_ERROR_2_RUNOFF:",(sum(WTOT_AFTER_GLOBAL)-(sum(WTOT_BEFORE_GLOBAL)+sum(runoff_global_m3)*route_dt-sum(QFLOW_SINK_GLOBAL)*route_dt))/(sum(runoff_global_m3)*route_dt)          
+         endif                     
 
-    integer, optional,    intent(OUT):: rc
+         call MPI_allgatherv  (                          &
+              ERROR,  route%scounts_cat(mype+1)      ,MPI_REAL, &
+              ERROR_GLOBAL, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
+              MPI_COMM_WORLD, mpierr)
+         temp = maxloc(abs(ERROR_GLOBAL))
+         cid = temp(1)
+         if(cid>=route%minCatch.and.cid<=route%maxCatch)then
+           tid=cid-route%minCatch+1
+           print *,"my PE is:",mype,", max abs value of ERROR=", ERROR(tid)," at pfafid: ",route%minCatch+tid-1,", W_BEFORE=",WTOT_BEFORE(tid),", RUNOFF=",RUNOFF_ACT(tid)*route_dt,", QINFLOW=",QINFLOW_LOCAL(tid)*route_dt,", QOUTFLOW=",QOUTFLOW_ACT(tid)*route_dt,", W_AFTER=",WTOT_AFTER(tid)
+         endif  
+         if(FirstTime)then     
+           if(mapl_am_I_root())then  
+             open(88,file="ERROR_TOTAL.txt",action="write")
+             do i=1,n_catg
+                write(88,*)ERROR_GLOBAL(i)
+             enddo
+           endif
+         endif
 
-    integer :: mpierr
-    character(len=ESMF_MAXSTR), parameter :: Iam='InitializeRiverRouting'
+         deallocate(WTOT_AFTER,UNBALANCE,UNBALANCE_GLOBAL,ERROR,QFLOW_SINK,QFLOW_SINK_GLOBAL,WTOT_BEFORE_GLOBAL,WTOT_AFTER_GLOBAL)
+         deallocate(runoff_save_m3,runoff_global_m3,ERROR_GLOBAL,runoff_cat_global)
 
-    ! STEP 1: Identify active catchments within the local processor. If the catchment is active in 
-    !         more than 1 processor, choose an owner.
-    ! --------------------------------------------------------------------------------------------
 
-    allocate (LocalActive (1:N_CatG))
-    LocalActive = -9999
- 
-    Local_Min = minval (pfaf_code)
-    Local_Max = maxval (pfaf_code)
- 
-    do N = 1, size (pfaf_code)               
-       LocalActive(pfaf_code(n)) = pfaf_code(n) 
-    end do 
+  end subroutine check balance
 
-    allocate (global_buff (N_CatG * numprocs))
-    allocate (scounts(numprocs),rdispls(numprocs),rcounts(numprocs))  
 
-    scounts = N_CatG
-    rcounts = N_CatG
-    
-    rdispls(1) = 0
-    global_buff= 0
-    
-    do i=2,numprocs
-       rdispls(i)=rdispls(i-1)+rcounts(i-1)
-    enddo   
-    
-    call MPI_allgatherv  (                          &
-         LocalActive, scounts         ,MPI_INTEGER, &
-         global_buff, rcounts, rdispls,MPI_INTEGER, &
-         MPI_COMM_WORLD, mpierr) 
-    
-    do i=1,numprocs
-       Allactive (:,i) = global_buff((i-1)*N_CatG+1:i*N_CatG)
-    enddo
-
-    if (root_proc) then
-
-       DO N = 1, N_CatG
-          NPROCS = count(Allactive(N,:) >= 1)
-          if(NPROCS > 0)then
-             if (NPROCS == 1) then
-                srcProcsID (N) = maxloc(Allactive(N,:),dim=1) - 1
-             else
-                i1 = MAX(N - 5,1)
-                i2 = MIN(N + 5, N_CatG)
-                N_active = 0
-                do I = 1,numprocs
-                   if(Allactive (N,I) >= 1) then
-                      if(count (Allactive(I1:I2,I) > 0) > N_active) then
-                         N_active = count (Allactive(I1:I2,I) > 0)
-                         J        = I
-                      endif
-                   endif
-                end do
-                srcProcsID (N) = J - 1
-             endif
-          endif
-       END DO
-
-    endif
-
-    call MPI_BCAST (srcProcsID, N_CatG, MPI_INTEGER, 0,MPI_COMM_WORLD,mpierr)
-
-    ! STEP 2: reset downstream catchment indeces (from -1 OR 1:291284) of catchments that are
-    !            in the local processor to full domain indeces.
-    ! ------------------------------------------------------------------------------------------
-
-    do N = Local_Min, Local_Max
-       
-       if(LocalActive (N) >=1) then 
-          
-          if (LocDstCatchID (N) == -1) then
-             ! (a) DNST Catch is a sink hole, ocean or lake so water drains to self 
-             LocDstCatchID (N)    = N 
-             
-          endif
-          
-       else
-          
-          LocDstCatchID (N) = -9999 ! is inactive
-          
-       endif
-    end do
-
-    global_buff= 0
-   
-    call MPI_allgatherv  (                          &
-         LocDstCatchID,  scounts      ,MPI_INTEGER, &
-         global_buff, rcounts, rdispls,MPI_INTEGER, &
-         MPI_COMM_WORLD, mpierr)
-    
-    do i=1,numprocs
-       AlldstCatchID (:,i) = global_buff((i-1)*N_CatG+1:i*N_CatG)
-    enddo
-    
-    deallocate (global_buff, scounts, rdispls, rcounts, LocalActive)
-
-    RETURN_(ESMF_SUCCESS)
-  end subroutine InitializeRiverRouting
 end module GEOS_RouteGridCompMod
