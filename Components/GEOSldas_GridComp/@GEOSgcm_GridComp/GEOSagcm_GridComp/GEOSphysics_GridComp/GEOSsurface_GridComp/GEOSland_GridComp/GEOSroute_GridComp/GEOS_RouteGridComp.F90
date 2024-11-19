@@ -25,7 +25,7 @@ module GEOS_RouteGridCompMod
   use MAPL_Mod
   use MAPL_ConstantsMod
   use ROUTING_MODEL,          ONLY:     &
-       river_routing, ROUTE_DT
+       river_routing_lin, river_routing_hyd, ROUTE_DT
 #if 0
   USE catch_constants, ONLY:          &
        N_CatG => N_Pfaf_Catchs  
@@ -798,7 +798,7 @@ contains
 
        ! Call river_routing_model
        ! ------------------------     
-       CALL RIVER_ROUTING  (ntiles, RUNOFF_ACT,AREACAT_ACT,LENGSC_ACT,  &
+       CALL RIVER_ROUTING_LIN  (ntiles, RUNOFF_ACT,AREACAT_ACT,LENGSC_ACT,  &
             WSTREAM_ACT,WRIVER_ACT, QSFLOW_ACT,QOUTFLOW_ACT) 
 
        allocate(QOUTFLOW_GLOBAL(n_catg))
