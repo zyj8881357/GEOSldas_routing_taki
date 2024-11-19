@@ -1214,8 +1214,8 @@ contains
               enddo
               close(90)
               !close(88);close(89);close(90)!;close(91)
-              print *, "output river storage is: ",sum(wriver_global)/1.e9
-              print *, "output stream storage is: ",sum(wstream_global)/1.e9                
+              !print *, "output river storage is: ",sum(wriver_global)/1.e9
+              !print *, "output stream storage is: ",sum(wstream_global)/1.e9                
          endif           
          deallocate(wriver_global,wstream_global,qoutflow_global,qsflow_global)
          route%wriver_acc = 0.
