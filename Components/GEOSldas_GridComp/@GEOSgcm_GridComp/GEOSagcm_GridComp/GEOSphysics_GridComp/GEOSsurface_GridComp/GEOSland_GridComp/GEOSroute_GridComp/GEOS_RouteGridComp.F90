@@ -38,6 +38,7 @@ module GEOS_RouteGridCompMod
   integer, parameter :: N_CatG = 291284
   integer,parameter :: nmax=150  
   integer,parameter :: upmax=34
+  character(len=500) :: inputdir="/umbc/xfs1/yujinz/users/yujinz/GEOSldas/river_input/"
 
   private
 
@@ -492,7 +493,7 @@ contains
     route%nt_global = nt_global
     !if (mapl_am_I_root()) print *, "nt_global=",nt_global           
     allocate(pfaf(nt_global))
-    open(77,file="../input/pfaf_input.txt",status="old",action="read")
+    open(77,file=trim(inputdir)//"/pfaf_input.txt",status="old",action="read")
     read(77,*)pfaf
     close(77)
     ! exchange Pfaf across PEs
@@ -627,8 +628,8 @@ contains
     VERIFY_(STATUS)
   ! Read sub-area data from text files
     allocate(nsub_global(N_CatG),subarea_global(nmax,N_CatG))
-    open(77,file="../input/Pfaf_nsub_M36.txt",status="old",action="read"); read(77,*)nsub_global; close(77)
-    open(77,file="../input/Pfaf_asub_M36.txt",status="old",action="read"); read(77,*)subarea_global; close(77)       
+    open(77,file=trim(inputdir)//"/Pfaf_nsub_M36.txt",status="old",action="read"); read(77,*)nsub_global; close(77)
+    open(77,file=trim(inputdir)//"/Pfaf_asub_M36.txt",status="old",action="read"); read(77,*)subarea_global; close(77)       
     allocate(nsub(ntiles),subarea(nmax,ntiles))
     nsub=nsub_global(minCatch:maxCatch)
     subarea=subarea_global(:,minCatch:maxCatch)
@@ -639,7 +640,7 @@ contains
     route%subarea => subarea
     
     allocate(subi_global(nmax,N_CatG),subi(nmax,ntiles))
-    open(77,file="../input/Pfaf_isub_M36.txt",status="old",action="read");read(77,*)subi_global;close(77)
+    open(77,file=trim(inputdir)//"/Pfaf_isub_M36.txt",status="old",action="read");read(77,*)subi_global;close(77)
     subi=subi_global(:,minCatch:maxCatch)
     route%subi => subi
     deallocate(subi_global)
@@ -676,7 +677,7 @@ contains
     route%runoff_save=0.
 
     allocate(tile_area_local(nt_local),tile_area_global(nt_global))  
-    open(77,file="../input/area_m36_1d.txt",status="old",action="read");read(77,*)tile_area_global;close(77)
+    open(77,file=trim(inputdir)//"/area_m36_1d.txt",status="old",action="read");read(77,*)tile_area_global;close(77)
     tile_area_local=tile_area_global(rdispls_global(mype+1)+1:rdispls_global(mype+1)+nt_local)*1.e6 !km2->m2
     route%tile_area => tile_area_local
     deallocate(tile_area_global)
@@ -695,19 +696,19 @@ contains
     route%areacat=>areacat
 
     allocate(lengsc_global(n_catg),lengsc(ntiles))   
-    open(77,file="../input/Pfaf_lriv_PR.txt",status="old",action="read");read(77,*)lengsc_global;close(77)
+    open(77,file=trim(inputdir)//"/Pfaf_lriv_PR.txt",status="old",action="read");read(77,*)lengsc_global;close(77)
     lengsc=lengsc_global(minCatch:maxCatch)*1.e3 !km->m
     route%lengsc=>lengsc
     deallocate(lengsc_global)
 
     allocate(downid_global(n_catg),downid(ntiles))
-    open(77,file="../input/downstream_1D_new_noadj.txt",status="old",action="read");read(77,*)downid_global;close(77)    
+    open(77,file=trim(inputdir)//"/downstream_1D_new_noadj.txt",status="old",action="read");read(77,*)downid_global;close(77)    
     downid=downid_global(minCatch:maxCatch)
     route%downid=>downid
     deallocate(downid_global)
 
     allocate(upid_global(upmax,n_catg),upid(upmax,ntiles))   
-    open(77,file="../input/upstream_1D.txt",status="old",action="read");read(77,*)upid_global;close(77)  
+    open(77,file=trim(inputdir)//"/upstream_1D.txt",status="old",action="read");read(77,*)upid_global;close(77)  
     upid=upid_global(:,minCatch:maxCatch)   
     route%upid=>upid
     deallocate(upid_global)
@@ -725,12 +726,12 @@ contains
       read(77,*)wriver_global;close(77)
     else
       close(77)
-      open(78,file="../input/river_storage_rs_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",status="old",action="read",iostat=status)
+      open(78,file=trim(inputdir)//"/river_storage_rs_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",status="old",action="read",iostat=status)
       if(status==0)then   
         read(78,*)wriver_global;close(78)  
       else
         close(78)      
-        open(79,file="../input/river_storage_rs.txt",status="old",action="read",iostat=status)      
+        open(79,file=trim(inputdir)//"/river_storage_rs.txt",status="old",action="read",iostat=status)      
         if(status==0)then 
           read(79,*)wriver_global;close(79) 
         else
@@ -744,12 +745,12 @@ contains
       read(77,*)wstream_global;close(77)
     else
       close(77)
-      open(78,file="../input/stream_storage_rs_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",status="old",action="read",iostat=status)
+      open(78,file=trim(inputdir)//"/stream_storage_rs_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",status="old",action="read",iostat=status)
       if(status==0)then   
         read(78,*)wstream_global;close(78)  
       else
         close(78)      
-        open(79,file="../input/stream_storage_rs.txt",status="old",action="read",iostat=status)      
+        open(79,file=trim(inputdir)//"/stream_storage_rs.txt",status="old",action="read",iostat=status)      
         if(status==0)then 
           read(79,*)wstream_global;close(79) 
         else
