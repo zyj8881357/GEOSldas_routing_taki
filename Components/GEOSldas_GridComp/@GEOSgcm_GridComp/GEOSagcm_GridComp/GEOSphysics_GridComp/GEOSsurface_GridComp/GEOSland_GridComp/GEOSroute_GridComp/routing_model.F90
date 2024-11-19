@@ -142,14 +142,14 @@ MODULE routing_model
        NCAT,                                &
        Qrunf0,llc_ori0,lstr0,             &
        qstr_clmt0, qri_clmt0, qin_clmt0,              &
-       K, Kstr,                          &
+       K, Kstr0,                          &
        Ws0,Wr0,                      &
        Qs,Qout)
     
     IMPLICIT NONE
     INTEGER, INTENT(IN)                     :: NCAT
     REAL,    INTENT(IN),   DIMENSION (NCAT) :: Qrunf0,llc_ori0,lstr0
-    REAL,    INTENT(IN),   DIMENSION (NCAT) :: qstr_clmt, qri_clmt0, qin_clmt0
+    REAL,    INTENT(IN),   DIMENSION (NCAT) :: qstr_clmt0,qri_clmt0, qin_clmt0
     REAL,    INTENT(IN),   DIMENSION (NCAT) :: K, Kstr0
     REAL,    INTENT(INOUT),DIMENSION (NCAT) :: Ws0,Wr0
     REAL,    INTENT(OUT),  DIMENSION (NCAT) :: Qs,Qout
