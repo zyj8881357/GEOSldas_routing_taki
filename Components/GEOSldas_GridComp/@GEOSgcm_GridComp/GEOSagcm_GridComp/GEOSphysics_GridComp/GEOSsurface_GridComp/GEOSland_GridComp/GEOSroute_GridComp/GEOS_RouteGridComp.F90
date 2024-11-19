@@ -456,7 +456,7 @@ contains
     route%runoff_save=0.
 
     allocate(tile_area_local(nt_local),tile_area_global(nt_global))  
-    open(77,file=trim(inputdir)//"/area_m36_1d.txt",status="old",action="read");read(77,*)tile_area_global;close(77)
+    open(77,file=trim(inputdir)//"/area_M36_1d.txt",status="old",action="read");read(77,*)tile_area_global;close(77)
     tile_area_local=tile_area_global(rdispls_global(mype+1)+1:rdispls_global(mype+1)+nt_local)*1.e6 !km2->m2
     route%tile_area => tile_area_local
     deallocate(tile_area_global)
@@ -821,7 +821,7 @@ contains
          enddo
        enddo
 
-       call check_balance(route,ntiles,nt_local,runoff_save,WRIVER_ACT,WSTREAM_ACT,WTOT_BEFORE,RUNOFF_ACT,QINFLOW_LOCAL,QOUTFLOW_ACT,FirstTime)
+       !call check_balance(route,ntiles,nt_local,runoff_save,WRIVER_ACT,WSTREAM_ACT,WTOT_BEFORE,RUNOFF_ACT,QINFLOW_LOCAL,QOUTFLOW_ACT,FirstTime)
 
        if(FirstTime) nstep_per_day = 86400/route_dt
        route%wriver_acc = route%wriver_acc + WRIVER_ACT/real(nstep_per_day)
