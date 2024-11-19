@@ -1204,14 +1204,14 @@ contains
               open(88,file="../river/river_storage_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",action="write")
               open(89,file="../river/stream_storage_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",action="write")
               open(90,file="../river/river_flow_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",action="write")              
-              open(91,file="../river/stream_flow_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",action="write")
+              !open(91,file="../river/stream_flow_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",action="write")
               do i=1,n_catg
                 write(88,*)wriver_global(i)
                 write(89,*)wstream_global(i)
                 write(90,*)qoutflow_global(i)
-                write(91,*)qsflow_global(i)
+                !write(91,*)qsflow_global(i)
               enddo
-              close(88);close(89);close(90);close(91)
+              close(88);close(89);close(90)!;close(91)
               print *, "output river storage is: ",sum(wriver_global)/1.e9
               print *, "output stream storage is: ",sum(wstream_global)/1.e9                
          endif           
