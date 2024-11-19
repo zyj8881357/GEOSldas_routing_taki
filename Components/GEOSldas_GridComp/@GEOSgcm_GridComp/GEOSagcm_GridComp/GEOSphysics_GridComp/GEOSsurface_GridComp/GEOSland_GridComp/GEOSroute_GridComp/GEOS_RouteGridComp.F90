@@ -437,6 +437,7 @@ contains
     integer,pointer :: upid_global(:,:)=>NULL(), upid(:,:)=>NULL()    
 
     real,pointer :: wstream(:)=>NULL(),wriver(:)=>NULL()
+    real,pointer :: wstream_global(:)=>NULL(),wriver_global(:)=>NULL()    
     
     type (T_RROUTE_STATE), pointer         :: route => null()
     type (RROUTE_wrap)                     :: wrap
