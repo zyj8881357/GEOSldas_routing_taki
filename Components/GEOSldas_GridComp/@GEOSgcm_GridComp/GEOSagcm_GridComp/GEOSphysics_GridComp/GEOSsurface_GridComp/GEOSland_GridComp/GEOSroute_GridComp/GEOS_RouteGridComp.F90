@@ -1182,18 +1182,18 @@ contains
        endif
        if(HH==23)then
          allocate(wriver_global(n_catg),wstream_global(n_catg),qoutflow_global(n_catg),qsflow_global(n_catg))       
-         call MPI_allgatherv  (                          &
-              route%wstream_acc,  route%scounts_cat(mype+1)      ,MPI_REAL, &
-              wstream_global, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
-              MPI_COMM_WORLD, mpierr)
-         call MPI_allgatherv  (                          &
-              route%wriver_acc,  route%scounts_cat(mype+1)      ,MPI_REAL, &
-              wriver_global, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
-              MPI_COMM_WORLD, mpierr)       
-         call MPI_allgatherv  (                          &
-              route%qsflow_acc,  route%scounts_cat(mype+1)      ,MPI_REAL, &
-              qsflow_global, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
-              MPI_COMM_WORLD, mpierr)  
+         !call MPI_allgatherv  (                          &
+         !     route%wstream_acc,  route%scounts_cat(mype+1)      ,MPI_REAL, &
+         !     wstream_global, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
+         !     MPI_COMM_WORLD, mpierr)
+         !call MPI_allgatherv  (                          &
+         !     route%wriver_acc,  route%scounts_cat(mype+1)      ,MPI_REAL, &
+         !     wriver_global, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
+         !     MPI_COMM_WORLD, mpierr)       
+         !call MPI_allgatherv  (                          &
+         !     route%qsflow_acc,  route%scounts_cat(mype+1)      ,MPI_REAL, &
+         !     qsflow_global, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
+         !     MPI_COMM_WORLD, mpierr)  
          call MPI_allgatherv  (                          &
               route%qoutflow_acc,  route%scounts_cat(mype+1)      ,MPI_REAL, &
               qoutflow_global, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
@@ -1202,17 +1202,18 @@ contains
               write(yr_s,'(I4.4)')YY
               write(mon_s,'(I2.2)')MM
               write(day_s,'(I2.2)')DD
-              open(88,file="../river/river_storage_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",action="write")
-              open(89,file="../river/stream_storage_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",action="write")
+              !open(88,file="../river/river_storage_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",action="write")
+              !open(89,file="../river/stream_storage_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",action="write")
               open(90,file="../river/river_flow_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",action="write")              
               !open(91,file="../river/stream_flow_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",action="write")
               do i=1,n_catg
-                write(88,*)wriver_global(i)
-                write(89,*)wstream_global(i)
+                !write(88,*)wriver_global(i)
+                !write(89,*)wstream_global(i)
                 write(90,*)qoutflow_global(i)
                 !write(91,*)qsflow_global(i)
               enddo
-              close(88);close(89);close(90)!;close(91)
+              close(90)
+              !close(88);close(89);close(90)!;close(91)
               print *, "output river storage is: ",sum(wriver_global)/1.e9
               print *, "output stream storage is: ",sum(wstream_global)/1.e9                
          endif           
