@@ -206,7 +206,7 @@ MODULE routing_model
     Wr=Wr+Qs*dt
     Qout=max(0.,alp_r * Wr**(1./(1.-mm))) ! River flow based on water storage (kg/s)
     Qout=min(Qout,Wr/dt)
-    Wr=max(0,Wr-Qout*dt)
+    Wr=max(0.,Wr-Qout*dt)
 
     Ws0 = Ws/rho !kg -> m3
     Wr0 = Wr/rho !kg -> m3
