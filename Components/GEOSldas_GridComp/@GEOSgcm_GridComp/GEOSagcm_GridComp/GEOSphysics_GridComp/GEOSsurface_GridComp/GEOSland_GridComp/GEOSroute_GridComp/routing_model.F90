@@ -140,7 +140,7 @@ MODULE routing_model
 
   SUBROUTINE RIVER_ROUTING_HYD (                &
        NCAT,                                &
-       Qrunf0,llc_ori0,lstr0             &
+       Qrunf0,llc_ori0,lstr0,             &
        qstr_clmt0, qri_clmt0, qin_clmt0,              &
        K, Kstr,                          &
        Ws0,Wr0,                      &
