@@ -821,7 +821,7 @@ contains
          enddo
        enddo
 
-       call check_balance(route,ntiles,WRIVER_ACT,WSTREAM_ACT,WTOT_BEFORE,RUNOFF_ACT,QINFLOW_LOCAL,QOUTFLOW_ACT,FirstTime)
+       call check_balance(route,ntiles,nt_local,runoff_save,WRIVER_ACT,WSTREAM_ACT,WTOT_BEFORE,RUNOFF_ACT,QINFLOW_LOCAL,QOUTFLOW_ACT,FirstTime)
 
        if(FirstTime) nstep_per_day = 86400/route_dt
        route%wriver_acc = route%wriver_acc + WRIVER_ACT/real(nstep_per_day)
@@ -940,11 +940,11 @@ contains
 ! --------------------------------------------------------
 
 
-  subroutine check_balance(route,ntiles,WRIVER_ACT,WSTREAM_ACT,WTOT_BEFORE,RUNOFF_ACT,QINFLOW_LOCAL,QOUTFLOW_ACT,FirstTime)
+  subroutine check_balance(route,ntiles,nt_local,runoff_save,WRIVER_ACT,WSTREAM_ACT,WTOT_BEFORE,RUNOFF_ACT,QINFLOW_LOCAL,QOUTFLOW_ACT,FirstTime)
       
       type(T_RROUTE_STATE), intent(in) :: route 
-      integer, intent(in) :: ntiles
-      real,intent(in) :: WRIVER_ACT(ntiles),WSTREAM_ACT(ntiles),WTOT_BEFORE(ntiles),RUNOFF_ACT(ntiles)
+      integer, intent(in) :: ntiles,nt_local
+      real,intent(in) :: runoff_save(nt_local),WRIVER_ACT(ntiles),WSTREAM_ACT(ntiles),WTOT_BEFORE(ntiles),RUNOFF_ACT(ntiles)
       real,intent(in) :: QINFLOW_LOCAL(ntiles),QOUTFLOW_ACT(ntiles)
       logical,intent(in) :: FirstTime
 
@@ -953,7 +953,7 @@ contains
       real,allocatable :: WTOT_AFTER(:),UNBALANCE(:),UNBALANCE_GLOBAL(:),ERROR(:),ERROR_GLOBAL(:)
       real,allocatable :: QFLOW_SINK(:),QFLOW_SINK_GLOBAL(:),WTOT_BEFORE_GLOBAL(:),WTOT_AFTER_GLOBAL(:)
 
-      integer :: i, nt_global,mype,cid,temp(1),tid
+      integer :: i, nt_global,nt_local,mype,cid,temp(1),tid,mpierr
 
       nt_global = route%nt_global
       mype = route%mype   
@@ -1045,7 +1045,7 @@ contains
          deallocate(runoff_save_m3,runoff_global_m3,ERROR_GLOBAL,runoff_cat_global)
 
 
-  end subroutine check balance
+  end subroutine check_balance
 
 
 end module GEOS_RouteGridCompMod
