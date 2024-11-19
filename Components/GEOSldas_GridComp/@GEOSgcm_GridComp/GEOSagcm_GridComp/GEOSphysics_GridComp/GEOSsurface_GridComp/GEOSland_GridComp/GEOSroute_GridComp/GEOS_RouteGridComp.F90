@@ -1152,7 +1152,7 @@ contains
          !       write(88,*)ERROR_GLOBAL(i)
          !    enddo
          !  endif
-         endif
+         !endif
 
          deallocate(WTOT_AFTER,UNBALANCE,UNBALANCE_GLOBAL,ERROR,QFLOW_SINK,QFLOW_SINK_GLOBAL,WTOT_BEFORE_GLOBAL,WTOT_AFTER_GLOBAL)
          deallocate(runoff_save_m3,runoff_global_m3,ERROR_GLOBAL,runoff_cat_global)
