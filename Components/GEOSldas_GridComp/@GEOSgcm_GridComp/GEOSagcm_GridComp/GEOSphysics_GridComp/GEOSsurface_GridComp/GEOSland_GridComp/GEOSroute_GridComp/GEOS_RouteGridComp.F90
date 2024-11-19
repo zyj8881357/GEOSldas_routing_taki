@@ -953,7 +953,7 @@ contains
       real,allocatable :: WTOT_AFTER(:),UNBALANCE(:),UNBALANCE_GLOBAL(:),ERROR(:),ERROR_GLOBAL(:)
       real,allocatable :: QFLOW_SINK(:),QFLOW_SINK_GLOBAL(:),WTOT_BEFORE_GLOBAL(:),WTOT_AFTER_GLOBAL(:)
 
-      integer :: i, nt_global,nt_local,mype,cid,temp(1),tid,mpierr
+      integer :: i, nt_global,mype,cid,temp(1),tid,mpierr
 
       nt_global = route%nt_global
       mype = route%mype   
