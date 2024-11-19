@@ -77,6 +77,13 @@ module GEOS_RouteGridCompMod
      real,    pointer :: qoutflow_acc(:) => NULL()
      real,    pointer :: qsflow_acc(:)  => NULL()
 
+     real,    pointer :: lstr(:) => NULL() !m
+     real,    pointer :: qri_clmt(:) => NULL() !m3/s
+     real,    pointer :: qin_clmt(:) => NULL() !m3/s
+     real,    pointer :: qstr_clmt(:) =>NULL() !m3/s
+     real,    pointer :: K(:) => NULL()
+     real,    pointer :: Kstr(:) => NULL()
+
   end type T_RROUTE_STATE
 
 
@@ -333,7 +340,7 @@ contains
     integer,pointer :: scounts_cat(:)=>NULL(),rdispls_cat(:)=>NULL()    
 
     real,pointer :: runoff_save(:)=>NULL(), areacat(:)=>NULL()
-    real,pointer :: lengsc_global(:)=>NULL(), lengsc(:)=>NULL()
+    real,pointer :: lengsc_global(:)=>NULL(), lengsc(:)=>NULL(), buff_global(:)=>NULL()
     integer,pointer :: downid_global(:)=>NULL(), downid(:)=>NULL()
     integer,pointer :: upid_global(:,:)=>NULL(), upid(:,:)=>NULL()    
 
@@ -552,6 +559,36 @@ contains
     route%qoutflow_acc=0.
     route%qsflow_acc=0.
 
+   !input for geometry hydraulic
+    allocate(buff_global(n_catg),route%lstr(ntiles))   
+    open(77,file=trim(inputdir)//"/Pfaf_lstr_PR.txt",status="old",action="read");read(77,*)buff_global;close(77)
+    route%lstr=buff_global(minCatch:maxCatch)*1.e3 !km->m
+    deallocate(buff_global)   
+
+    allocate(buff_global(n_catg),route%K(ntiles))   
+    open(77,file=trim(inputdir)//"/Pfaf_Kv_PR_0p35_0p45_0p2_n0p2.txt",status="old",action="read");read(77,*)buff_global;close(77)
+    route%K=buff_global(minCatch:maxCatch) 
+    deallocate(buff_global)  
+
+    allocate(buff_global(n_catg),route%Kstr(ntiles))   
+    open(77,file=trim(inputdir)//"/Pfaf_Kstr_PR_fac1_0p35_0p45_0p2_n0p2.txt",status="old",action="read");read(77,*)buff_global;close(77)
+    route%Kstr=buff_global(minCatch:maxCatch)
+    deallocate(buff_global)     
+
+    allocate(buff_global(n_catg),route%qri_clmt(ntiles))   
+    open(77,file=trim(inputdir)//"/Pfaf_qri.txt",status="old",action="read");read(77,*)buff_global;close(77)
+    route%qri_clmt=buff_global(minCatch:maxCatch) !m3/s
+    deallocate(buff_global)      
+
+    allocate(buff_global(n_catg),route%qin_clmt(ntiles))   
+    open(77,file=trim(inputdir)//"/Pfaf_qin.txt",status="old",action="read");read(77,*)buff_global;close(77)
+    route%qin_clmt=buff_global(minCatch:maxCatch) !m3/s
+    deallocate(buff_global)  
+
+    allocate(buff_global(n_catg),route%qstr_clmt(ntiles))   
+    open(77,file=trim(inputdir)//"/Pfaf_qstr.txt",status="old",action="read");read(77,*)buff_global;close(77)
+    route%qstr_clmt=buff_global(minCatch:maxCatch) !m3/s
+    deallocate(buff_global) 
 
     !if (mapl_am_I_root())then
     !  open(88,file="nsub.txt",action="write")
@@ -798,8 +835,15 @@ contains
 
        ! Call river_routing_model
        ! ------------------------     
-       CALL RIVER_ROUTING_LIN  (ntiles, RUNOFF_ACT,AREACAT_ACT,LENGSC_ACT,  &
-            WSTREAM_ACT,WRIVER_ACT, QSFLOW_ACT,QOUTFLOW_ACT) 
+       !CALL RIVER_ROUTING_LIN  (ntiles, RUNOFF_ACT,AREACAT_ACT,LENGSC_ACT,  &
+       !     WSTREAM_ACT,WRIVER_ACT, QSFLOW_ACT,QOUTFLOW_ACT) 
+
+       CALL RIVER_ROUTING_HYD  (ntiles, &
+            RUNOFF_ACT, route%lengsc, route%lstr, &
+            route%qstr_clmt, route%qri_clmt, route%qin_clmt, &
+            route%K, route%Kstr, &
+            WSTREAM_ACT,WRIVER_ACT, &
+            QSFLOW_ACT,QOUTFLOW_ACT)        
 
        allocate(QOUTFLOW_GLOBAL(n_catg))
        call MPI_allgatherv  (                          &
@@ -821,7 +865,7 @@ contains
          enddo
        enddo
 
-       !call check_balance(route,ntiles,nt_local,runoff_save,WRIVER_ACT,WSTREAM_ACT,WTOT_BEFORE,RUNOFF_ACT,QINFLOW_LOCAL,QOUTFLOW_ACT,FirstTime)
+       call check_balance(route,ntiles,nt_local,runoff_save,WRIVER_ACT,WSTREAM_ACT,WTOT_BEFORE,RUNOFF_ACT,QINFLOW_LOCAL,QOUTFLOW_ACT,FirstTime)
 
        if(FirstTime) nstep_per_day = 86400/route_dt
        route%wriver_acc = route%wriver_acc + WRIVER_ACT/real(nstep_per_day)
@@ -1000,22 +1044,22 @@ contains
               runoff_cat_global, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
               MPI_COMM_WORLD, mpierr)     
          if(mapl_am_I_root())then 
-             open(88,file="runoff_global_m3.txt",status="unknown", position="append")
-             write(88,*)sum(runoff_global_m3)
-             close(88)
-             open(88,file="runoff_cat_global.txt",status="unknown", position="append")
-             write(88,*)sum(runoff_cat_global)
-             close(88)  
+             !open(88,file="runoff_global_m3.txt",status="unknown", position="append")
+             !write(88,*)sum(runoff_global_m3)
+             !close(88)
+             !open(88,file="runoff_cat_global.txt",status="unknown", position="append")
+             !write(88,*)sum(runoff_cat_global)
+             !close(88)  
              print *,"sum(runoff_global_m3)=",sum(runoff_global_m3)
              print *,"sum(runoff_cat_global)=",sum(runoff_cat_global)   
          endif                   
          if(mapl_am_I_root())then 
-             open(88,file="WTOT_AFTER.txt",status="unknown", position="append")
-             write(88,*)sum(WTOT_AFTER_GLOBAL)
-             close(88)
-             open(88,file="WTOT_BEFORE_RUNOFF_QSINK.txt",status="unknown", position="append")
-             write(88,*) sum(WTOT_BEFORE_GLOBAL)+sum(runoff_global_m3)*route_dt-sum(QFLOW_SINK_GLOBAL)*route_dt
-             close(88)  
+             !open(88,file="WTOT_AFTER.txt",status="unknown", position="append")
+             !write(88,*)sum(WTOT_AFTER_GLOBAL)
+             !close(88)
+             !open(88,file="WTOT_BEFORE_RUNOFF_QSINK.txt",status="unknown", position="append")
+             !write(88,*) sum(WTOT_BEFORE_GLOBAL)+sum(runoff_global_m3)*route_dt-sum(QFLOW_SINK_GLOBAL)*route_dt
+             !close(88)  
              open(88,file="WTOT_ERROR_2_RUNOFF.txt",status="unknown", position="append")
              write(88,*) (sum(WTOT_AFTER_GLOBAL)-(sum(WTOT_BEFORE_GLOBAL)+sum(runoff_global_m3)*route_dt-sum(QFLOW_SINK_GLOBAL)*route_dt))/(sum(runoff_global_m3)*route_dt)
              close(88)    
@@ -1032,14 +1076,14 @@ contains
            tid=cid-route%minCatch+1
            print *,"my PE is:",mype,", max abs value of ERROR=", ERROR(tid)," at pfafid: ",route%minCatch+tid-1,", W_BEFORE=",WTOT_BEFORE(tid),", RUNOFF=",RUNOFF_ACT(tid)*route_dt,", QINFLOW=",QINFLOW_LOCAL(tid)*route_dt,", QOUTFLOW=",QOUTFLOW_ACT(tid)*route_dt,", W_AFTER=",WTOT_AFTER(tid)
          endif  
-         if(FirstTime)then     
-           if(mapl_am_I_root())then  
-             open(88,file="ERROR_TOTAL.txt",action="write")
-             do i=1,n_catg
-                write(88,*)ERROR_GLOBAL(i)
-             enddo
-           endif
-         endif
+         !if(FirstTime)then     
+         !  if(mapl_am_I_root())then  
+         !    open(88,file="ERROR_TOTAL.txt",action="write")
+         !    do i=1,n_catg
+         !       write(88,*)ERROR_GLOBAL(i)
+         !    enddo
+         !  endif
+         !endif
 
          deallocate(WTOT_AFTER,UNBALANCE,UNBALANCE_GLOBAL,ERROR,QFLOW_SINK,QFLOW_SINK_GLOBAL,WTOT_BEFORE_GLOBAL,WTOT_AFTER_GLOBAL)
          deallocate(runoff_save_m3,runoff_global_m3,ERROR_GLOBAL,runoff_cat_global)

@@ -140,7 +140,7 @@ MODULE routing_model
 
   SUBROUTINE RIVER_ROUTING_HYD (                &
        NCAT,                                &
-       Qrunf0,llc_ori0,lstr0,             &
+       Qrunf0,llc_ori,lstr,             &
        qstr_clmt0, qri_clmt0, qin_clmt0,              &
        K, Kstr0,                          &
        Ws0,Wr0,                      &
@@ -148,8 +148,8 @@ MODULE routing_model
     
     IMPLICIT NONE
     INTEGER, INTENT(IN)                     :: NCAT
-    REAL,    INTENT(IN),   DIMENSION (NCAT) :: Qrunf0,llc_ori0,lstr0
-    REAL,    INTENT(IN),   DIMENSION (NCAT) :: qstr_clmt0,qri_clmt0, qin_clmt0
+    REAL,    INTENT(IN),   DIMENSION (NCAT) :: Qrunf0,llc_ori,lstr
+    REAL,    INTENT(IN),   DIMENSION (NCAT) :: qstr_clmt0,qri_clmt0,qin_clmt0
     REAL,    INTENT(IN),   DIMENSION (NCAT) :: K, Kstr0
     REAL,    INTENT(INOUT),DIMENSION (NCAT) :: Ws0,Wr0
     REAL,    INTENT(OUT),  DIMENSION (NCAT) :: Qs,Qout
@@ -163,15 +163,15 @@ MODULE routing_model
     real, parameter :: rho = 1000.
     real, parameter :: cur_avg = 1.4
 
-    real,dimension(NCAT) :: Qrunf,llc_ori,lstr,qstr_clmt,qri_clmt,qin_clmt,Ws,Wr,Kstr,dt
+    real,dimension(NCAT) :: Qrunf,qstr_clmt,qri_clmt,qin_clmt,Ws,Wr,Kstr,dt
     real,dimension(NCAT) :: nume,deno,llc,alp_s,alp_r,Qs0,ks,Ws_last   
 
     integer :: i,j 
     
 
     Qrunf = Qrunf0 * rho !m3/s -> kg/s  
-    llc_ori = llc_ori0 * 1.e3 !km -> m
-    lstr = lstr0 * 1.e3 !km -> m
+    !llc_ori = llc_ori0 * 1.e3 !km -> m
+    !lstr = lstr0 * 1.e3 !km -> m
     qstr_clmt = qstr_clmt0 * rho !m3/s -> kg/s
     qri_clmt = qri_clmt0 * rho !m3/s -> kg/s
     qin_clmt = qin_clmt0 * rho !m3/s -> kg/s
