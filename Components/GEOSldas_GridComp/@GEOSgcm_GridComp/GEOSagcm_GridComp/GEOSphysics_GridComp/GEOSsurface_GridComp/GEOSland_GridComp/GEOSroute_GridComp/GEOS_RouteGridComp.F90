@@ -948,6 +948,11 @@ contains
       real,intent(in) :: QINFLOW_LOCAL(ntiles),QOUTFLOW_ACT(ntiles)
       logical,intent(in) :: FirstTime
 
+      real,allocatable :: runoff_cat_global(:)
+      real,allocatable :: runoff_save_m3(:),runoff_global_m3(:)
+      real,allocatable :: WTOT_AFTER(:),UNBALANCE(:),UNBALANCE_GLOBAL(:),ERROR(:),ERROR_GLOBAL(:)
+      real,allocatable :: QFLOW_SINK(:),QFLOW_SINK_GLOBAL(:),WTOT_BEFORE_GLOBAL(:),WTOT_AFTER_GLOBAL(:)
+
       integer :: i, nt_global,mype,cid,temp(1),tid
 
       nt_global = route%nt_global
