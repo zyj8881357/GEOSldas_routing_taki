@@ -163,8 +163,9 @@ MODULE routing_model
     real, parameter :: rho = 1000.
     real, parameter :: cur_avg = 1.4
 
-    real,dimension(NCAT) :: Qrunf,qstr_clmt,qri_clmt,qin_clmt,Ws,Wr,Kstr,dt
-    real,dimension(NCAT) :: nume,deno,llc,alp_s,alp_r,Qs0,ks,Ws_last   
+    real,dimension(NCAT) :: Qrunf,qstr_clmt,qri_clmt,qin_clmt,Ws,Wr,Kstr
+    real,dimension(NCAT) :: nume,deno,llc,alp_s,alp_r,Qs0,ks,Ws_last  
+    real :: dt 
 
     integer :: i,j 
     
