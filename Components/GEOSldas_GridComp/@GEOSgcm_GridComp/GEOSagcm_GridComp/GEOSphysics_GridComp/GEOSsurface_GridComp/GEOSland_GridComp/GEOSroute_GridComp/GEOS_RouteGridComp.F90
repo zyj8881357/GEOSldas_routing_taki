@@ -810,6 +810,9 @@ contains
        call ESMF_TimeGet(CurrentTime, yy=YY, mm=MM, dd=DD, h=HH, m=MMM, s=SS, rc=status)  
        call ESMF_ClockGetNextTime(clock, nextTime=nextTime, rc=status)
        call ESMF_TimeGet(nextTime, yy=YY_next, mm=MM_next, dd=DD_next, rc=status) 
+       write(yr_s,'(I4.4)')YY
+       write(mon_s,'(I2.2)')MM
+       write(day_s,'(I2.2)')DD
 
        allocate(runoff_global(nt_global))
        call MPI_allgatherv  (                          &
@@ -880,7 +883,7 @@ contains
          enddo
        enddo
 
-       call check_balance(route,ntiles,nt_local,runoff_save,WRIVER_ACT,WSTREAM_ACT,WTOT_BEFORE,RUNOFF_ACT,QINFLOW_LOCAL,QOUTFLOW_ACT,FirstTime)
+       call check_balance(route,ntiles,nt_local,runoff_save,WRIVER_ACT,WSTREAM_ACT,WTOT_BEFORE,RUNOFF_ACT,QINFLOW_LOCAL,QOUTFLOW_ACT,FirstTime,yr_s,mon_s)
 
        if(FirstTime) nstep_per_day = 86400/route_dt
        route%wriver_acc = route%wriver_acc + WRIVER_ACT/real(nstep_per_day)
@@ -904,40 +907,37 @@ contains
        endif
        if(HH==23)then
          allocate(wriver_global(n_catg),wstream_global(n_catg),qoutflow_global(n_catg),qsflow_global(n_catg))       
-         !call MPI_allgatherv  (                          &
-         !     route%wstream_acc,  route%scounts_cat(mype+1)      ,MPI_REAL, &
-         !     wstream_global, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
-         !     MPI_COMM_WORLD, mpierr)
-         !call MPI_allgatherv  (                          &
-         !     route%wriver_acc,  route%scounts_cat(mype+1)      ,MPI_REAL, &
-         !     wriver_global, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
-         !     MPI_COMM_WORLD, mpierr)       
-         !call MPI_allgatherv  (                          &
-         !     route%qsflow_acc,  route%scounts_cat(mype+1)      ,MPI_REAL, &
-         !     qsflow_global, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
-         !     MPI_COMM_WORLD, mpierr)  
+         call MPI_allgatherv  (                          &
+              route%wriver_acc,  route%scounts_cat(mype+1)      ,MPI_REAL, &
+              wriver_global, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
+              MPI_COMM_WORLD, mpierr)    
+         call MPI_allgatherv  (                          &
+              route%wstream_acc,  route%scounts_cat(mype+1)      ,MPI_REAL, &
+              wstream_global, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
+              MPI_COMM_WORLD, mpierr)    
          call MPI_allgatherv  (                          &
               route%qoutflow_acc,  route%scounts_cat(mype+1)      ,MPI_REAL, &
               qoutflow_global, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
-              MPI_COMM_WORLD, mpierr)                       
+              MPI_COMM_WORLD, mpierr)        
+         !call MPI_allgatherv  (                          &
+         !     route%qsflow_acc,  route%scounts_cat(mype+1)      ,MPI_REAL, &
+         !     qsflow_global, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
+         !     MPI_COMM_WORLD, mpierr)                              
          if(mapl_am_I_root())then   
-              write(yr_s,'(I4.4)')YY
-              write(mon_s,'(I2.2)')MM
-              write(day_s,'(I2.2)')DD
-              !open(88,file="../river/river_storage_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",action="write")
-              !open(89,file="../river/stream_storage_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",action="write")
+              open(88,file="../river/river_storage_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",action="write")
+              open(89,file="../river/stream_storage_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",action="write")
               open(90,file="../river/river_flow_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",action="write")              
               !open(91,file="../river/stream_flow_"//trim(yr_s)//trim(mon_s)//trim(day_s)//".txt",action="write")
               do i=1,n_catg
-                !write(88,*)wriver_global(i)
-                !write(89,*)wstream_global(i)
+                write(88,*)wriver_global(i)
+                write(89,*)wstream_global(i)
                 write(90,*)qoutflow_global(i)
                 !write(91,*)qsflow_global(i)
               enddo
-              close(90)
-              !close(88);close(89);close(90)!;close(91)
-              !print *, "output river storage is: ",sum(wriver_global)/1.e9
-              !print *, "output stream storage is: ",sum(wstream_global)/1.e9                
+              !close(90)
+              close(88);close(89);close(90)!;close(91)
+              print *, "output river storage is: ",sum(wriver_global)/1.e9
+              print *, "output stream storage is: ",sum(wstream_global)/1.e9                
          endif           
          deallocate(wriver_global,wstream_global,qoutflow_global,qsflow_global)
          route%wriver_acc = 0.
@@ -999,20 +999,22 @@ contains
 ! --------------------------------------------------------
 
 
-  subroutine check_balance(route,ntiles,nt_local,runoff_save,WRIVER_ACT,WSTREAM_ACT,WTOT_BEFORE,RUNOFF_ACT,QINFLOW_LOCAL,QOUTFLOW_ACT,FirstTime)
+  subroutine check_balance(route,ntiles,nt_local,runoff_save,WRIVER_ACT,WSTREAM_ACT,WTOT_BEFORE,RUNOFF_ACT,QINFLOW_LOCAL,QOUTFLOW_ACT,FirstTime,yr_s,mon_s)
       
       type(T_RROUTE_STATE), intent(in) :: route 
       integer, intent(in) :: ntiles,nt_local
       real,intent(in) :: runoff_save(nt_local),WRIVER_ACT(ntiles),WSTREAM_ACT(ntiles),WTOT_BEFORE(ntiles),RUNOFF_ACT(ntiles)
       real,intent(in) :: QINFLOW_LOCAL(ntiles),QOUTFLOW_ACT(ntiles)
       logical,intent(in) :: FirstTime
-
+      character(len=*), intent(in) :: yr_s,mon_s
+   
       real,allocatable :: runoff_cat_global(:)
       real,allocatable :: runoff_save_m3(:),runoff_global_m3(:)
       real,allocatable :: WTOT_AFTER(:),UNBALANCE(:),UNBALANCE_GLOBAL(:),ERROR(:),ERROR_GLOBAL(:)
       real,allocatable :: QFLOW_SINK(:),QFLOW_SINK_GLOBAL(:),WTOT_BEFORE_GLOBAL(:),WTOT_AFTER_GLOBAL(:)
 
       integer :: i, nt_global,mype,cid,temp(1),tid,mpierr
+      real :: wr_error, wr_tot, runf_tot
 
       nt_global = route%nt_global
       mype = route%mype   
@@ -1059,14 +1061,14 @@ contains
               runoff_cat_global, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
               MPI_COMM_WORLD, mpierr)     
          if(mapl_am_I_root())then 
-             !open(88,file="runoff_global_m3.txt",status="unknown", position="append")
-             !write(88,*)sum(runoff_global_m3)
-             !close(88)
-             !open(88,file="runoff_cat_global.txt",status="unknown", position="append")
-             !write(88,*)sum(runoff_cat_global)
-             !close(88)  
-             print *,"sum(runoff_global_m3)=",sum(runoff_global_m3)
-             print *,"sum(runoff_cat_global)=",sum(runoff_cat_global)   
+             open(88,file="../runoff_tile_global_"//trim(yr_s)//"_"//trim(mon_s)//".txt",status="unknown", position="append")
+             write(88,*)sum(runoff_global_m3)
+             close(88)
+             open(88,file="../runoff_cat_global_"//trim(yr_s)//"_"//trim(mon_s)//".txt",status="unknown", position="append")
+             write(88,*)sum(runoff_cat_global)
+             close(88)  
+             !print *,"sum(runoff_global_m3)=",sum(runoff_global_m3)
+             !print *,"sum(runoff_cat_global)=",sum(runoff_cat_global)   
          endif                   
          if(mapl_am_I_root())then 
              !open(88,file="WTOT_AFTER.txt",status="unknown", position="append")
@@ -1075,10 +1077,16 @@ contains
              !open(88,file="WTOT_BEFORE_RUNOFF_QSINK.txt",status="unknown", position="append")
              !write(88,*) sum(WTOT_BEFORE_GLOBAL)+sum(runoff_global_m3)*route_dt-sum(QFLOW_SINK_GLOBAL)*route_dt
              !close(88)  
-             open(88,file="WTOT_ERROR_2_RUNOFF.txt",status="unknown", position="append")
-             write(88,*) (sum(WTOT_AFTER_GLOBAL)-(sum(WTOT_BEFORE_GLOBAL)+sum(runoff_global_m3)*route_dt-sum(QFLOW_SINK_GLOBAL)*route_dt))/(sum(runoff_global_m3)*route_dt)
-             close(88)    
-             print *,"WTOT_ERROR_2_RUNOFF:",(sum(WTOT_AFTER_GLOBAL)-(sum(WTOT_BEFORE_GLOBAL)+sum(runoff_global_m3)*route_dt-sum(QFLOW_SINK_GLOBAL)*route_dt))/(sum(runoff_global_m3)*route_dt)          
+             wr_error=sum(WTOT_AFTER_GLOBAL)-(sum(WTOT_BEFORE_GLOBAL)+sum(runoff_global_m3)*route_dt-sum(QFLOW_SINK_GLOBAL)*route_dt)
+             runf_tot=sum(runoff_global_m3)*route_dt
+             wr_tot=sum(WTOT_AFTER_GLOBAL)
+             open(88,file="../WTOT_ERROR_2_RUNOFF_"//trim(yr_s)//"_"//trim(mon_s)//".txt",status="unknown", position="append")
+             write(88,*) wr_error/runf_tot
+             close(88)
+             open(88,file="../WTOT_ERROR_2_WTOT_"//trim(yr_s)//"_"//trim(mon_s)//".txt",status="unknown", position="append")
+             write(88,*) wr_error/wr_tot
+             close(88)                 
+             !print *,"WTOT_ERROR_2_RUNOFF:",(sum(WTOT_AFTER_GLOBAL)-(sum(WTOT_BEFORE_GLOBAL)+sum(runoff_global_m3)*route_dt-sum(QFLOW_SINK_GLOBAL)*route_dt))/(sum(runoff_global_m3)*route_dt)          
          endif                     
 
          call MPI_allgatherv  (                          &
