@@ -817,7 +817,7 @@ contains
           runoff_global, route%scounts_global, route%rdispls_global,MPI_REAL, &
           MPI_COMM_WORLD, mpierr) 
 
-       if(FirstTime.and.mapl_am_I_root()) print,"nmax=",nmax
+       if(FirstTime.and.mapl_am_I_root()) print *,"nmax=",nmax
        allocate(RUNOFF_ACT(ntiles))
        RUNOFF_ACT=0.
        do i=1,ntiles
