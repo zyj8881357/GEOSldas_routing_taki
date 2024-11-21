@@ -34,9 +34,9 @@ module GEOS_RouteGridCompMod
   
   implicit none
   integer, parameter :: N_CatG = 291284
-  integer,parameter :: nmax=150  
   integer,parameter :: upmax=34
   character(len=500) :: inputdir="/umbc/xfs1/yujinz/users/yujinz/GEOSldas/river_input/"
+  integer,save :: nmax 
 
   private
 
@@ -354,6 +354,7 @@ contains
     integer :: YY,MM,DD,HH,MMM,SS
     character(len=4) :: yr_s
     character(len=2) :: mon_s,day_s    
+    character(len=3) :: resname
 
     real, pointer :: dataPtr(:)
     integer :: j,nt_local,mpierr,it   
@@ -397,6 +398,19 @@ contains
          tileGrid=tilegrid, nt_global=nt_global, RC=status)
     VERIFY_(STATUS)     
     route%nt_global = nt_global
+
+    if(nt_global==112573)then
+      resname="M36"
+      nmax=150
+    else if(nt_global==1684725)then
+      resname="M09"
+      nmax=458
+    else
+      if(mapl_am_I_root())then
+        print *,"unknown grid for routing model"
+        stop
+      endif
+    endif
     ! exchange Pfaf across PEs
 
     call MAPL_LocStreamGet(locstream, TILEAREA = tile_area_src, LOCAL_ID=local_id, RC=status)
@@ -416,8 +430,8 @@ contains
     route%maxCatch = maxCatch 
   ! Read sub-area data from text files
     allocate(nsub_global(N_CatG),subarea_global(nmax,N_CatG))
-    open(77,file=trim(inputdir)//"/Pfaf_nsub_M36.txt",status="old",action="read"); read(77,*)nsub_global; close(77)
-    open(77,file=trim(inputdir)//"/Pfaf_asub_M36.txt",status="old",action="read"); read(77,*)subarea_global; close(77)       
+    open(77,file=trim(inputdir)//"/Pfaf_nsub_"//trim(resname)//".txt",status="old",action="read"); read(77,*)nsub_global; close(77)
+    open(77,file=trim(inputdir)//"/Pfaf_asub_"//trim(resname)//".txt",status="old",action="read"); read(77,*)subarea_global; close(77)       
     allocate(nsub(ntiles),subarea(nmax,ntiles))
     nsub=nsub_global(minCatch:maxCatch)
     subarea=subarea_global(:,minCatch:maxCatch)
@@ -428,7 +442,7 @@ contains
     route%subarea => subarea
     
     allocate(subi_global(nmax,N_CatG),subi(nmax,ntiles))
-    open(77,file=trim(inputdir)//"/Pfaf_isub_M36.txt",status="old",action="read");read(77,*)subi_global;close(77)
+    open(77,file=trim(inputdir)//"/Pfaf_isub_"//trim(resname)//".txt",status="old",action="read");read(77,*)subi_global;close(77)
     subi=subi_global(:,minCatch:maxCatch)
     route%subi => subi
     deallocate(subi_global)
@@ -463,7 +477,7 @@ contains
     route%runoff_save=0.
 
     allocate(tile_area_local(nt_local),tile_area_global(nt_global))  
-    open(77,file=trim(inputdir)//"/area_M36_1d.txt",status="old",action="read");read(77,*)tile_area_global;close(77)
+    open(77,file=trim(inputdir)//"/area_"//trim(resname)//"_1d.txt",status="old",action="read");read(77,*)tile_area_global;close(77)
     tile_area_local=tile_area_global(rdispls_global(mype+1)+1:rdispls_global(mype+1)+nt_local)*1.e6 !km2->m2
     route%tile_area => tile_area_local
     deallocate(tile_area_global)
@@ -803,6 +817,7 @@ contains
           runoff_global, route%scounts_global, route%rdispls_global,MPI_REAL, &
           MPI_COMM_WORLD, mpierr) 
 
+       if(FirstTime.and.mapl_am_I_root()) print,"nmax=",nmax
        allocate(RUNOFF_ACT(ntiles))
        RUNOFF_ACT=0.
        do i=1,ntiles
@@ -865,7 +880,7 @@ contains
          enddo
        enddo
 
-       !call check_balance(route,ntiles,nt_local,runoff_save,WRIVER_ACT,WSTREAM_ACT,WTOT_BEFORE,RUNOFF_ACT,QINFLOW_LOCAL,QOUTFLOW_ACT,FirstTime)
+       call check_balance(route,ntiles,nt_local,runoff_save,WRIVER_ACT,WSTREAM_ACT,WTOT_BEFORE,RUNOFF_ACT,QINFLOW_LOCAL,QOUTFLOW_ACT,FirstTime)
 
        if(FirstTime) nstep_per_day = 86400/route_dt
        route%wriver_acc = route%wriver_acc + WRIVER_ACT/real(nstep_per_day)
