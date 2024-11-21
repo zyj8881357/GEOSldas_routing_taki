@@ -1071,12 +1071,12 @@ contains
              !print *,"sum(runoff_cat_global)=",sum(runoff_cat_global)   
          endif                   
          if(mapl_am_I_root())then 
-             !open(88,file="WTOT_AFTER.txt",status="unknown", position="append")
-             !write(88,*)sum(WTOT_AFTER_GLOBAL)
-             !close(88)
-             !open(88,file="WTOT_BEFORE_RUNOFF_QSINK.txt",status="unknown", position="append")
-             !write(88,*) sum(WTOT_BEFORE_GLOBAL)+sum(runoff_global_m3)*route_dt-sum(QFLOW_SINK_GLOBAL)*route_dt
-             !close(88)  
+             open(88,file="../WTOT_AFTER_"//trim(yr_s)//"_"//trim(mon_s)//".txt",status="unknown", position="append")
+             write(88,*)sum(WTOT_AFTER_GLOBAL)
+             close(88)
+             open(88,file="../WTOT_BEFORE_RUNOFF_QSINK_"//trim(yr_s)//"_"//trim(mon_s)//".txt",status="unknown", position="append")
+             write(88,*) sum(WTOT_BEFORE_GLOBAL)+sum(runoff_global_m3)*route_dt-sum(QFLOW_SINK_GLOBAL)*route_dt
+             close(88)  
              wr_error=sum(WTOT_AFTER_GLOBAL)-(sum(WTOT_BEFORE_GLOBAL)+sum(runoff_global_m3)*route_dt-sum(QFLOW_SINK_GLOBAL)*route_dt)
              runf_tot=sum(runoff_global_m3)*route_dt
              wr_tot=sum(WTOT_AFTER_GLOBAL)
