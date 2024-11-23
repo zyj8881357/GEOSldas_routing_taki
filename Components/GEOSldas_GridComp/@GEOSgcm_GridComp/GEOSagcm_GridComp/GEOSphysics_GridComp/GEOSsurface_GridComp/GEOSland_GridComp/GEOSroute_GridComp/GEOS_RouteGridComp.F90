@@ -724,6 +724,7 @@ contains
     INTEGER, SAVE                            :: N_Active, ThisCycle=1  
     INTEGER                                  :: Local_Min, Local_Max
     integer                                  :: K, N, I, req
+    real :: HEARTBEAT0
     real*8                                     :: mm2m3, rbuff, HEARTBEAT 
     real*8, ALLOCATABLE, DIMENSION(:)          :: RUNOFF_CATCH, RUNOFF_ACT,AREACAT_ACT,& 
          LENGSC_ACT, QSFLOW_ACT,QOUTFLOW_ACT
@@ -770,8 +771,9 @@ contains
 
     call MAPL_GetObjectFromGC(GC, MAPL, STATUS)
     VERIFY_(STATUS)
-    call MAPL_Get(MAPL, HEARTBEAT = HEARTBEAT, RC=STATUS)
+    call MAPL_Get(MAPL, HEARTBEAT = HEARTBEAT0, RC=STATUS)
     VERIFY_(STATUS)
+    HEARTBEAT=dble(HEARTBEAT0)
     !if (mapl_am_I_root()) print *, "HEARTBEAT=",HEARTBEAT 
 ! Start timers
 ! ------------
