@@ -682,7 +682,7 @@ contains
 ! ----------------------------------------------------- 
 
     real*8, dimension(:), pointer :: RUNOFF 
-    real*8, dimension(:), pointer :: RUNOFF_SRC0   
+    real, dimension(:), pointer :: RUNOFF_SRC0   
 
 ! -----------------------------------------------------
 ! INTERNAL pointers
