@@ -326,6 +326,7 @@ contains
     integer, pointer :: arbSeq_pf(:) => NULL()    
     integer, pointer :: arbSeq_ori(:) => NULL()    
     integer, allocatable :: arbIndex(:,:)
+    real, pointer :: tile_area_src0(:) => NULL()    
     real*8, pointer :: tile_area_src(:) => NULL()
     integer,pointer :: local_id(:)  => NULL()
     real*8, pointer :: tile_area_local(:) => NULL(), tile_area_global(:) => NULL()
@@ -345,7 +346,8 @@ contains
     integer,pointer :: downid_global(:)=>NULL(), downid(:)=>NULL()
     integer,pointer :: upid_global(:,:)=>NULL(), upid(:,:)=>NULL()    
 
-    real*8,pointer :: wstream_global(:)=>NULL(),wriver_global(:)=>NULL()    
+    real*8,pointer :: wstream_global(:)=>NULL(),wriver_global(:)=>NULL()  
+    real*8,pointer :: wstream(:)=>NULL(),wriver(:)=>NULL()        
     
     type (T_RROUTE_STATE), pointer         :: route => null()
     type (RROUTE_wrap)                     :: wrap
@@ -413,10 +415,13 @@ contains
     endif
     ! exchange Pfaf across PEs
 
-    call MAPL_LocStreamGet(locstream, TILEAREA = tile_area_src, LOCAL_ID=local_id, RC=status)
+    call MAPL_LocStreamGet(locstream, TILEAREA = tile_area_src0, LOCAL_ID=local_id, RC=status)
     VERIFY_(STATUS) 
-    nt_local=size(tile_area_src,1) 
-    route%nt_local=nt_local       
+    nt_local=size(tile_area_src0,1)     
+    allocate(tile_area_src(nt_local))
+    tile_area_src=dble(tile_area_src0)
+    route%nt_local=nt_local   
+    deallocate(tile_area_src)    
 
     ntiles = maxCatch-minCatch+1
     allocate(arbSeq_pf(maxCatch-minCatch+1))
