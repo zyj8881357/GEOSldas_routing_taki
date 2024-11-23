@@ -435,7 +435,7 @@ contains
     allocate(nsub(ntiles),subarea(nmax,ntiles))
     nsub=nsub_global(minCatch:maxCatch)
     subarea=subarea_global(:,minCatch:maxCatch)
-    subarea=subarea*1.e6 !km2->m2
+    subarea=subarea*1.D6 !km2->m2
     deallocate(nsub_global,subarea_global)
 
     route%nsub => nsub
@@ -474,7 +474,7 @@ contains
 
     allocate(runoff_save(1:nt_local))
     route%runoff_save => runoff_save
-    route%runoff_save=0.
+    route%runoff_save=0.D0
 
     allocate(tile_area_local(nt_local),tile_area_global(nt_global))  
     open(77,file=trim(inputdir)//"/area_"//trim(resname)//"_1d.txt",status="old",action="read");read(77,*)tile_area_global;close(77)
@@ -497,7 +497,7 @@ contains
 
     allocate(lengsc_global(n_catg),lengsc(ntiles))   
     open(77,file=trim(inputdir)//"/Pfaf_lriv_PR.txt",status="old",action="read");read(77,*)lengsc_global;close(77)
-    lengsc=lengsc_global(minCatch:maxCatch)*1.e3 !km->m
+    lengsc=lengsc_global(minCatch:maxCatch)*1.D3 !km->m
     route%lengsc=>lengsc
     deallocate(lengsc_global)
 
@@ -559,8 +559,8 @@ contains
         endif
       endif
     endif
-    if(mapl_am_I_root())print *, "init river storage is: ",sum(wriver_global)/1.e9
-    if(mapl_am_I_root())print *, "init stream storage is: ",sum(wstream_global)/1.e9        
+    if(mapl_am_I_root())print *, "init river storage is: ",sum(wriver_global)/1.D9
+    if(mapl_am_I_root())print *, "init stream storage is: ",sum(wstream_global)/1.D9        
     wriver=wriver_global(minCatch:maxCatch)
     wstream=wstream_global(minCatch:maxCatch)
     deallocate(wriver_global,wstream_global)
@@ -576,7 +576,7 @@ contains
    !input for geometry hydraulic
     allocate(buff_global(n_catg),route%lstr(ntiles))   
     open(77,file=trim(inputdir)//"/Pfaf_lstr_PR.txt",status="old",action="read");read(77,*)buff_global;close(77)
-    route%lstr=buff_global(minCatch:maxCatch)*1.e3 !km->m
+    route%lstr=buff_global(minCatch:maxCatch)*1.D3 !km->m
     deallocate(buff_global)   
 
     allocate(buff_global(n_catg),route%K(ntiles))   
@@ -822,12 +822,12 @@ contains
 
        if(FirstTime.and.mapl_am_I_root()) print *,"nmax=",nmax
        allocate(RUNOFF_ACT(ntiles))
-       RUNOFF_ACT=0.
+       RUNOFF_ACT=0.D0
        do i=1,ntiles
          do j=1,nmax
            it=route%subi(j,i) 
            if(it>0)then
-             RUNOFF_ACT(i)=RUNOFF_ACT(i)+route%subarea(j,i)*runoff_global(it)/1000.   
+             RUNOFF_ACT(i)=RUNOFF_ACT(i)+route%subarea(j,i)*runoff_global(it)/1000.D0   
            endif
            if(it==0)exit
          enddo
@@ -841,8 +841,8 @@ contains
        allocate (QSFLOW_ACT  (1:ntiles))
        allocate (QOUTFLOW_ACT(1:ntiles))     
 
-       LENGSC_ACT=route%lengsc/1.e3 !m->km
-       AREACAT_ACT=route%areacat/1.e6 !m2->km2
+       LENGSC_ACT=route%lengsc/1.D3 !m->km
+       AREACAT_ACT=route%areacat/1.D6 !m2->km2
 
        WSTREAM_ACT => route%wstream
        WRIVER_ACT => route%wriver
@@ -870,7 +870,7 @@ contains
             MPI_COMM_WORLD, mpierr) 
 
        allocate(QINFLOW_LOCAL(ntiles))
-       QINFLOW_LOCAL=0.
+       QINFLOW_LOCAL=0.D0
        do i=1,nTiles
          do j=1,upmax
            if(route%upid(j,i)>0)then
@@ -896,7 +896,7 @@ contains
        WSTREAM_ACT=>NULL()
        WRIVER_ACT=>NULL()      
 
-       runoff_save = 0.
+       runoff_save = 0.D0
        ThisCycle   = 1           
 
       ! output
@@ -936,14 +936,14 @@ contains
               enddo
               !close(90)
               close(88);close(89);close(90)!;close(91)
-              print *, "output river storage is: ",sum(wriver_global)/1.e9
-              print *, "output stream storage is: ",sum(wstream_global)/1.e9                
+              print *, "output river storage is: ",sum(wriver_global)/1.D9
+              print *, "output stream storage is: ",sum(wstream_global)/1.D9                
          endif           
          deallocate(wriver_global,wstream_global,qoutflow_global,qsflow_global)
-         route%wriver_acc = 0.
-         route%wstream_acc = 0.
-         route%qoutflow_acc = 0.
-         route%qsflow_acc = 0.
+         route%wriver_acc = 0.D0
+         route%wstream_acc = 0.D0
+         route%qoutflow_acc = 0.D0
+         route%qsflow_acc = 0.D0
        endif
  
        !restart
@@ -968,8 +968,8 @@ contains
                 write(89,*)wstream_global(i)
               enddo   
               close(88);close(89) 
-              print *, "saved river storage is: ",sum(wriver_global)/1.e9
-              print *, "saved stream storage is: ",sum(wstream_global)/1.e9                                  
+              print *, "saved river storage is: ",sum(wriver_global)/1.D9
+              print *, "saved stream storage is: ",sum(wstream_global)/1.D9                                  
          endif
          deallocate(wriver_global,wstream_global)
        endif
@@ -1027,13 +1027,13 @@ contains
 
          WTOT_AFTER=WRIVER_ACT+WSTREAM_ACT
          ERROR = WTOT_AFTER - (WTOT_BEFORE + RUNOFF_ACT*route_dt + QINFLOW_LOCAL*route_dt - QOUTFLOW_ACT*route_dt)
-         where(QOUTFLOW_ACT>0.) UNBALANCE = abs(ERROR)/(QOUTFLOW_ACT*route_dt)
-         where(QOUTFLOW_ACT<=0.) UNBALANCE = 0.
+         where(QOUTFLOW_ACT>0.D0) UNBALANCE = abs(ERROR)/(QOUTFLOW_ACT*route_dt)
+         where(QOUTFLOW_ACT<=0.D0) UNBALANCE = 0.D0
          call MPI_allgatherv  (                          &
               UNBALANCE,  route%scounts_cat(mype+1)      ,MPI_DOUBLE_PRECISION, &
               UNBALANCE_GLOBAL, route%scounts_cat, route%rdispls_cat,MPI_DOUBLE_PRECISION, &
               MPI_COMM_WORLD, mpierr)           
-         QFLOW_SINK=0.
+         QFLOW_SINK=0.D0
          do i=1,ntiles
            if(route%downid(i)==-1)then
               QFLOW_SINK(i) = QOUTFLOW_ACT(i)
@@ -1051,7 +1051,7 @@ contains
               WTOT_AFTER,  route%scounts_cat(mype+1)      ,MPI_DOUBLE_PRECISION, &
               WTOT_AFTER_GLOBAL, route%scounts_cat, route%rdispls_cat,MPI_DOUBLE_PRECISION, &
               MPI_COMM_WORLD, mpierr) 
-         runoff_save_m3=runoff_save*route%tile_area/1000. 
+         runoff_save_m3=runoff_save*route%tile_area/1000.D0
          call MPI_allgatherv  (                          &
               runoff_save_m3,  route%scounts_global(mype+1)      ,MPI_DOUBLE_PRECISION, &
               runoff_global_m3, route%scounts_global, route%rdispls_global,MPI_DOUBLE_PRECISION, &

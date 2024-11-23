@@ -23,10 +23,10 @@ MODULE routing_model
     REAL*8,    INTENT(INOUT),DIMENSION (NCAT) :: WSTREAM, WRIVER
     REAL*8,    INTENT(OUT),  DIMENSION (NCAT) :: QSFLOW,QOUTFLOW
 
-    REAL*8,   PARAMETER    :: K_SIMPLE = 0.111902, K_RES_MAX = 0.8                       ! m1_r2com_c1
-    REAL*8,   PARAMETER    :: CUR_AVG = 1.4
-    REAL*8,   PARAMETER    :: P1 = 0.010611, P2 = 0.188556, P3 = 0.096864,   &
-                            P4 = 0.691310, P5 = 0.1, P6 = 0.009831    ! m5_calib_240, ori P5 = 0.365747,
+    REAL*8,   PARAMETER    :: K_SIMPLE = 0.111902D0, K_RES_MAX = 0.8D0                       ! m1_r2com_c1
+    REAL*8,   PARAMETER    :: CUR_AVG = 1.4D0
+    REAL*8,   PARAMETER    :: P1 = 0.010611D0, P2 = 0.188556D0, P3 = 0.096864D0,   &
+                            P4 = 0.691310D0, P5 = 0.1D0, P6 = 0.009831D0    ! m5_calib_240, ori P5 = 0.365747,
 
     INTEGER :: N,I,J 
     REAL*8    :: COEFF, LS, COEFF1, COEFF2,ROFF 
@@ -51,24 +51,24 @@ MODULE routing_model
     !                 QOUTFLOWs from all upstream catchments. This is computed outside this subroutine
     !**** QOUTFLOW  = TRANSFER OF RIVER WATER TO THE DOWNSTREAM CATCHMENT  [m^3/s]
 
-    QSFLOW   = 0.
-    QOUTFLOW = 0.       
+    QSFLOW   = 0.D0
+    QOUTFLOW = 0.D0       
  
     DO N=1,NCAT
               
        ! Updating WSTREAM
        
        WSTREAM(N)    = WSTREAM(N)  + RUNCATCH(N) * DBLE (ROUTE_DT)
-       LS            = AREACAT(N) / (AMAX1(1.,LENGSC (N))) /4. * CUR_AVG
+       LS            = AREACAT(N) / (AMAX1(1.D0,LENGSC (N))) /4.D0 * CUR_AVG
        ROFF          = RUNCATCH(N) * AREACAT(N)
-       IF(ROFF < 2. ) THEN
+       IF(ROFF < 2.D0 ) THEN
              COEFF = RESCONST (LS, P1, P2)
-          ELSEIF(ROFF > 10.) THEN
+          ELSEIF(ROFF > 10.D0) THEN
              COEFF = RESCONST (LS, P3, P4)
           ELSE
              COEFF1 = RESCONST (LS, P1, P2)    
              COEFF2 = RESCONST (LS, P3, P4)   
-             COEFF  = COEFF1 + (ROFF - 2.)*(COEFF2 - COEFF1)/8.
+             COEFF  = COEFF1 + (ROFF - 2.D0)*(COEFF2 - COEFF1)/8.D0
           ENDIF
 
        IF(COEFF > K_RES_MAX) COEFF = K_SIMPLE
@@ -80,7 +80,7 @@ MODULE routing_model
 
        ! Updating WRIVER
        
-       LS            = AMAX1(1.,LENGSC (N)) 
+       LS            = AMAX1(1.D0,LENGSC (N)) 
        COEFF         = RESCONST (LS, P5, P6)
        IF(COEFF > K_RES_MAX) COEFF = K_SIMPLE 
 
@@ -103,7 +103,7 @@ MODULE routing_model
 
     REAL*8, INTENT (IN)    :: LS, P1, P2
 
-    RESCONST  = P1 * ((1./LS)**P2) 
+    RESCONST  = P1 * ((1.D0/LS)**P2) 
 
   END FUNCTION RESCONST
 
@@ -156,12 +156,12 @@ MODULE routing_model
 
 
 
-    real*8, parameter :: small = 1.e-20 
-    real*8, parameter :: fac_kstr = 0.025      ! Factor for local stream scaling
-    real*8, parameter :: M = 0.45               ! Parameter in hydraulic geometry formula
-    real*8, parameter :: mm = 0.35              ! Parameter in hydraulic geometry formula
-    real*8, parameter :: rho = 1000.
-    real*8, parameter :: cur_avg = 1.4
+    real*8, parameter :: small = 1.D-20 
+    real*8, parameter :: fac_kstr = 0.025D0      ! Factor for local stream scaling
+    real*8, parameter :: M = 0.45D0               ! Parameter in hydraulic geometry formula
+    real*8, parameter :: mm = 0.35D0              ! Parameter in hydraulic geometry formula
+    real*8, parameter :: rho = 1000.D0
+    real*8, parameter :: cur_avg = 1.4D0
 
     real*8,dimension(NCAT) :: Qrunf,qstr_clmt,qri_clmt,qin_clmt,Ws,Wr,Kstr
     real*8,dimension(NCAT) :: nume,deno,llc,alp_s,alp_r,Qs0,ks,Ws_last  
@@ -182,32 +182,32 @@ MODULE routing_model
     dt = ROUTE_DT
 
     ! Calculate llc (length of river channel)
-    nume = qri_clmt**(2.-M) - qin_clmt**(2.-M)  ! Numerator for the llc calculation
-    deno = (2.-M) * (qri_clmt - qin_clmt) * (qri_clmt**(1.-M))  ! Denominator for the llc calculation
+    nume = qri_clmt**(2.D0-M) - qin_clmt**(2.D0-M)  ! Numerator for the llc calculation
+    deno = (2.D0-M) * (qri_clmt - qin_clmt) * (qri_clmt**(1.D0-M))  ! Denominator for the llc calculation
     where(abs(deno) > small) llc = llc_ori * (nume / deno)  ! Compute llc where denominator is not too small
-    where(abs(deno) <= small) llc = llc_ori * 0.5        ! Set llc to half of original value if denominator is small
+    where(abs(deno) <= small) llc = llc_ori * 0.5D0        ! Set llc to half of original value if denominator is small
 
    ! Calculate alp_s (stream coefficient) and alp_r (river coefficient)
-    where(qstr_clmt > small) alp_s = (rho**(-M) * qstr_clmt**(M-mm) * Kstr * (0.5*lstr)**(-1.))**(1./(1.-mm))  ! For non-zero streamflow
-    where(qstr_clmt <= small) alp_s = 0.  ! If streamflow is too small, set alp_s to 0
-    where(qri_clmt > small) alp_r = (rho**(-M) * qri_clmt**(M-mm) * K * llc**(-1.))**(1./(1.-mm))  ! For non-zero river input
-    where(qri_clmt <= small) alp_r = 0.  ! If river input is too small, set alp_r to 0
+    where(qstr_clmt > small) alp_s = (rho**(-M) * qstr_clmt**(M-mm) * Kstr * (0.5D0*lstr)**(-1.D0))**(1.D0/(1.D0-mm))  ! For non-zero streamflow
+    where(qstr_clmt <= small) alp_s = 0.D0  ! If streamflow is too small, set alp_s to 0
+    where(qri_clmt > small) alp_r = (rho**(-M) * qri_clmt**(M-mm) * K * llc**(-1.D0))**(1.D0/(1.D0-mm))  ! For non-zero river input
+    where(qri_clmt <= small) alp_r = 0.D0  ! If river input is too small, set alp_r to 0
 
    ! Update state variables: ks, Ws, and Qs 
-    where(Qrunf<=small)Qrunf=0.  ! Set runoff to zero if it's too small
-    Qs0=max(0.,alp_s * Ws**(1./(1.-mm))) ! Initial flow from stream storage (kg/s)
-    ks=max(0.,(alp_s/(1.-mm)) * Ws**(mm/(1.D0-mm))) ! Flow coefficient (s^-1)
+    where(Qrunf<=small)Qrunf=0.D0  ! Set runoff to zero if it's too small
+    Qs0=max(0.D0,alp_s * Ws**(1.D0/(1.D0-mm))) ! Initial flow from stream storage (kg/s)
+    ks=max(0.D0,(alp_s/(1.D0-mm)) * Ws**(mm/(1.D0-mm))) ! Flow coefficient (s^-1)
     Ws_last=Ws  ! Store the current water storage 
-    where(ks>small) Ws=Ws + (Qrunf-Qs0)/ks*(1.-exp(-ks*dt)) ! Update storage (kg)
+    where(ks>small) Ws=Ws + (Qrunf-Qs0)/ks*(1.D0-exp(-ks*dt)) ! Update storage (kg)
     where(ks<=small) Ws=Ws + (Qrunf-Qs0)*dt  ! Simplified update if ks is small
-    Ws=max(0.,Ws)  ! Ensure storage is non-negative
-    Qs=max(0.,Qrunf-(Ws-Ws_last)/dt)  ! Calculate the stream flow (kg/s)
+    Ws=max(0.D0,Ws)  ! Ensure storage is non-negative
+    Qs=max(0.D0,Qrunf-(Ws-Ws_last)/dt)  ! Calculate the stream flow (kg/s)
 
     ! Calculate variables related to river routing: Qr0, kr
     Wr=Wr+Qs*dt
-    Qout=max(0.,alp_r * Wr**(1./(1.-mm))) ! River flow based on water storage (kg/s)
+    Qout=max(0.D0,alp_r * Wr**(1.D0/(1.D0-mm))) ! River flow based on water storage (kg/s)
     Qout=min(Qout,Wr/dt)
-    Wr=max(0.,Wr-Qout*dt)
+    Wr=max(0.D0,Wr-Qout*dt)
 
     Ws0 = Ws/rho !kg -> m3
     Wr0 = Wr/rho !kg -> m3
