@@ -5,6 +5,7 @@
 #define MAPL_DimsCatchOnly MAPL_DimsTileOnly
 #endif
 
+
 !=============================================================================
 module GEOS_RouteGridCompMod
 
@@ -53,36 +54,36 @@ module GEOS_RouteGridCompMod
      integer :: minCatch
      integer :: maxCatch
      integer, pointer :: pfaf(:) => NULL()
-     real,    pointer :: tile_area(:) => NULL() !m2
+     real*8,    pointer :: tile_area(:) => NULL() !m2
      integer, pointer :: nsub(:) => NULL()
      integer, pointer :: subi(:,:) => NULL()
-     real,    pointer :: subarea(:,:) => NULL() !m2
+     real*8,    pointer :: subarea(:,:) => NULL() !m2
 
      integer, pointer :: scounts_global(:) => NULL()
      integer, pointer :: rdispls_global(:) => NULL()
      integer, pointer :: scounts_cat(:) => NULL()
      integer, pointer :: rdispls_cat(:) => NULL()
  
-     real,    pointer :: runoff_save(:) => NULL()
-     real,    pointer :: areacat(:) => NULL() !m2
-     real,    pointer :: lengsc(:) => NULL() !m
+     real*8,    pointer :: runoff_save(:) => NULL()
+     real*8,    pointer :: areacat(:) => NULL() !m2
+     real*8,    pointer :: lengsc(:) => NULL() !m
 
-     real,    pointer :: wstream(:) => NULL() !m3
-     real,    pointer :: wriver(:)  => NULL() !m3
+     real*8,    pointer :: wstream(:) => NULL() !m3
+     real*8,    pointer :: wriver(:)  => NULL() !m3
      integer, pointer :: downid(:) => NULL()
      integer, pointer :: upid(:,:) => NULL()
 
-     real,    pointer :: wriver_acc(:)  => NULL()
-     real,    pointer :: wstream_acc(:) => NULL()     
-     real,    pointer :: qoutflow_acc(:) => NULL()
-     real,    pointer :: qsflow_acc(:)  => NULL()
+     real*8,    pointer :: wriver_acc(:)  => NULL()
+     real*8,    pointer :: wstream_acc(:) => NULL()     
+     real*8,    pointer :: qoutflow_acc(:) => NULL()
+     real*8,    pointer :: qsflow_acc(:)  => NULL()
 
-     real,    pointer :: lstr(:) => NULL() !m
-     real,    pointer :: qri_clmt(:) => NULL() !m3/s
-     real,    pointer :: qin_clmt(:) => NULL() !m3/s
-     real,    pointer :: qstr_clmt(:) =>NULL() !m3/s
-     real,    pointer :: K(:) => NULL()
-     real,    pointer :: Kstr(:) => NULL()
+     real*8,    pointer :: lstr(:) => NULL() !m
+     real*8,    pointer :: qri_clmt(:) => NULL() !m3/s
+     real*8,    pointer :: qin_clmt(:) => NULL() !m3/s
+     real*8,    pointer :: qstr_clmt(:) =>NULL() !m3/s
+     real*8,    pointer :: K(:) => NULL()
+     real*8,    pointer :: Kstr(:) => NULL()
 
   end type T_RROUTE_STATE
 
@@ -153,7 +154,7 @@ contains
     type (RROUTE_wrap)                     :: wrap
 
     integer      :: RUN_DT
-    real         :: DT
+    real*8         :: DT
 
 !=============================================================================
 
@@ -325,27 +326,26 @@ contains
     integer, pointer :: arbSeq_pf(:) => NULL()    
     integer, pointer :: arbSeq_ori(:) => NULL()    
     integer, allocatable :: arbIndex(:,:)
-    real, pointer :: tile_area_src(:) => NULL()
+    real*8, pointer :: tile_area_src(:) => NULL()
     integer,pointer :: local_id(:)  => NULL()
-    real, pointer :: tile_area_local(:) => NULL(), tile_area_global(:) => NULL()
-    real, pointer :: tile_area(:) => NULL()    
-    real, pointer :: ptr2(:) => NULL()
+    real*8, pointer :: tile_area_local(:) => NULL(), tile_area_global(:) => NULL()
+    real*8, pointer :: tile_area(:) => NULL()    
+    real*8, pointer :: ptr2(:) => NULL()
 
-    real,pointer :: subarea_global(:,:)=> NULL(),subarea(:,:)=> NULL() ! Arrays for sub-area and fractions
+    real*8,pointer :: subarea_global(:,:)=> NULL(),subarea(:,:)=> NULL() ! Arrays for sub-area and fractions
     integer,pointer :: subi_global(:,:)=> NULL(),subi(:,:)=> NULL()
     integer,pointer :: nsub_global(:)=> NULL(),nsub(:)=> NULL()
-    real,pointer :: area_cat_global(:)=> NULL(),area_cat(:)=> NULL()
+    real*8,pointer :: area_cat_global(:)=> NULL(),area_cat(:)=> NULL()
     integer,pointer :: scounts(:)=>NULL()
     integer,pointer :: scounts_global(:)=>NULL(),rdispls_global(:)=>NULL()
     integer,pointer :: scounts_cat(:)=>NULL(),rdispls_cat(:)=>NULL()    
 
-    real,pointer :: runoff_save(:)=>NULL(), areacat(:)=>NULL()
-    real,pointer :: lengsc_global(:)=>NULL(), lengsc(:)=>NULL(), buff_global(:)=>NULL()
+    real*8,pointer :: runoff_save(:)=>NULL(), areacat(:)=>NULL()
+    real*8,pointer :: lengsc_global(:)=>NULL(), lengsc(:)=>NULL(), buff_global(:)=>NULL()
     integer,pointer :: downid_global(:)=>NULL(), downid(:)=>NULL()
     integer,pointer :: upid_global(:,:)=>NULL(), upid(:,:)=>NULL()    
 
-    real,pointer :: wstream(:)=>NULL(),wriver(:)=>NULL()
-    real,pointer :: wstream_global(:)=>NULL(),wriver_global(:)=>NULL()    
+    real*8,pointer :: wstream_global(:)=>NULL(),wriver_global(:)=>NULL()    
     
     type (T_RROUTE_STATE), pointer         :: route => null()
     type (RROUTE_wrap)                     :: wrap
@@ -356,7 +356,7 @@ contains
     character(len=2) :: mon_s,day_s    
     character(len=3) :: resname
 
-    real, pointer :: dataPtr(:)
+    real*8, pointer :: dataPtr(:)
     integer :: j,nt_local,mpierr,it   
     ! ------------------
     ! begin
@@ -568,10 +568,10 @@ contains
     route%wriver=>wriver
 
     allocate(route%wriver_acc(ntiles),route%wstream_acc(ntiles),route%qoutflow_acc(ntiles),route%qsflow_acc(ntiles))
-    route%wriver_acc=0.
-    route%wstream_acc=0.
-    route%qoutflow_acc=0.
-    route%qsflow_acc=0.
+    route%wriver_acc=0.D0
+    route%wstream_acc=0.D0
+    route%qoutflow_acc=0.D0
+    route%qsflow_acc=0.D0
 
    !input for geometry hydraulic
     allocate(buff_global(n_catg),route%lstr(ntiles))   
@@ -676,28 +676,28 @@ contains
 ! IMPORT pointers
 ! ----------------------------------------------------- 
 
-    real, dimension(:), pointer :: RUNOFF 
-    real, dimension(:), pointer :: RUNOFF_SRC0   
+    real*8, dimension(:), pointer :: RUNOFF 
+    real*8, dimension(:), pointer :: RUNOFF_SRC0   
 
 ! -----------------------------------------------------
 ! INTERNAL pointers
 ! ----------------------------------------------------- 
 
-    real, dimension(:), pointer :: AREACAT
-    real, dimension(:), pointer :: LENGSC
-    real, dimension(:), pointer :: DNSTR
-    real, dimension(:), pointer :: WSTREAM
-    real, dimension(:), pointer :: WRIVER
-    real, dimension(:), pointer :: LRIVERMOUTH
-    real, dimension(:), pointer :: ORIVERMOUTH
+    real*8, dimension(:), pointer :: AREACAT
+    real*8, dimension(:), pointer :: LENGSC
+    real*8, dimension(:), pointer :: DNSTR
+    real*8, dimension(:), pointer :: WSTREAM
+    real*8, dimension(:), pointer :: WRIVER
+    real*8, dimension(:), pointer :: LRIVERMOUTH
+    real*8, dimension(:), pointer :: ORIVERMOUTH
 
 ! -----------------------------------------------------
 ! EXPORT pointers 
 ! -----------------------------------------------------
 
-    real, dimension(:), pointer :: QSFLOW
-    real, dimension(:), pointer :: QINFLOW
-    real, dimension(:), pointer :: QOUTFLOW
+    real*8, dimension(:), pointer :: QSFLOW
+    real*8, dimension(:), pointer :: QINFLOW
+    real*8, dimension(:), pointer :: QOUTFLOW
   
 ! Time attributes and placeholders
 
@@ -710,7 +710,7 @@ contains
  
     integer                            :: NTILES, N_CatL, N_CYC
     logical, save                      :: FirstTime=.true.
-    real, pointer, dimension(:)    :: tile_area
+    real*8, pointer, dimension(:)    :: tile_area
     integer, pointer, dimension(:) :: pfaf_code
 
     INTEGER, DIMENSION(:,:), POINTER, SAVE   :: AllActive,DstCatchID 
@@ -719,8 +719,8 @@ contains
     INTEGER, SAVE                            :: N_Active, ThisCycle=1  
     INTEGER                                  :: Local_Min, Local_Max
     integer                                  :: K, N, I, req
-    REAL                                     :: mm2m3, rbuff, HEARTBEAT 
-    REAL, ALLOCATABLE, DIMENSION(:)          :: RUNOFF_CATCH, RUNOFF_ACT,AREACAT_ACT,& 
+    real*8                                     :: mm2m3, rbuff, HEARTBEAT 
+    real*8, ALLOCATABLE, DIMENSION(:)          :: RUNOFF_CATCH, RUNOFF_ACT,AREACAT_ACT,& 
          LENGSC_ACT, QSFLOW_ACT,QOUTFLOW_ACT
     INTEGER, ALLOCATABLE, DIMENSION(:)       :: tmp_index
     type(ESMF_Field) :: runoff_src
@@ -729,7 +729,7 @@ contains
     type (T_RROUTE_STATE), pointer         :: route => null()
     type (RROUTE_wrap)                     :: wrap
     INTEGER, DIMENSION(:)  ,ALLOCATABLE  :: scounts, scounts_global,rdispls, rcounts  
-    real, dimension(:), pointer :: runoff_global,runoff_local,area_local,runoff_cat_global    
+    real*8, dimension(:), pointer :: runoff_global,runoff_local,area_local,runoff_cat_global    
 
     integer :: mpierr, nt_global,nt_local, it, j, upid,cid,temp(1),tid,istat
     integer,save :: nstep_per_day
@@ -739,13 +739,13 @@ contains
     character(len=4) :: yr_s
     character(len=2) :: mon_s,day_s
 
-    real,pointer :: runoff_save(:)=>NULL()
-    real,pointer :: WSTREAM_ACT(:)=>NULL()
-    real,pointer :: WRIVER_ACT(:)=>NULL()
-    real,allocatable :: runoff_save_m3(:),runoff_global_m3(:),QOUTFLOW_GLOBAL(:)
-    real,allocatable :: WTOT_BEFORE(:),WTOT_AFTER(:),QINFLOW_LOCAL(:),UNBALANCE(:),UNBALANCE_GLOBAL(:),ERROR(:),ERROR_GLOBAL(:)
-    real,allocatable :: QFLOW_SINK(:),QFLOW_SINK_GLOBAL(:),WTOT_BEFORE_GLOBAL(:),WTOT_AFTER_GLOBAL(:)
-    real,allocatable :: wriver_global(:),wstream_global(:),qsflow_global(:)
+    real*8,pointer :: runoff_save(:)=>NULL()
+    real*8,pointer :: WSTREAM_ACT(:)=>NULL()
+    real*8,pointer :: WRIVER_ACT(:)=>NULL()
+    real*8,allocatable :: runoff_save_m3(:),runoff_global_m3(:),QOUTFLOW_GLOBAL(:)
+    real*8,allocatable :: WTOT_BEFORE(:),WTOT_AFTER(:),QINFLOW_LOCAL(:),UNBALANCE(:),UNBALANCE_GLOBAL(:),ERROR(:),ERROR_GLOBAL(:)
+    real*8,allocatable :: QFLOW_SINK(:),QFLOW_SINK_GLOBAL(:),WTOT_BEFORE_GLOBAL(:),WTOT_AFTER_GLOBAL(:)
+    real*8,allocatable :: wriver_global(:),wstream_global(:),qsflow_global(:)
     
     ! ------------------
     ! begin    
@@ -804,7 +804,7 @@ contains
     N_CYC = ROUTE_DT/HEARTBEAT    
     RUN_MODEL : if (ThisCycle == N_CYC) then   
 
-       runoff_save = runoff_save + RUNOFF_SRC0/real (N_CYC)
+       runoff_save = runoff_save + RUNOFF_SRC0/dble (N_CYC)
 
        call ESMF_ClockGet(clock, currTime=CurrentTime, rc=status)
        call ESMF_TimeGet(CurrentTime, yy=YY, mm=MM, dd=DD, h=HH, m=MMM, s=SS, rc=status)  
@@ -816,8 +816,8 @@ contains
 
        allocate(runoff_global(nt_global))
        call MPI_allgatherv  (                          &
-          runoff_save,  route%scounts_global(mype+1)      ,MPI_REAL, &
-          runoff_global, route%scounts_global, route%rdispls_global,MPI_REAL, &
+          runoff_save,  route%scounts_global(mype+1)      ,MPI_DOUBLE_PRECISION, &
+          runoff_global, route%scounts_global, route%rdispls_global,MPI_DOUBLE_PRECISION, &
           MPI_COMM_WORLD, mpierr) 
 
        if(FirstTime.and.mapl_am_I_root()) print *,"nmax=",nmax
@@ -865,8 +865,8 @@ contains
 
        allocate(QOUTFLOW_GLOBAL(n_catg))
        call MPI_allgatherv  (                          &
-            QOUTFLOW_ACT,  route%scounts_cat(mype+1)      ,MPI_REAL, &
-            QOUTFLOW_GLOBAL, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
+            QOUTFLOW_ACT,  route%scounts_cat(mype+1)      ,MPI_DOUBLE_PRECISION, &
+            QOUTFLOW_GLOBAL, route%scounts_cat, route%rdispls_cat,MPI_DOUBLE_PRECISION, &
             MPI_COMM_WORLD, mpierr) 
 
        allocate(QINFLOW_LOCAL(ntiles))
@@ -875,7 +875,7 @@ contains
          do j=1,upmax
            if(route%upid(j,i)>0)then
              upid=route%upid(j,i)
-             WRIVER_ACT(i)=WRIVER_ACT(i)+QOUTFLOW_GLOBAL(upid)*real(route_dt)
+             WRIVER_ACT(i)=WRIVER_ACT(i)+QOUTFLOW_GLOBAL(upid)*dble(route_dt)
              QINFLOW_LOCAL(i)=QINFLOW_LOCAL(i)+QOUTFLOW_GLOBAL(upid)
            else
              exit
@@ -886,10 +886,10 @@ contains
        call check_balance(route,ntiles,nt_local,runoff_save,WRIVER_ACT,WSTREAM_ACT,WTOT_BEFORE,RUNOFF_ACT,QINFLOW_LOCAL,QOUTFLOW_ACT,FirstTime,yr_s,mon_s)
 
        if(FirstTime) nstep_per_day = 86400/route_dt
-       route%wriver_acc = route%wriver_acc + WRIVER_ACT/real(nstep_per_day)
-       route%wstream_acc = route%wstream_acc + WSTREAM_ACT/real(nstep_per_day)
-       route%qoutflow_acc = route%qoutflow_acc + QOUTFLOW_ACT/real(nstep_per_day)
-       route%qsflow_acc = route%qsflow_acc + QSFLOW_ACT/real(nstep_per_day)
+       route%wriver_acc = route%wriver_acc + WRIVER_ACT/dble(nstep_per_day)
+       route%wstream_acc = route%wstream_acc + WSTREAM_ACT/dble(nstep_per_day)
+       route%qoutflow_acc = route%qoutflow_acc + QOUTFLOW_ACT/dble(nstep_per_day)
+       route%qsflow_acc = route%qsflow_acc + QSFLOW_ACT/dble(nstep_per_day)
 
        deallocate(RUNOFF_ACT,AREACAT_ACT,LENGSC_ACT,QOUTFLOW_ACT,QINFLOW_LOCAL,QOUTFLOW_GLOBAL,QSFLOW_ACT,WTOT_BEFORE)
       !initialize the cycle counter and sum (runoff_tile)       
@@ -908,16 +908,16 @@ contains
        if(HH==23)then
          allocate(wriver_global(n_catg),wstream_global(n_catg),qoutflow_global(n_catg),qsflow_global(n_catg))       
          call MPI_allgatherv  (                          &
-              route%wriver_acc,  route%scounts_cat(mype+1)      ,MPI_REAL, &
-              wriver_global, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
+              route%wriver_acc,  route%scounts_cat(mype+1)      ,MPI_DOUBLE_PRECISION, &
+              wriver_global, route%scounts_cat, route%rdispls_cat,MPI_DOUBLE_PRECISION, &
               MPI_COMM_WORLD, mpierr)    
          call MPI_allgatherv  (                          &
-              route%wstream_acc,  route%scounts_cat(mype+1)      ,MPI_REAL, &
-              wstream_global, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
+              route%wstream_acc,  route%scounts_cat(mype+1)      ,MPI_DOUBLE_PRECISION, &
+              wstream_global, route%scounts_cat, route%rdispls_cat,MPI_DOUBLE_PRECISION, &
               MPI_COMM_WORLD, mpierr)    
          call MPI_allgatherv  (                          &
-              route%qoutflow_acc,  route%scounts_cat(mype+1)      ,MPI_REAL, &
-              qoutflow_global, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
+              route%qoutflow_acc,  route%scounts_cat(mype+1)      ,MPI_DOUBLE_PRECISION, &
+              qoutflow_global, route%scounts_cat, route%rdispls_cat,MPI_DOUBLE_PRECISION, &
               MPI_COMM_WORLD, mpierr)        
          !call MPI_allgatherv  (                          &
          !     route%qsflow_acc,  route%scounts_cat(mype+1)      ,MPI_REAL, &
@@ -950,12 +950,12 @@ contains
        if(MM_next/=MM)then
          allocate(wriver_global(n_catg),wstream_global(n_catg))
          call MPI_allgatherv  (                          &
-              route%wstream,  route%scounts_cat(mype+1)      ,MPI_REAL, &
-              wstream_global, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
+              route%wstream,  route%scounts_cat(mype+1)      ,MPI_DOUBLE_PRECISION, &
+              wstream_global, route%scounts_cat, route%rdispls_cat,MPI_DOUBLE_PRECISION, &
               MPI_COMM_WORLD, mpierr)
          call MPI_allgatherv  (                          &
-              route%wriver,  route%scounts_cat(mype+1)      ,MPI_REAL, &
-              wriver_global, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
+              route%wriver,  route%scounts_cat(mype+1)      ,MPI_DOUBLE_PRECISION, &
+              wriver_global, route%scounts_cat, route%rdispls_cat,MPI_DOUBLE_PRECISION, &
               MPI_COMM_WORLD, mpierr)    
          if(mapl_am_I_root())then
               write(yr_s,'(I4.4)')YY_next
@@ -978,7 +978,7 @@ contains
 
     else
        
-       runoff_save = runoff_save + RUNOFF_SRC0/real (N_CYC)
+       runoff_save = runoff_save + RUNOFF_SRC0/dble(N_CYC)
        
        ThisCycle = ThisCycle + 1
 
@@ -1003,18 +1003,18 @@ contains
       
       type(T_RROUTE_STATE), intent(in) :: route 
       integer, intent(in) :: ntiles,nt_local
-      real,intent(in) :: runoff_save(nt_local),WRIVER_ACT(ntiles),WSTREAM_ACT(ntiles),WTOT_BEFORE(ntiles),RUNOFF_ACT(ntiles)
-      real,intent(in) :: QINFLOW_LOCAL(ntiles),QOUTFLOW_ACT(ntiles)
+      real*8,intent(in) :: runoff_save(nt_local),WRIVER_ACT(ntiles),WSTREAM_ACT(ntiles),WTOT_BEFORE(ntiles),RUNOFF_ACT(ntiles)
+      real*8,intent(in) :: QINFLOW_LOCAL(ntiles),QOUTFLOW_ACT(ntiles)
       logical,intent(in) :: FirstTime
       character(len=*), intent(in) :: yr_s,mon_s
    
-      real,allocatable :: runoff_cat_global(:)
-      real,allocatable :: runoff_save_m3(:),runoff_global_m3(:)
-      real,allocatable :: WTOT_AFTER(:),UNBALANCE(:),UNBALANCE_GLOBAL(:),ERROR(:),ERROR_GLOBAL(:)
-      real,allocatable :: QFLOW_SINK(:),QFLOW_SINK_GLOBAL(:),WTOT_BEFORE_GLOBAL(:),WTOT_AFTER_GLOBAL(:)
+      real*8,allocatable :: runoff_cat_global(:)
+      real*8,allocatable :: runoff_save_m3(:),runoff_global_m3(:)
+      real*8,allocatable :: WTOT_AFTER(:),UNBALANCE(:),UNBALANCE_GLOBAL(:),ERROR(:),ERROR_GLOBAL(:)
+      real*8,allocatable :: QFLOW_SINK(:),QFLOW_SINK_GLOBAL(:),WTOT_BEFORE_GLOBAL(:),WTOT_AFTER_GLOBAL(:)
 
       integer :: i, nt_global,mype,cid,temp(1),tid,mpierr
-      real :: wr_error, wr_tot, runf_tot
+      real*8 :: wr_error, wr_tot, runf_tot
 
       nt_global = route%nt_global
       mype = route%mype   
@@ -1030,8 +1030,8 @@ contains
          where(QOUTFLOW_ACT>0.) UNBALANCE = abs(ERROR)/(QOUTFLOW_ACT*route_dt)
          where(QOUTFLOW_ACT<=0.) UNBALANCE = 0.
          call MPI_allgatherv  (                          &
-              UNBALANCE,  route%scounts_cat(mype+1)      ,MPI_REAL, &
-              UNBALANCE_GLOBAL, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
+              UNBALANCE,  route%scounts_cat(mype+1)      ,MPI_DOUBLE_PRECISION, &
+              UNBALANCE_GLOBAL, route%scounts_cat, route%rdispls_cat,MPI_DOUBLE_PRECISION, &
               MPI_COMM_WORLD, mpierr)           
          QFLOW_SINK=0.
          do i=1,ntiles
@@ -1040,25 +1040,25 @@ contains
            endif
          enddo
          call MPI_allgatherv  (                          &
-              QFLOW_SINK,  route%scounts_cat(mype+1)      ,MPI_REAL, &
-              QFLOW_SINK_GLOBAL, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
+              QFLOW_SINK,  route%scounts_cat(mype+1)      ,MPI_DOUBLE_PRECISION, &
+              QFLOW_SINK_GLOBAL, route%scounts_cat, route%rdispls_cat,MPI_DOUBLE_PRECISION, &
               MPI_COMM_WORLD, mpierr)
          call MPI_allgatherv  (                          &
-              WTOT_BEFORE,  route%scounts_cat(mype+1)      ,MPI_REAL, &
-              WTOT_BEFORE_GLOBAL, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
+              WTOT_BEFORE,  route%scounts_cat(mype+1)      ,MPI_DOUBLE_PRECISION, &
+              WTOT_BEFORE_GLOBAL, route%scounts_cat, route%rdispls_cat,MPI_DOUBLE_PRECISION, &
               MPI_COMM_WORLD, mpierr)   
          call MPI_allgatherv  (                          &
-              WTOT_AFTER,  route%scounts_cat(mype+1)      ,MPI_REAL, &
-              WTOT_AFTER_GLOBAL, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
+              WTOT_AFTER,  route%scounts_cat(mype+1)      ,MPI_DOUBLE_PRECISION, &
+              WTOT_AFTER_GLOBAL, route%scounts_cat, route%rdispls_cat,MPI_DOUBLE_PRECISION, &
               MPI_COMM_WORLD, mpierr) 
          runoff_save_m3=runoff_save*route%tile_area/1000. 
          call MPI_allgatherv  (                          &
-              runoff_save_m3,  route%scounts_global(mype+1)      ,MPI_REAL, &
-              runoff_global_m3, route%scounts_global, route%rdispls_global,MPI_REAL, &
+              runoff_save_m3,  route%scounts_global(mype+1)      ,MPI_DOUBLE_PRECISION, &
+              runoff_global_m3, route%scounts_global, route%rdispls_global,MPI_DOUBLE_PRECISION, &
               MPI_COMM_WORLD, mpierr)     
          call MPI_allgatherv  (                          &
-              RUNOFF_ACT,  route%scounts_cat(mype+1)      ,MPI_REAL, &
-              runoff_cat_global, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
+              RUNOFF_ACT,  route%scounts_cat(mype+1)      ,MPI_DOUBLE_PRECISION, &
+              runoff_cat_global, route%scounts_cat, route%rdispls_cat,MPI_DOUBLE_PRECISION, &
               MPI_COMM_WORLD, mpierr)     
          if(mapl_am_I_root())then 
              open(88,file="../runoff_tile_global_"//trim(yr_s)//"_"//trim(mon_s)//".txt",status="unknown", position="append")
@@ -1090,8 +1090,8 @@ contains
          endif                     
 
          call MPI_allgatherv  (                          &
-              ERROR,  route%scounts_cat(mype+1)      ,MPI_REAL, &
-              ERROR_GLOBAL, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
+              ERROR,  route%scounts_cat(mype+1)      ,MPI_DOUBLE_PRECISION, &
+              ERROR_GLOBAL, route%scounts_cat, route%rdispls_cat,MPI_DOUBLE_PRECISION, &
               MPI_COMM_WORLD, mpierr)
          temp = maxloc(abs(ERROR_GLOBAL))
          cid = temp(1)

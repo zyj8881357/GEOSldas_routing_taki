@@ -19,17 +19,17 @@ MODULE routing_model
     
     IMPLICIT NONE
     INTEGER, INTENT(IN)                     :: NCAT
-    REAL,    INTENT(IN),   DIMENSION (NCAT) :: RUNCATCH,AREACAT,LENGSC
-    REAL,    INTENT(INOUT),DIMENSION (NCAT) :: WSTREAM, WRIVER
-    REAL,    INTENT(OUT),  DIMENSION (NCAT) :: QSFLOW,QOUTFLOW
+    REAL*8,    INTENT(IN),   DIMENSION (NCAT) :: RUNCATCH,AREACAT,LENGSC
+    REAL*8,    INTENT(INOUT),DIMENSION (NCAT) :: WSTREAM, WRIVER
+    REAL*8,    INTENT(OUT),  DIMENSION (NCAT) :: QSFLOW,QOUTFLOW
 
-    REAL,   PARAMETER    :: K_SIMPLE = 0.111902, K_RES_MAX = 0.8                       ! m1_r2com_c1
-    REAL,   PARAMETER    :: CUR_AVG = 1.4
-    REAL,   PARAMETER    :: P1 = 0.010611, P2 = 0.188556, P3 = 0.096864,   &
+    REAL*8,   PARAMETER    :: K_SIMPLE = 0.111902, K_RES_MAX = 0.8                       ! m1_r2com_c1
+    REAL*8,   PARAMETER    :: CUR_AVG = 1.4
+    REAL*8,   PARAMETER    :: P1 = 0.010611, P2 = 0.188556, P3 = 0.096864,   &
                             P4 = 0.691310, P5 = 0.1, P6 = 0.009831    ! m5_calib_240, ori P5 = 0.365747,
 
     INTEGER :: N,I,J 
-    REAL    :: COEFF, LS, COEFF1, COEFF2,ROFF 
+    REAL*8    :: COEFF, LS, COEFF1, COEFF2,ROFF 
 
     ! Routing Model Input Parameters
     ! ------------------------------
@@ -58,7 +58,7 @@ MODULE routing_model
               
        ! Updating WSTREAM
        
-       WSTREAM(N)    = WSTREAM(N)  + RUNCATCH(N) * REAL (ROUTE_DT)
+       WSTREAM(N)    = WSTREAM(N)  + RUNCATCH(N) * DBLE (ROUTE_DT)
        LS            = AREACAT(N) / (AMAX1(1.,LENGSC (N))) /4. * CUR_AVG
        ROFF          = RUNCATCH(N) * AREACAT(N)
        IF(ROFF < 2. ) THEN
@@ -76,7 +76,7 @@ MODULE routing_model
        QSFLOW(N)     = COEFF * WSTREAM(N)
        WSTREAM(N)    = WSTREAM(N) - QSFLOW(N)
        WRIVER(N)     = WRIVER(N)  + QSFLOW(N)
-       QSFLOW(N)     = QSFLOW(N) / REAL (ROUTE_DT) 
+       QSFLOW(N)     = QSFLOW(N) / DBLE (ROUTE_DT) 
 
        ! Updating WRIVER
        
@@ -87,7 +87,7 @@ MODULE routing_model
        QOUTFLOW(N)   = COEFF * WRIVER(N)
        QOUTFLOW(N)   = MIN(QOUTFLOW(N), WRIVER(N)) !make WRIVER(N) >=0.
        WRIVER(N)     = WRIVER(N)   - QOUTFLOW(N)
-       QOUTFLOW(N)   = QOUTFLOW(N) / REAL (ROUTE_DT) 
+       QOUTFLOW(N)   = QOUTFLOW(N) / DBLE (ROUTE_DT) 
        
     ENDDO
    
@@ -97,11 +97,11 @@ MODULE routing_model
 
 ! -------------------------------------------------------------------------------------------------------
 
-  REAL FUNCTION RESCONST (LS, P1, P2)
+  REAL*8 FUNCTION RESCONST (LS, P1, P2)
 
     IMPLICIT NONE
 
-    REAL, INTENT (IN)    :: LS, P1, P2
+    REAL*8, INTENT (IN)    :: LS, P1, P2
 
     RESCONST  = P1 * ((1./LS)**P2) 
 
@@ -148,24 +148,24 @@ MODULE routing_model
     
     IMPLICIT NONE
     INTEGER, INTENT(IN)                     :: NCAT
-    REAL,    INTENT(IN),   DIMENSION (NCAT) :: Qrunf0,llc_ori,lstr
-    REAL,    INTENT(IN),   DIMENSION (NCAT) :: qstr_clmt0,qri_clmt0,qin_clmt0
-    REAL,    INTENT(IN),   DIMENSION (NCAT) :: K, Kstr0
-    REAL,    INTENT(INOUT),DIMENSION (NCAT) :: Ws0,Wr0
-    REAL,    INTENT(OUT),  DIMENSION (NCAT) :: Qs,Qout
+    REAL*8,    INTENT(IN),   DIMENSION (NCAT) :: Qrunf0,llc_ori,lstr
+    REAL*8,    INTENT(IN),   DIMENSION (NCAT) :: qstr_clmt0,qri_clmt0,qin_clmt0
+    REAL*8,    INTENT(IN),   DIMENSION (NCAT) :: K, Kstr0
+    REAL*8,    INTENT(INOUT),DIMENSION (NCAT) :: Ws0,Wr0
+    REAL*8,    INTENT(OUT),  DIMENSION (NCAT) :: Qs,Qout
 
 
 
-    real, parameter :: small = 1.e-20 
-    real, parameter :: fac_kstr = 0.025      ! Factor for local stream scaling
-    real, parameter :: M = 0.45               ! Parameter in hydraulic geometry formula
-    real, parameter :: mm = 0.35              ! Parameter in hydraulic geometry formula
-    real, parameter :: rho = 1000.
-    real, parameter :: cur_avg = 1.4
+    real*8, parameter :: small = 1.e-20 
+    real*8, parameter :: fac_kstr = 0.025      ! Factor for local stream scaling
+    real*8, parameter :: M = 0.45               ! Parameter in hydraulic geometry formula
+    real*8, parameter :: mm = 0.35              ! Parameter in hydraulic geometry formula
+    real*8, parameter :: rho = 1000.
+    real*8, parameter :: cur_avg = 1.4
 
-    real,dimension(NCAT) :: Qrunf,qstr_clmt,qri_clmt,qin_clmt,Ws,Wr,Kstr
-    real,dimension(NCAT) :: nume,deno,llc,alp_s,alp_r,Qs0,ks,Ws_last  
-    real :: dt 
+    real*8,dimension(NCAT) :: Qrunf,qstr_clmt,qri_clmt,qin_clmt,Ws,Wr,Kstr
+    real*8,dimension(NCAT) :: nume,deno,llc,alp_s,alp_r,Qs0,ks,Ws_last  
+    real*8 :: dt 
 
     integer :: i,j 
     
