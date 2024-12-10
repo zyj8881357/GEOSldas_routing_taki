@@ -26,6 +26,7 @@ module GEOS_RouteGridCompMod
   use MAPL_ConstantsMod
   use ROUTING_MODEL,          ONLY:     &
        river_routing_lin, river_routing_hyd, ROUTE_DT
+  use reservoir
 #if 0
   USE catch_constants, ONLY:          &
        N_CatG => N_Pfaf_Catchs  
@@ -35,15 +36,30 @@ module GEOS_RouteGridCompMod
   implicit none
   integer, parameter :: N_CatG = 291284
   integer,parameter :: upmax=34
+  integer,parameter :: nres=7250
   character(len=500) :: inputdir="/umbc/xfs1/yujinz/users/yujinz/GEOSldas/river_input/"
+  logical,parameter :: use_res = .True.
   integer,save :: nmax 
 
   private
+
+  type RES_STATE
+    integer, pointer :: active_res(:)
+    real,    pointer :: Wr_res(:)
+    real,    pointer :: Q_res(:)
+    integer, pointer :: type_res(:)
+    real,    pointer :: cap_res(:)
+    real,    pointer :: wid_res(:)
+    real,    pointer :: fld_res(:)
+    real,    pointer :: Qfld_thres(:)
+    integer, pointer :: cat2res(:)
+  end type RES_STATE
 
   type T_RROUTE_STATE
      private
      type (ESMF_RouteHandle) :: routeHandle
      type (ESMF_Field)       :: field
+     type (RES_STATE)        :: reservoir
      integer :: nTiles
      integer :: nt_global
      integer :: nt_local
@@ -348,6 +364,7 @@ contains
     real,pointer :: wstream_global(:)=>NULL(),wriver_global(:)=>NULL()    
     
     type (T_RROUTE_STATE), pointer         :: route => null()
+    type (RES_STATE), pointer :: res => NULL()
     type (RROUTE_wrap)                     :: wrap
 
     type(ESMF_Time) :: CurrentTime
@@ -603,6 +620,9 @@ contains
     open(77,file=trim(inputdir)//"/Pfaf_qstr.txt",status="old",action="read");read(77,*)buff_global;close(77)
     route%qstr_clmt=buff_global(minCatch:maxCatch) !m3/s
     deallocate(buff_global) 
+
+    res => route%reservoir
+    call res_init(input_dir,nres,n_catg,ntiles,minCatch,maxCatch,use_res,res%active_res,res%Wr_res,res%Q_res,res%type_res,res%cap_res,res%fld_res,res%Qfld_thres,res%cat2res,res%wid_res)
 
     !if (mapl_am_I_root())then
     !  open(88,file="nsub.txt",action="write")
