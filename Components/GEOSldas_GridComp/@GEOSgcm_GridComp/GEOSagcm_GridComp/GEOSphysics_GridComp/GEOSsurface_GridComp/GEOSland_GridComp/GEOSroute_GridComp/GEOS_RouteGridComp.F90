@@ -623,6 +623,7 @@ contains
 
     res => route%reservoir
     call res_init(inputdir,nres,n_catg,ntiles,minCatch,maxCatch,use_res,res%active_res,res%Wr_res,res%Q_res,res%type_res,res%cap_res,res%fld_res,res%Qfld_thres,res%cat2res,res%wid_res)
+    if(mapl_am_I_root()) print *,"reservoir init success" 
 
     !if (mapl_am_I_root())then
     !  open(88,file="nsub.txt",action="write")
