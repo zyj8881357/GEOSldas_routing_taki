@@ -230,7 +230,7 @@ subroutine res_init(input_dir,nres,nall,nc,minCatch,maxCatch,use_res,active_res,
   cat2res=cat2res_all(minCatch:maxCatch)
 
   ! Mark active reservoirs based on type or flood control status
-  do i = 1, ntile
+  do i = 1, nc
     if(type_res(i) /= 0 .or. fld_res(i) == 1) then
       active_res(i) = 1
     endif
