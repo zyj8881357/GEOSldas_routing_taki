@@ -50,7 +50,7 @@ module GEOS_RouteGridCompMod
     integer, pointer :: type_res(:)
     real,    pointer :: cap_res(:)
     real,    pointer :: wid_res(:)
-    real,    pointer :: fld_res(:)
+    integer, pointer :: fld_res(:)
     real,    pointer :: Qfld_thres(:)
     integer, pointer :: cat2res(:)
   end type RES_STATE
@@ -622,7 +622,7 @@ contains
     deallocate(buff_global) 
 
     res => route%reservoir
-    call res_init(input_dir,nres,n_catg,ntiles,minCatch,maxCatch,use_res,res%active_res,res%Wr_res,res%Q_res,res%type_res,res%cap_res,res%fld_res,res%Qfld_thres,res%cat2res,res%wid_res)
+    call res_init(inputdir,nres,n_catg,ntiles,minCatch,maxCatch,use_res,res%active_res,res%Wr_res,res%Q_res,res%type_res,res%cap_res,res%fld_res,res%Qfld_thres,res%cat2res,res%wid_res)
 
     !if (mapl_am_I_root())then
     !  open(88,file="nsub.txt",action="write")
