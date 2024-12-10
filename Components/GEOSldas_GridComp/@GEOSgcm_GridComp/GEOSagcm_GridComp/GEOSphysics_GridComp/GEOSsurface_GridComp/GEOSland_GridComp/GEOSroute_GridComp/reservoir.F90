@@ -35,9 +35,9 @@ subroutine res_init(input_dir,nres,nall,nc,minCatch,maxCatch,use_res,active_res,
   ! Logical variable to check if reservoirs are used
   logical,intent(in) :: use_res
   ! Input/output arrays for reservoir attributes: active reservoirs, types, capacities, etc.
-  integer,intent(inout),allocatable :: active_res(:),type_res(:),fld_res(:),cat2res(:)
-  real,intent(inout),allocatable :: Wr_res(:),Q_res(:),cap_res(:),Qfld_thres(:)
-  real,intent(inout),allocatable :: wid_res(:)
+  integer,intent(inout),pointer :: active_res(:),type_res(:),fld_res(:),cat2res(:)
+  real,intent(inout),pointer :: Wr_res(:),Q_res(:),cap_res(:),Qfld_thres(:)
+  real,intent(inout),pointer :: wid_res(:)
 
   ! Internal arrays for various reservoir-related data
   integer,allocatable,dimension(:) :: flag_grand,catid_grand,elec_grand,irrsup_grand,fld_grand,supply_grand,irr_grand,realuse_grand
