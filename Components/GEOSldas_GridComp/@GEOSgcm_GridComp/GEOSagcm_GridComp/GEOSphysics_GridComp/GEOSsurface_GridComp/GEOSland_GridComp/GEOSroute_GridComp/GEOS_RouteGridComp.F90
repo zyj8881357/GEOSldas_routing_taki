@@ -885,8 +885,9 @@ contains
        allocate (AREACAT_ACT (1:ntiles))       
        allocate (LENGSC_ACT  (1:ntiles))
        allocate (QSFLOW_ACT  (1:ntiles))
-       allocate (QOUTFLOW_ACT(1:ntiles), QRES_ACT(1:ntiles))     
+       allocate (QOUTFLOW_ACT(1:ntiles), QRES_ACT(1:ntiles))  
 
+       QRES_ACT=0.
        LENGSC_ACT=route%lengsc/1.e3 !m->km
        AREACAT_ACT=route%areacat/1.e6 !m2->km2
 
@@ -895,7 +896,7 @@ contains
 
       
        allocate(WTOT_BEFORE(ntiles))
-       WTOT_BEFORE=WSTREAM_ACT+WRIVER_ACT
+       WTOT_BEFORE=WSTREAM_ACT+WRIVER_ACT+res%Wr_res
 
        ! Call river_routing_model
        ! ------------------------     
@@ -943,7 +944,7 @@ contains
          enddo
        enddo
 
-       !call check_balance(route,ntiles,nt_local,runoff_save,WRIVER_ACT,WSTREAM_ACT,WTOT_BEFORE,RUNOFF_ACT,QINFLOW_LOCAL,QOUTFLOW_ACT,FirstTime,yr_s,mon_s)
+       call check_balance(route,ntiles,nt_local,runoff_save,WRIVER_ACT,WSTREAM_ACT,WTOT_BEFORE,RUNOFF_ACT,QINFLOW_LOCAL,QOUTFLOW_ACT,QRES_ACT,FirstTime,yr_s,mon_s)
 
        if(FirstTime) nstep_per_day = 86400/route_dt
        route%wriver_acc = route%wriver_acc + WRIVER_ACT/real(nstep_per_day)
@@ -1077,12 +1078,12 @@ contains
 ! --------------------------------------------------------
 
 
-  subroutine check_balance(route,ntiles,nt_local,runoff_save,WRIVER_ACT,WSTREAM_ACT,WTOT_BEFORE,RUNOFF_ACT,QINFLOW_LOCAL,QOUTFLOW_ACT,FirstTime,yr_s,mon_s)
+  subroutine check_balance(route,ntiles,nt_local,runoff_save,WRIVER_ACT,WSTREAM_ACT,WTOT_BEFORE,RUNOFF_ACT,QINFLOW_LOCAL,QOUTFLOW_ACT,QRES_ACT,FirstTime,yr_s,mon_s)
       
       type(T_RROUTE_STATE), intent(in) :: route 
       integer, intent(in) :: ntiles,nt_local
       real,intent(in) :: runoff_save(nt_local),WRIVER_ACT(ntiles),WSTREAM_ACT(ntiles),WTOT_BEFORE(ntiles),RUNOFF_ACT(ntiles)
-      real,intent(in) :: QINFLOW_LOCAL(ntiles),QOUTFLOW_ACT(ntiles)
+      real,intent(in) :: QINFLOW_LOCAL(ntiles),QOUTFLOW_ACT(ntiles),QRES_ACT(ntiles)
       logical,intent(in) :: FirstTime
       character(len=*), intent(in) :: yr_s,mon_s
    
@@ -1090,6 +1091,7 @@ contains
       real,allocatable :: runoff_save_m3(:),runoff_global_m3(:)
       real,allocatable :: WTOT_AFTER(:),UNBALANCE(:),UNBALANCE_GLOBAL(:),ERROR(:),ERROR_GLOBAL(:)
       real,allocatable :: QFLOW_SINK(:),QFLOW_SINK_GLOBAL(:),WTOT_BEFORE_GLOBAL(:),WTOT_AFTER_GLOBAL(:)
+      real,allocatable :: QOUT(:)
 
       integer :: i, nt_global,mype,cid,temp(1),tid,mpierr
       real :: wr_error, wr_tot, runf_tot
@@ -1100,13 +1102,14 @@ contains
          allocate(WTOT_AFTER(ntiles),UNBALANCE(ntiles),UNBALANCE_GLOBAL(n_catg),runoff_cat_global(n_catg))
          allocate(QFLOW_SINK(ntiles),QFLOW_SINK_GLOBAL(n_catg),WTOT_BEFORE_GLOBAL(n_catg),WTOT_AFTER_GLOBAL(n_catg))
          allocate(runoff_save_m3(nt_local),runoff_global_m3(nt_global),ERROR(ntiles),ERROR_GLOBAL(n_catg))
+         allocate(QOUT(ntiles))
 
-    
+         where (route%reservoir%active_res/=1) QOUT=QOUTFLOW_ACT
+         where (route%reservoir%active_res==1) QOUT=QRES_ACT
 
-         WTOT_AFTER=WRIVER_ACT+WSTREAM_ACT
-         ERROR = WTOT_AFTER - (WTOT_BEFORE + RUNOFF_ACT*route_dt + QINFLOW_LOCAL*route_dt - QOUTFLOW_ACT*route_dt)
-         where(QOUTFLOW_ACT>0.) UNBALANCE = abs(ERROR)/(QOUTFLOW_ACT*route_dt)
-         where(QOUTFLOW_ACT<=0.) UNBALANCE = 0.
+         WTOT_AFTER=WRIVER_ACT+WSTREAM_ACT+route%reservoir%Wr_res
+         ERROR = WTOT_AFTER - (WTOT_BEFORE + RUNOFF_ACT*route_dt + QINFLOW_LOCAL*route_dt - QOUT*route_dt)
+         UNBALANCE = abs(ERROR)
          call MPI_allgatherv  (                          &
               UNBALANCE,  route%scounts_cat(mype+1)      ,MPI_REAL, &
               UNBALANCE_GLOBAL, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
@@ -1114,7 +1117,8 @@ contains
          QFLOW_SINK=0.
          do i=1,ntiles
            if(route%downid(i)==-1)then
-              QFLOW_SINK(i) = QOUTFLOW_ACT(i)
+              !QFLOW_SINK(i) = QOUTFLOW_ACT(i)
+              QFLOW_SINK(i) = QOUT(i)
            endif
          enddo
          call MPI_allgatherv  (                          &
@@ -1175,7 +1179,7 @@ contains
          cid = temp(1)
          if(cid>=route%minCatch.and.cid<=route%maxCatch)then
            tid=cid-route%minCatch+1
-           print *,"my PE is:",mype,", max abs value of ERROR=", ERROR(tid)," at pfafid: ",route%minCatch+tid-1,", W_BEFORE=",WTOT_BEFORE(tid),", RUNOFF=",RUNOFF_ACT(tid)*route_dt,", QINFLOW=",QINFLOW_LOCAL(tid)*route_dt,", QOUTFLOW=",QOUTFLOW_ACT(tid)*route_dt,", W_AFTER=",WTOT_AFTER(tid)
+           print *,"my PE is:",mype,", max abs value of ERROR=", ERROR(tid)," at pfafid: ",route%minCatch+tid-1,", W_BEFORE=",WTOT_BEFORE(tid),", RUNOFF=",RUNOFF_ACT(tid)*route_dt,", QINFLOW=",QINFLOW_LOCAL(tid)*route_dt,", QOUTFLOW=",QOUT(tid)*route_dt,", W_AFTER=",WTOT_AFTER(tid)
          endif  
          !if(FirstTime)then     
          !  if(mapl_am_I_root())then  
@@ -1187,7 +1191,7 @@ contains
          !endif
 
          deallocate(WTOT_AFTER,UNBALANCE,UNBALANCE_GLOBAL,ERROR,QFLOW_SINK,QFLOW_SINK_GLOBAL,WTOT_BEFORE_GLOBAL,WTOT_AFTER_GLOBAL)
-         deallocate(runoff_save_m3,runoff_global_m3,ERROR_GLOBAL,runoff_cat_global)
+         deallocate(runoff_save_m3,runoff_global_m3,ERROR_GLOBAL,runoff_cat_global,QOUT)
 
 
   end subroutine check_balance
