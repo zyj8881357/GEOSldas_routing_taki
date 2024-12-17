@@ -248,7 +248,7 @@ end subroutine res_init
 !-----------------------
 ! Reservoir calculation subroutine
 subroutine res_cal(active_res,Qout,type_res,cat2res,Q_res,wid_res,fld_res,Wr_res,Qfld_thres,cap_res,dt)
-  integer, intent(in) :: active_res, type_res, active_lake, cat2res, fld_res
+  integer, intent(in) :: active_res, type_res, cat2res, fld_res
   real, intent(in) :: Qout, wid_res, Qfld_thres, cap_res
   real, intent(inout) :: Q_res, Wr_res
   real, intent(in) :: dt
