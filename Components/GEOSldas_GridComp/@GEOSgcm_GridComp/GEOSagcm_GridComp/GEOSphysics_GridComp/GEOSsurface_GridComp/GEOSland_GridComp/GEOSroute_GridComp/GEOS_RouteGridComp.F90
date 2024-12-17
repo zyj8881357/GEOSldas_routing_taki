@@ -38,7 +38,7 @@ module GEOS_RouteGridCompMod
   integer,parameter :: upmax=34
   integer,parameter :: nres=7250
   character(len=500) :: inputdir="/umbc/xfs1/yujinz/users/yujinz/GEOSldas/river_input/"
-  logical,parameter :: use_res = .True.
+  logical,parameter :: use_res = .False.
   integer,save :: nmax 
 
   private
@@ -597,7 +597,7 @@ contains
     endif    
     if(mapl_am_I_root())print *, "init river storage is: ",sum(wriver_global)/1.e9
     if(mapl_am_I_root())print *, "init stream storage is: ",sum(wstream_global)/1.e9  
-    if(mapl_am_I_root())print *, "init stream storage is: ",sum(wres_global)/1.e9           
+    if(mapl_am_I_root())print *, "init reservoir storage is: ",sum(wres_global)/1.e9           
     wriver=wriver_global(minCatch:maxCatch)
     wstream=wstream_global(minCatch:maxCatch)
     wres=wres_global(minCatch:maxCatch)
