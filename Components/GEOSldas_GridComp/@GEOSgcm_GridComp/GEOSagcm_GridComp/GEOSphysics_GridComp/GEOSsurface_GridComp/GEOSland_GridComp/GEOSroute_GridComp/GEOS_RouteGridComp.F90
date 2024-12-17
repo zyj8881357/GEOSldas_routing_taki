@@ -808,7 +808,7 @@ contains
     nt_global = route%nt_global  
     runoff_save => route%runoff_save
     nt_local = route%nt_local
-    res => route%res
+    res => route%reservoir
 
     ! get the field from IMPORT
     call ESMF_StateGet(IMPORT, 'RUNOFF', field=runoff_src, RC=STATUS)
