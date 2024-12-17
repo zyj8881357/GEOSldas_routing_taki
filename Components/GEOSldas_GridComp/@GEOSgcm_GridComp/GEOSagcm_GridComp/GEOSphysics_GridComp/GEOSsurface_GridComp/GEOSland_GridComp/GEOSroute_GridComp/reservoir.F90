@@ -17,7 +17,7 @@ real, parameter  :: fac_other_a = 0.20 ! Coefficient for other reservoir types
 real, parameter  :: fac_other_b = 2.00 ! Exponent for other reservoir types
 integer, parameter :: fac_fld = 1         ! Flood control parameter
 
-real, parameter :: dt = 86400.       ! Time step in seconds (1 day)
+!real, parameter :: dt = 86400.       ! Time step in seconds (1 day)
 
 real, parameter :: ai_thres = 0.5    ! Aridity index threshold for irrigation reservoirs
 real, parameter :: rho = 1.e3         ! Water density (kg/m^3)
@@ -74,7 +74,7 @@ subroutine res_init(input_dir,nres,nall,nc,minCatch,maxCatch,use_res,active_res,
   read(77,*)flag_grand;close(77)
   open(77,file=trim(input_dir)//"/cap_max_grand.txt",status="old",action="read")
   read(77,*)cap_grand;close(77)
-  cap_grand=cap_grand*1.e6*rho ! Convert capacity from million cubic meters (MCM) to kilograms (kg)
+  cap_grand=cap_grand*1.e6! Convert capacity from million cubic meters (MCM) to m3
   open(77,file=trim(input_dir)//"/hydroelec_grand.txt",status="old",action="read")
   read(77,*)elec_grand;close(77)
   open(77,file=trim(input_dir)//"/irrmainsec_noelec_grand.txt",status="old",action="read")
@@ -99,7 +99,7 @@ subroutine res_init(input_dir,nres,nall,nc,minCatch,maxCatch,use_res,active_res,
 
   allocate(buff_global(nall))
   open(77,file=trim(input_dir)//"/Pfaf_flood_qr_thres"//trim(fld_thres)//".txt");read(77,*)buff_global;close(77)
-  Qfld_thres=buff_global(minCatch:maxCatch)*rho
+  Qfld_thres=buff_global(minCatch:maxCatch)
   deallocate(buff_global)   
 
   ! Set initial reservoir ID mapping 
@@ -247,23 +247,20 @@ end subroutine res_init
 
 !-----------------------
 ! Reservoir calculation subroutine
-subroutine res_cal(active_res,active_lake,Qout,Q_lake,type_res,cat2res,Q_res,wid_res,fld_res,Wr_res,Qfld_thres,cap_res,B1,B2)
+subroutine res_cal(active_res,Qout,type_res,cat2res,Q_res,wid_res,fld_res,Wr_res,Qfld_thres,cap_res,dt)
   integer, intent(in) :: active_res, type_res, active_lake, cat2res, fld_res
-  real*8, intent(in) :: Qout, Q_lake, wid_res, Qfld_thres, cap_res
-  real*8, intent(inout) :: Q_res, Wr_res, B1, B2
+  real, intent(in) :: Qout, wid_res, Qfld_thres, cap_res
+  real, intent(inout) :: Q_res, Wr_res
+  real, intent(in) :: dt
 
   integer :: rid  ! Reservoir ID
-  real*8 :: Qin_res, coe, irrfac, alp_res  ! Variables for inflow, coefficients, and factors
+  real :: Qin_res, coe, irrfac, alp_res  ! Variables for inflow, coefficients, and factors
 
   ! If the reservoir is active
   if (active_res == 1) then
 
     ! Determine the inflow to the reservoir (from river or lake)
-    if (active_lake == 0) then
-      Qin_res = Qout  ! Inflow from river
-    else
-      Qin_res = Q_lake  ! Inflow from lake
-    endif
+    Qin_res = Qout  ! Inflow from river
 
     ! Irrigation reservoir 
     if (type_res == 1 .or. type_res == 3) then 
@@ -295,13 +292,9 @@ subroutine res_cal(active_res,active_lake,Qout,Q_lake,type_res,cat2res,Q_res,wid
 
     ! If the storage exceeds capacity, adjust outflow and storage
     if (Wr_res > cap_res) then
-      if (type_res /= 1) Q_res = Q_res + (Wr_res - cap_res) / dt  ! Adjust outflow for overflow
+      Q_res = Q_res + (Wr_res - cap_res) / dt  ! Adjust outflow for overflow
       Wr_res = cap_res  ! Limit storage to reservoir capacity
     endif
-
-    ! Output the calculated outflow and zero out the second output variable (B2)
-    B1 = Q_res
-    B2 = 0.0
 
   endif
 

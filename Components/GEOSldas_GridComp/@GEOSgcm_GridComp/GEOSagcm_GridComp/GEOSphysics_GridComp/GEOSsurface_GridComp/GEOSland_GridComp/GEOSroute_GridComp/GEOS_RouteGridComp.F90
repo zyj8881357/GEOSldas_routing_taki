@@ -45,13 +45,13 @@ module GEOS_RouteGridCompMod
 
   type RES_STATE
     integer, pointer :: active_res(:)
-    real,    pointer :: Wr_res(:)
-    real,    pointer :: Q_res(:)
+    real,    pointer :: Wr_res(:) !m3
+    real,    pointer :: Q_res(:) !m3/s
     integer, pointer :: type_res(:)
-    real,    pointer :: cap_res(:)
-    real,    pointer :: wid_res(:)
-    integer, pointer :: fld_res(:)
-    real,    pointer :: Qfld_thres(:)
+    real,    pointer :: cap_res(:) !m3
+    real,    pointer :: wid_res(:) !m
+    integer, pointer :: fld_res(:) 
+    real,    pointer :: Qfld_thres(:) !m3/s
     integer, pointer :: cat2res(:)
   end type RES_STATE
 
@@ -763,6 +763,7 @@ contains
     real,pointer :: runoff_save(:)=>NULL()
     real,pointer :: WSTREAM_ACT(:)=>NULL()
     real,pointer :: WRIVER_ACT(:)=>NULL()
+    type (RES_STATE), pointer :: res => NULL()    
     real,allocatable :: runoff_save_m3(:),runoff_global_m3(:),QOUTFLOW_GLOBAL(:)
     real,allocatable :: WTOT_BEFORE(:),WTOT_AFTER(:),QINFLOW_LOCAL(:),UNBALANCE(:),UNBALANCE_GLOBAL(:),ERROR(:),ERROR_GLOBAL(:)
     real,allocatable :: QFLOW_SINK(:),QFLOW_SINK_GLOBAL(:),WTOT_BEFORE_GLOBAL(:),WTOT_AFTER_GLOBAL(:)
@@ -807,6 +808,7 @@ contains
     nt_global = route%nt_global  
     runoff_save => route%runoff_save
     nt_local = route%nt_local
+    res => route%res
 
     ! get the field from IMPORT
     call ESMF_StateGet(IMPORT, 'RUNOFF', field=runoff_src, RC=STATUS)
@@ -882,7 +884,11 @@ contains
             route%qstr_clmt, route%qri_clmt, route%qin_clmt, &
             route%K, route%Kstr, &
             WSTREAM_ACT,WRIVER_ACT, &
-            QSFLOW_ACT,QOUTFLOW_ACT)        
+            QSFLOW_ACT,QOUTFLOW_ACT)     
+       do i=1,ntiles
+         call res_cal(res%active_res(i),QOUTFLOW_ACT(i),res%type_res(i),res%cat2res(i),&
+              res%Q_res(i),res%wid_res(i),res%fld_res(i),res%Wr_res(i),res%Qfld_thres(i),res%cap_res(i),real(route_dt))
+       enddo               
 
        allocate(QOUTFLOW_GLOBAL(n_catg))
        call MPI_allgatherv  (                          &
