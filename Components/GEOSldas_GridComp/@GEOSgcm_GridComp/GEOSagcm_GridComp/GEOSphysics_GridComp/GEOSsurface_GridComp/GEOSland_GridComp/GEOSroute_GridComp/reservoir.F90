@@ -28,7 +28,7 @@ contains
 
 !------------------------------------------
 ! Initialization subroutine for reservoirs
-subroutine res_init(input_dir,nres,nall,nc,minCatch,maxCatch,use_res,active_res,Wr_res,Q_res,type_res,cap_res,fld_res,Qfld_thres,cat2res,wid_res)
+subroutine res_init(input_dir,nres,nall,nc,minCatch,maxCatch,use_res,active_res,type_res,cap_res,fld_res,Qfld_thres,cat2res,wid_res)
   character(len=500),intent(in) :: input_dir
   ! Define the number of reservoirs (nres) and the number of catchments (nc)
   integer,intent(in) :: nall,nres,nc,minCatch,maxCatch
@@ -36,7 +36,7 @@ subroutine res_init(input_dir,nres,nall,nc,minCatch,maxCatch,use_res,active_res,
   logical,intent(in) :: use_res
   ! Input/output arrays for reservoir attributes: active reservoirs, types, capacities, etc.
   integer,intent(inout),pointer :: active_res(:),type_res(:),fld_res(:),cat2res(:)
-  real,intent(inout),pointer :: Wr_res(:),Q_res(:),cap_res(:),Qfld_thres(:)
+  real,intent(inout),pointer :: cap_res(:),Qfld_thres(:)
   real,intent(inout),pointer :: wid_res(:)
 
   ! Internal arrays for various reservoir-related data
@@ -55,7 +55,6 @@ subroutine res_init(input_dir,nres,nall,nc,minCatch,maxCatch,use_res,active_res,
 !----------reservoir module--------------
   ! Allocate memory for each array
   allocate(flag_grand(nres),catid_grand(nres),active_res(nc),Qfld_thres(nc))
-  allocate(Wr_res(nc),Q_res(nc))
   allocate(elec_grand(nres),type_res(nc),type_res_all(nall),cap_grand(nres),cap_res(nc),area_grand(nres))
   allocate(area_res(nc),area_max_res(nall))
   allocate(irrsup_grand(nres))
