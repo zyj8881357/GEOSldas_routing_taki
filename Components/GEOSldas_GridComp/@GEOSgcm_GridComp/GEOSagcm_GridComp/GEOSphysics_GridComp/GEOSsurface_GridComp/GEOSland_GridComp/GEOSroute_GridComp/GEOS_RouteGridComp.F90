@@ -361,7 +361,7 @@ contains
     integer,pointer :: upid_global(:,:)=>NULL(), upid(:,:)=>NULL()    
 
     real,pointer :: wstream(:)=>NULL(),wriver(:)=>NULL(),wres(:)=>NULL()
-    real,pointer :: wstream_global(:)=>NULL(),wriver_global(:)=>NULL(),wres_global=>NULL()    
+    real,pointer :: wstream_global(:)=>NULL(),wriver_global(:)=>NULL(),wres_global(:)=>NULL()    
     
     type (T_RROUTE_STATE), pointer         :: route => null()
     type (RES_STATE), pointer :: res => NULL()
