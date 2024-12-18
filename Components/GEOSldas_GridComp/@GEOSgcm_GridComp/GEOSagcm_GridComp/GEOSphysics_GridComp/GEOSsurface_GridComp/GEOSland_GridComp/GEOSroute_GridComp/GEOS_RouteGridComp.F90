@@ -38,7 +38,7 @@ module GEOS_RouteGridCompMod
   integer,parameter :: upmax=34
   integer,parameter :: nres=7250
   character(len=500) :: inputdir="/umbc/xfs1/yujinz/users/yujinz/GEOSldas/river_input/"
-  logical,parameter :: use_res = .False.
+  logical,parameter :: use_res = .True.
   integer,save :: nmax 
 
   private
@@ -922,12 +922,7 @@ contains
        call MPI_allgatherv  (                          &
             QOUT_CAT,  route%scounts_cat(mype+1)      ,MPI_REAL, &
             QOUTFLOW_GLOBAL, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
-            MPI_COMM_WORLD, mpierr) 
-       allocate(Qres_global(n_catg))
-       call MPI_allgatherv  (                          &
-            QRES_ACT,  route%scounts_cat(mype+1)      ,MPI_REAL, &
-            Qres_global, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
-            MPI_COMM_WORLD, mpierr)        
+            MPI_COMM_WORLD, mpierr)      
 
        allocate(QINFLOW_LOCAL(ntiles))
        QINFLOW_LOCAL=0.
@@ -952,7 +947,7 @@ contains
        route%qsflow_acc = route%qsflow_acc + QSFLOW_ACT/real(nstep_per_day)
        route%qres_acc = route%qres_acc + QRES_ACT/real(nstep_per_day)       
 
-       deallocate(RUNOFF_ACT,AREACAT_ACT,LENGSC_ACT,QOUTFLOW_ACT,QINFLOW_LOCAL,QOUTFLOW_GLOBAL,QSFLOW_ACT,WTOT_BEFORE,QRES_ACT,Qres_global,QOUT_CAT)
+       deallocate(RUNOFF_ACT,AREACAT_ACT,LENGSC_ACT,QOUTFLOW_ACT,QINFLOW_LOCAL,QOUTFLOW_GLOBAL,QSFLOW_ACT,WTOT_BEFORE,QRES_ACT,QOUT_CAT)
       !initialize the cycle counter and sum (runoff_tile)       
        WSTREAM_ACT=>NULL()
        WRIVER_ACT=>NULL()      
