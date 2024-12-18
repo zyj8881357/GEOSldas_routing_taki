@@ -45,6 +45,7 @@ module GEOS_RouteGridCompMod
 
   type RES_STATE
     integer, pointer :: active_res(:)
+    integer, pointer :: active_up(:,:)
     real,    pointer :: Wr_res(:) !m3
     integer, pointer :: type_res(:)
     real,    pointer :: cap_res(:) !m3
@@ -765,7 +766,7 @@ contains
     integer                                  :: K, N, I, req
     REAL                                     :: mm2m3, rbuff, HEARTBEAT 
     REAL, ALLOCATABLE, DIMENSION(:)          :: RUNOFF_CATCH, RUNOFF_ACT,AREACAT_ACT,& 
-         LENGSC_ACT, QSFLOW_ACT,QOUTFLOW_ACT,QRES_ACT
+         LENGSC_ACT, QSFLOW_ACT,QOUTFLOW_ACT,QRES_ACT,QOUT_CAT
     INTEGER, ALLOCATABLE, DIMENSION(:)       :: tmp_index
     type(ESMF_Field) :: runoff_src
 
@@ -882,10 +883,10 @@ contains
        deallocate(runoff_global) 
 
 
-       allocate (AREACAT_ACT (1:ntiles))       
-       allocate (LENGSC_ACT  (1:ntiles))
-       allocate (QSFLOW_ACT  (1:ntiles))
-       allocate (QOUTFLOW_ACT(1:ntiles), QRES_ACT(1:ntiles))  
+       allocate (AREACAT_ACT (ntiles))       
+       allocate (LENGSC_ACT  (ntiles))
+       allocate (QSFLOW_ACT  (ntiles))
+       allocate (QOUTFLOW_ACT(ntiles),QRES_ACT(ntiles),QOUT_CAT(ntiles))  
 
        QRES_ACT=0.
        LENGSC_ACT=route%lengsc/1.e3 !m->km
@@ -896,7 +897,7 @@ contains
 
       
        allocate(WTOT_BEFORE(ntiles))
-       WTOT_BEFORE=WSTREAM_ACT+WRIVER_ACT!+res%Wr_res
+       WTOT_BEFORE=WSTREAM_ACT+WRIVER_ACT+res%Wr_res
 
        ! Call river_routing_model
        ! ------------------------     
@@ -912,11 +913,14 @@ contains
        do i=1,ntiles
          call res_cal(res%active_res(i),QOUTFLOW_ACT(i),res%type_res(i),res%cat2res(i),&
               QRES_ACT(i),res%wid_res(i),res%fld_res(i),res%Wr_res(i),res%Qfld_thres(i),res%cap_res(i),real(route_dt))
-       enddo               
+       enddo
+       QOUT_CAT = QOUTFLOW_ACT              
+       where(res%active_res==1) QOUT_CAT=QRES_ACT
+
 
        allocate(QOUTFLOW_GLOBAL(n_catg))
        call MPI_allgatherv  (                          &
-            QOUTFLOW_ACT,  route%scounts_cat(mype+1)      ,MPI_REAL, &
+            QOUT_CAT,  route%scounts_cat(mype+1)      ,MPI_REAL, &
             QOUTFLOW_GLOBAL, route%scounts_cat, route%rdispls_cat,MPI_REAL, &
             MPI_COMM_WORLD, mpierr) 
        allocate(Qres_global(n_catg))
@@ -931,13 +935,8 @@ contains
          do j=1,upmax
            if(route%upid(j,i)>0)then
              upid=route%upid(j,i)
-             !if(res%active_res(upid)/=1)then
-               WRIVER_ACT(i)=WRIVER_ACT(i)+QOUTFLOW_GLOBAL(upid)*real(route_dt)
-               QINFLOW_LOCAL(i)=QINFLOW_LOCAL(i)+QOUTFLOW_GLOBAL(upid)
-             !else
-             !  WRIVER_ACT(i)=WRIVER_ACT(i)+Qres_global(upid)*real(route_dt)
-             !  QINFLOW_LOCAL(i)=QINFLOW_LOCAL(i)+Qres_global(upid)              
-             !endif
+             WRIVER_ACT(i)=WRIVER_ACT(i)+QOUTFLOW_GLOBAL(upid)*real(route_dt)
+             QINFLOW_LOCAL(i)=QINFLOW_LOCAL(i)+QOUTFLOW_GLOBAL(upid)
            else
              exit
            endif
@@ -953,7 +952,7 @@ contains
        route%qsflow_acc = route%qsflow_acc + QSFLOW_ACT/real(nstep_per_day)
        route%qres_acc = route%qres_acc + QRES_ACT/real(nstep_per_day)       
 
-       deallocate(RUNOFF_ACT,AREACAT_ACT,LENGSC_ACT,QOUTFLOW_ACT,QINFLOW_LOCAL,QOUTFLOW_GLOBAL,QSFLOW_ACT,WTOT_BEFORE,QRES_ACT,Qres_global)
+       deallocate(RUNOFF_ACT,AREACAT_ACT,LENGSC_ACT,QOUTFLOW_ACT,QINFLOW_LOCAL,QOUTFLOW_GLOBAL,QSFLOW_ACT,WTOT_BEFORE,QRES_ACT,Qres_global,QOUT_CAT)
       !initialize the cycle counter and sum (runoff_tile)       
        WSTREAM_ACT=>NULL()
        WRIVER_ACT=>NULL()      
@@ -1107,7 +1106,7 @@ contains
          where (route%reservoir%active_res/=1) QOUT=QOUTFLOW_ACT
          where (route%reservoir%active_res==1) QOUT=QRES_ACT
 
-         WTOT_AFTER=WRIVER_ACT+WSTREAM_ACT !+route%reservoir%Wr_res
+         WTOT_AFTER=WRIVER_ACT+WSTREAM_ACT+route%reservoir%Wr_res
          ERROR = WTOT_AFTER - (WTOT_BEFORE + RUNOFF_ACT*route_dt + QINFLOW_LOCAL*route_dt - QOUT*route_dt)
          UNBALANCE = abs(ERROR)
          call MPI_allgatherv  (                          &
@@ -1117,8 +1116,8 @@ contains
          QFLOW_SINK=0.
          do i=1,ntiles
            if(route%downid(i)==-1)then
-              QFLOW_SINK(i) = QOUTFLOW_ACT(i)
-              !QFLOW_SINK(i) = QOUT(i)
+              !QFLOW_SINK(i) = QOUTFLOW_ACT(i)
+              QFLOW_SINK(i) = QOUT(i)
            endif
          enddo
          call MPI_allgatherv  (                          &
