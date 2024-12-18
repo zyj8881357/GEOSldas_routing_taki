@@ -1188,7 +1188,7 @@ contains
          cid = temp(1)
          if(cid>=route%minCatch.and.cid<=route%maxCatch)then
            tid=cid-route%minCatch+1
-           print *,"my PE is:",mype,", max abs value of ERROR=", ERROR(tid)," at pfafid: ",route%minCatch+tid-1,", W_BEFORE=",WTOT_BEFORE(tid),", RUNOFF=",RUNOFF_ACT(tid)*route_dt,", QINFLOW=",QINFLOW_LOCAL(tid)*route_dt,", QOUTFLOW=",QOUT(tid)*route_dt,", W_AFTER=",WTOT_AFTER(tid)
+           print *,"my PE is:",mype,", max abs value of ERROR=", ERROR(tid)," at pfafid: ",route%minCatch+tid-1,", W_BEFORE=",WTOT_BEFORE(tid),", RUNOFF=",RUNOFF_ACT(tid)*route_dt,", QINFLOW=",QINFLOW_LOCAL(tid)*route_dt,", QOUTFLOW=",QOUTFLOW_ACT(tid)*route_dt,", W_AFTER=",WTOT_AFTER(tid)
          endif  
          !if(FirstTime)then     
          !  if(mapl_am_I_root())then  
