@@ -931,13 +931,13 @@ contains
          do j=1,upmax
            if(route%upid(j,i)>0)then
              upid=route%upid(j,i)
-             if(res%active_res(upid)/=1)then
+             !if(res%active_res(upid)/=1)then
                WRIVER_ACT(i)=WRIVER_ACT(i)+QOUTFLOW_GLOBAL(upid)*real(route_dt)
                QINFLOW_LOCAL(i)=QINFLOW_LOCAL(i)+QOUTFLOW_GLOBAL(upid)
-             else
-               WRIVER_ACT(i)=WRIVER_ACT(i)+Qres_global(upid)*real(route_dt)
-               QINFLOW_LOCAL(i)=QINFLOW_LOCAL(i)+Qres_global(upid)              
-             endif
+             !else
+             !  WRIVER_ACT(i)=WRIVER_ACT(i)+Qres_global(upid)*real(route_dt)
+             !  QINFLOW_LOCAL(i)=QINFLOW_LOCAL(i)+Qres_global(upid)              
+             !endif
            else
              exit
            endif
