@@ -896,7 +896,7 @@ contains
 
       
        allocate(WTOT_BEFORE(ntiles))
-       WTOT_BEFORE=WSTREAM_ACT+WRIVER_ACT+res%Wr_res
+       WTOT_BEFORE=WSTREAM_ACT+WRIVER_ACT!+res%Wr_res
 
        ! Call river_routing_model
        ! ------------------------     
@@ -1107,7 +1107,7 @@ contains
          where (route%reservoir%active_res/=1) QOUT=QOUTFLOW_ACT
          where (route%reservoir%active_res==1) QOUT=QRES_ACT
 
-         WTOT_AFTER=WRIVER_ACT+WSTREAM_ACT+route%reservoir%Wr_res
+         WTOT_AFTER=WRIVER_ACT+WSTREAM_ACT !+route%reservoir%Wr_res
          ERROR = WTOT_AFTER - (WTOT_BEFORE + RUNOFF_ACT*route_dt + QINFLOW_LOCAL*route_dt - QOUT*route_dt)
          UNBALANCE = abs(ERROR)
          call MPI_allgatherv  (                          &
@@ -1117,8 +1117,8 @@ contains
          QFLOW_SINK=0.
          do i=1,ntiles
            if(route%downid(i)==-1)then
-              !QFLOW_SINK(i) = QOUTFLOW_ACT(i)
-              QFLOW_SINK(i) = QOUT(i)
+              QFLOW_SINK(i) = QOUTFLOW_ACT(i)
+              !QFLOW_SINK(i) = QOUT(i)
            endif
          enddo
          call MPI_allgatherv  (                          &
