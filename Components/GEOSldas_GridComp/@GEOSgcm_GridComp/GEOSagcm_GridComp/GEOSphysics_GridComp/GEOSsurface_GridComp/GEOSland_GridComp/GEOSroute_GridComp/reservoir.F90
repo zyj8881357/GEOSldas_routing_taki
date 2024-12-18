@@ -18,8 +18,6 @@ real, parameter  :: fac_other_b = 2.00 ! Exponent for other reservoir types
 integer, parameter :: fac_fld = 1         ! Flood control parameter
 
 !real, parameter :: dt = 86400.       ! Time step in seconds (1 day)
-
-real, parameter :: ai_thres = 0.5    ! Aridity index threshold for irrigation reservoirs
 real, parameter :: rho = 1.e3         ! Water density (kg/m^3)
 
 !-----------------------------------------
