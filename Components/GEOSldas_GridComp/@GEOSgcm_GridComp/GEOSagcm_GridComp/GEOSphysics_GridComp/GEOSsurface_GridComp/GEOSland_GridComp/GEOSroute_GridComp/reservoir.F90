@@ -159,7 +159,7 @@ subroutine res_init(input_dir,nall,nc,minCatch,maxCatch,use_res,active_res,type_
   where(cap_res==0.) cap_res=value_max
   !area_res=buff_global2(minCatch:maxCatch)
   fld_res=buff_global_int(minCatch:maxCatch)
-  deallocate(buff_global,buff_global2,buff_global_int)
+  deallocate(buff_global,buff_global_int)
 
   ! Assign reservoir type 7 (Other use) to the largest reservoir in a catchment
   do i = 1, nres
