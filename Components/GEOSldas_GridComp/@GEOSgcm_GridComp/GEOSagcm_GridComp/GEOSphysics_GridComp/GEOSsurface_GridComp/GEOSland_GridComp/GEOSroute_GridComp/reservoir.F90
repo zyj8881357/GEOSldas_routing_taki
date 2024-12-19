@@ -6,6 +6,8 @@ private
 public :: res_init, res_cal
 
 !----Reservoir module constants----------
+integer,parameter :: nres=7250
+integer,parameter :: nlake=3917
 
 real, parameter  :: fac_elec_a = 0.30 ! Coefficient for hydropower calculation
 real, parameter  :: fac_elec_b = 2.00 ! Exponent for hydropower calculation
@@ -17,6 +19,12 @@ real, parameter  :: fac_other_a = 0.20 ! Coefficient for other reservoir types
 real, parameter  :: fac_other_b = 2.00 ! Exponent for other reservoir types
 integer, parameter :: fac_fld = 1         ! Flood control parameter
 
+real, parameter  :: fac_a_slake = 0.003  ! Factor for small lakes
+real, parameter  :: fac_b_slake = 0.40   ! Exponent for small lakes
+real, parameter  :: fac_a_llake = 0.01   ! Factor for large lakes
+real, parameter  :: fac_b_llake = 0.60   ! Exponent for large lakes
+real, parameter  :: thr_wid_lake = 1.e5    ! Threshold lake width (in m)
+
 !real, parameter :: dt = 86400.       ! Time step in seconds (1 day)
 real, parameter :: rho = 1.e3         ! Water density (kg/m^3)
 
@@ -26,10 +34,10 @@ contains
 
 !------------------------------------------
 ! Initialization subroutine for reservoirs
-subroutine res_init(input_dir,nres,nall,nc,minCatch,maxCatch,use_res,active_res,type_res,cap_res,fld_res,Qfld_thres,cat2res,wid_res)
+subroutine res_init(input_dir,nall,nc,minCatch,maxCatch,use_res,active_res,type_res,cap_res,fld_res,Qfld_thres,cat2res,wid_res)
   character(len=500),intent(in) :: input_dir
   ! Define the number of reservoirs (nres) and the number of catchments (nc)
-  integer,intent(in) :: nall,nres,nc,minCatch,maxCatch
+  integer,intent(in) :: nall,nc,minCatch,maxCatch
   ! Logical variable to check if reservoirs are used
   logical,intent(in) :: use_res
   ! Input/output arrays for reservoir attributes: active reservoirs, types, capacities, etc.
@@ -43,8 +51,12 @@ subroutine res_init(input_dir,nres,nall,nc,minCatch,maxCatch,use_res,active_res,
   integer,allocatable,dimension(:) :: type_res_all,cat2res_all
   real,allocatable,dimension(:) :: cap_grand,area_max_res,Qavg_grand,ai_grand,area_grand,power_grand,area_res
   real,allocatable,dimension(:,:) :: Wres_tar
-  real,pointer :: buff_global(:)=>NULL(),buff_global2(:)=>NULL(),buff_global3(:)=>NULL()
+  real,pointer :: buff_global(:)=>NULL(),area_all(:)=>NULL()
   integer,pointer :: buff_global_int(:)=>NULL()
+  real :: value_max
+
+  integer,allocatable,dimension(:) :: flag_lake,catid_lake
+  real,allocatable,dimension(:) :: area_lake
 
   ! Define the flood threshold variable and a counter variable
   character(len=2) :: fld_thres  
@@ -63,6 +75,8 @@ subroutine res_init(input_dir,nres,nall,nc,minCatch,maxCatch,use_res,active_res,
   allocate(other_grand(nres))
   allocate(wid_res(nc))
   allocate(realuse_grand(nres))
+
+  allocate(flag_lake(nlake),catid_lake(nlake),area_lake(nlake))
 
   ! Open reservoir-related data files and read the corresponding arrays
   open(77,file=trim(input_dir)//"/catid_dam_corr_aca_grand5000.txt",status="old",action="read")
@@ -97,7 +111,16 @@ subroutine res_init(input_dir,nres,nall,nc,minCatch,maxCatch,use_res,active_res,
   allocate(buff_global(nall))
   open(77,file=trim(input_dir)//"/Pfaf_flood_qr_thres"//trim(fld_thres)//".txt");read(77,*)buff_global;close(77)
   Qfld_thres=buff_global(minCatch:maxCatch)
-  deallocate(buff_global)   
+  deallocate(buff_global) 
+
+  !lake input
+  open(77, file = trim(input_dir)//"/lake_outlet_flag_valid_2097.txt")
+  read(77, *) flag_lake;close(77)
+  open(77, file = trim(input_dir)//"/lake_outlet_catid.txt")
+  read(77, *) catid_lake;close(77)
+  open(77, file = trim(input_dir)//"/lake_outlet_lakearea.txt")
+  read(77, *) area_lake;close(77) ! km^2  
+  area_lake=area_lake*1.e6 
 
   ! Set initial reservoir ID mapping 
   cat2res_all=0
@@ -118,26 +141,25 @@ subroutine res_init(input_dir,nres,nall,nc,minCatch,maxCatch,use_res,active_res,
   realuse_grand = 0        ! Initialize real use for each reservoir to zero
 
   ! Loop over all reservoirs
-  allocate(buff_global(nall),buff_global2(nall),buff_global_int(nall))
+  allocate(buff_global(nall),buff_global_int(nall),area_all(nall))
   buff_global=0.
-  buff_global2=0.
+  area_all=0.
   buff_global_int=0
   do i = 1, nres
     if(flag_grand(i) == 1) then     ! If the reservoir is flagged as active
       cid = catid_grand(i)          ! Get the catchment ID for the reservoir
       buff_global(cid) = buff_global(cid) + cap_grand(i)  ! Sum up the capacities for reservoirs in the same catchment
-      buff_global2(cid) = buff_global2(cid) + area_grand(i) ! Sum up the areas for reservoirs in the same catchment
+      area_all(cid) = area_all(cid) + area_grand(i) ! Sum up the areas for reservoirs in the same catchment
       !Qavg_res(cid) = Qavg_grand(i)               ! Assign average flow rate to the catchment
       if(fld_grand(i) == 1) buff_global_int(cid) = 1      ! Mark the catchment if it has flood control
     endif
   enddo
   cap_res=buff_global(minCatch:maxCatch)
-  area_res=buff_global2(minCatch:maxCatch)
+  value_max=huge(value_max)
+  where(cap_res==0.) cap_res=value_max
+  !area_res=buff_global2(minCatch:maxCatch)
   fld_res=buff_global_int(minCatch:maxCatch)
   deallocate(buff_global,buff_global2,buff_global_int)
-
-  ! Compute reservoir width from area (square root of the area)
-  wid_res = sqrt(area_res)
 
   ! Assign reservoir type 7 (Other use) to the largest reservoir in a catchment
   do i = 1, nres
@@ -223,8 +245,23 @@ subroutine res_init(input_dir,nres,nall,nc,minCatch,maxCatch,use_res,active_res,
     endif
   enddo
 
+  ! Set up natural lakes
+  do i = 1, nlake
+    if(flag_lake(i) == 1 .and. catid_lake(i) > 0) then
+      cid = catid_lake(i)
+      if(type_res_all(cid)==0)then
+        type_res_all(cid) = -1 !for lake
+        cat2res_all(cid) = i
+        area_all(cid) = area_lake(i)
+      endif
+    endif
+  enddo
+
   type_res=type_res_all(minCatch:maxCatch)
   cat2res=cat2res_all(minCatch:maxCatch)
+  area_res=area_all(minCatch:maxCatch)
+  ! Compute reservoir width from area (square root of the area)
+  wid_res = sqrt(area_res)!m
 
   ! Mark active reservoirs based on type or flood control status
   do i = 1, nc
@@ -239,6 +276,7 @@ subroutine res_init(input_dir,nres,nall,nc,minCatch,maxCatch,use_res,active_res,
   deallocate(flag_grand,catid_grand,elec_grand,type_res_all,cap_grand,area_grand)
   deallocate(area_res,area_max_res,irrsup_grand,fld_grand,supply_grand,irr_grand)
   deallocate(cat2res_all,nav_grand,rec_grand,other_grand,realuse_grand)
+  deallocate(flag_lake,catid_lake,area_lake,area_all)
 
 end subroutine res_init
 
@@ -256,29 +294,37 @@ subroutine res_cal(active_res,Qout,type_res,cat2res,Q_res,wid_res,fld_res,Wr_res
   ! If the reservoir is active
   if (active_res == 1) then
 
-    ! Determine the inflow to the reservoir (from river or lake)
+    ! Determine the inflow to the reservoir 
     Qin_res = Qout  ! Inflow from river
 
     ! Irrigation reservoir 
     if (type_res == 1 .or. type_res == 3) then 
       alp_res = fac_irr_a * ((1.0 / (wid_res / 1.e3)) ** fac_irr_b) / 3600.0   ! irrigation coefficient
-      Q_res = alp_res * Wr_res  ! Outflow based on water storage
 
     ! Hydropower reservoir
     else if (type_res == 2) then 
       alp_res = fac_elec_a * ((1.0 / (wid_res / 1.e3)) ** fac_elec_b) / 3600.0  ! Hydropower coefficient
-      Q_res = alp_res * Wr_res  ! Outflow based on water storage
 
     ! Water supply reservoir
     else if (type_res == 4) then 
       alp_res = fac_sup_a * ((1.0 / (wid_res / 1.e3)) ** fac_sup_b) / 3600.0  ! Supply coefficient
-      Q_res = alp_res * Wr_res  ! Outflow based on water storage
 
     ! Other reservoir types
-    else if (type_res == 5 .or. type_res == 6 .or. type_res == 7 .or. type_res == 0) then 
+    else if (type_res == 5 .or. type_res == 6 .or. type_res == 7) then 
       alp_res = fac_other_a * ((1.0 / (wid_res / 1.e3)) ** fac_other_b) / 3600.0  ! Generic reservoir coefficient
-      Q_res = alp_res * Wr_res  ! Outflow based on water storage
+
+    ! Natural lake 
+    else if (type_res == -1) then  
+      ! Determine lake type based on area and calculate alpha
+      if (wid_res >= thr_wid_lake) then
+        alp_res = fac_a_llake * ( (1. / (wid_res / 1.e3)) ** fac_b_llake ) / 3600.
+      else
+        alp_res = fac_a_slake * ( (1./ (wid_res / 1.e3)) ** fac_b_slake ) / 3600.
+      endif
+
     endif
+
+    Q_res = alp_res * Wr_res
 
     ! Ensure outflow is within reasonable bounds
     Q_res = max(0.0, Q_res)  ! Ensure non-negative outflow

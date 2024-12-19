@@ -36,7 +36,6 @@ module GEOS_RouteGridCompMod
   implicit none
   integer, parameter :: N_CatG = 291284
   integer,parameter :: upmax=34
-  integer,parameter :: nres=7250
   character(len=500) :: inputdir="/umbc/xfs1/yujinz/users/yujinz/GEOSldas/river_input/"
   logical,parameter :: use_res = .True.
   integer,save :: nmax 
@@ -646,7 +645,7 @@ contains
     deallocate(buff_global) 
 
     res => route%reservoir
-    call res_init(inputdir,nres,n_catg,ntiles,minCatch,maxCatch,use_res,res%active_res,res%type_res,res%cap_res,res%fld_res,res%Qfld_thres,res%cat2res,res%wid_res)
+    call res_init(inputdir,n_catg,ntiles,minCatch,maxCatch,use_res,res%active_res,res%type_res,res%cap_res,res%fld_res,res%Qfld_thres,res%cat2res,res%wid_res)
     if(mapl_am_I_root()) print *,"reservoir init success" 
 
     !if (mapl_am_I_root())then
