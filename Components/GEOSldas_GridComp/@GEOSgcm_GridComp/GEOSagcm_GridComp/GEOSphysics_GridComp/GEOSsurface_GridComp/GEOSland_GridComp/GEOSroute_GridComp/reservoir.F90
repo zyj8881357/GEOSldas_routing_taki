@@ -52,7 +52,7 @@ subroutine res_init(input_dir,nall,nc,minCatch,maxCatch,use_res,active_res,type_
   real,allocatable,dimension(:) :: cap_grand,area_max_res,Qavg_grand,ai_grand,area_grand,power_grand,area_res
   real,allocatable,dimension(:,:) :: Wres_tar
   real,pointer :: buff_global(:)=>NULL(),area_all(:)=>NULL()
-  integer,pointer :: buff_global_int(:)=>NULL()
+  integer,pointer :: fld_all(:)=>NULL() !buff_global_int(:)=>NULL()
   real :: value_max
 
   integer,allocatable,dimension(:) :: flag_lake,catid_lake
@@ -141,25 +141,25 @@ subroutine res_init(input_dir,nall,nc,minCatch,maxCatch,use_res,active_res,type_
   realuse_grand = 0        ! Initialize real use for each reservoir to zero
 
   ! Loop over all reservoirs
-  allocate(buff_global(nall),buff_global_int(nall),area_all(nall))
+  allocate(buff_global(nall),fld_all(nall),area_all(nall))
   buff_global=0.
   area_all=0.
-  buff_global_int=0
+  fld_all=0
   do i = 1, nres
     if(flag_grand(i) == 1) then     ! If the reservoir is flagged as active
       cid = catid_grand(i)          ! Get the catchment ID for the reservoir
       buff_global(cid) = buff_global(cid) + cap_grand(i)  ! Sum up the capacities for reservoirs in the same catchment
       area_all(cid) = area_all(cid) + area_grand(i) ! Sum up the areas for reservoirs in the same catchment
       !Qavg_res(cid) = Qavg_grand(i)               ! Assign average flow rate to the catchment
-      if(fld_grand(i) == 1) buff_global_int(cid) = 1      ! Mark the catchment if it has flood control
+      if(fld_grand(i) == 1) fld_all(cid) = 1      ! Mark the catchment if it has flood control
     endif
   enddo
   cap_res=buff_global(minCatch:maxCatch)
   value_max=huge(value_max)
   where(cap_res==0.) cap_res=value_max
   !area_res=buff_global2(minCatch:maxCatch)
-  fld_res=buff_global_int(minCatch:maxCatch)
-  deallocate(buff_global,buff_global_int)
+  fld_res=fld_all(minCatch:maxCatch)
+  deallocate(buff_global)
 
   ! Assign reservoir type 7 (Other use) to the largest reservoir in a catchment
   do i = 1, nres
@@ -249,7 +249,7 @@ subroutine res_init(input_dir,nall,nc,minCatch,maxCatch,use_res,active_res,type_
   do i = 1, nlake
     if(flag_lake(i) == 1 .and. catid_lake(i) > 0) then
       cid = catid_lake(i)
-      if(type_res_all(cid)==0)then
+      if(type_res_all(cid)==0.and.fld_all(cid)==0)then
         type_res_all(cid) = -1 !for lake
         cat2res_all(cid) = i
         area_all(cid) = area_lake(i)
@@ -276,7 +276,7 @@ subroutine res_init(input_dir,nall,nc,minCatch,maxCatch,use_res,active_res,type_
   deallocate(flag_grand,catid_grand,elec_grand,type_res_all,cap_grand,area_grand)
   deallocate(area_res,area_max_res,irrsup_grand,fld_grand,supply_grand,irr_grand)
   deallocate(cat2res_all,nav_grand,rec_grand,other_grand,realuse_grand)
-  deallocate(flag_lake,catid_lake,area_lake,area_all)
+  deallocate(flag_lake,catid_lake,area_lake,area_all,fld_all)
 
 end subroutine res_init
 
@@ -310,7 +310,7 @@ subroutine res_cal(active_res,Qout,type_res,cat2res,Q_res,wid_res,fld_res,Wr_res
       alp_res = fac_sup_a * ((1.0 / (wid_res / 1.e3)) ** fac_sup_b) / 3600.0  ! Supply coefficient
 
     ! Other reservoir types
-    else if (type_res == 5 .or. type_res == 6 .or. type_res == 7) then 
+    else if (type_res == 5 .or. type_res == 6 .or. type_res == 7 .or. type_res == 0) then 
       alp_res = fac_other_a * ((1.0 / (wid_res / 1.e3)) ** fac_other_b) / 3600.0  ! Generic reservoir coefficient
 
     ! Natural lake 
