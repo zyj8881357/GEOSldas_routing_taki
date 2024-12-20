@@ -46,7 +46,7 @@ subroutine res_init(input_dir,nall,nc,minCatch,maxCatch,use_res,active_res,type_
   real,intent(inout),pointer :: wid_res(:)
 
   ! Internal arrays for various reservoir-related data
-  integer,allocatable,dimension(:) :: flag_grand,catid_grand,elec_grand,irrsup_grand,fld_grand,supply_grand,irr_grand,realuse_grand
+  integer,allocatable,dimension(:) :: flag_grand,catid_grand,elec_grand,fld_grand,supply_grand,irr_grand,realuse_grand
   integer,allocatable,dimension(:) :: nav_grand,rec_grand,other_grand
   integer,allocatable,dimension(:) :: type_res_all,cat2res_all
   real,allocatable,dimension(:) :: cap_grand,area_max_res,Qavg_grand,ai_grand,area_grand,power_grand,area_res
@@ -67,7 +67,6 @@ subroutine res_init(input_dir,nall,nc,minCatch,maxCatch,use_res,active_res,type_
   allocate(flag_grand(nres),catid_grand(nres),active_res(nc),Qfld_thres(nc))
   allocate(elec_grand(nres),type_res(nc),type_res_all(nall),cap_grand(nres),cap_res(nc),area_grand(nres))
   allocate(area_res(nc),area_max_res(nall))
-  allocate(irrsup_grand(nres))
   allocate(fld_grand(nres),fld_res(nc),supply_grand(nres))
   allocate(irr_grand(nres))
   allocate(cat2res(nc),cat2res_all(nall))
@@ -88,8 +87,6 @@ subroutine res_init(input_dir,nall,nc,minCatch,maxCatch,use_res,active_res,type_
   cap_grand=cap_grand*1.e6! Convert capacity from million cubic meters (MCM) to m3
   open(77,file=trim(input_dir)//"/hydroelec_grand.txt",status="old",action="read")
   read(77,*)elec_grand;close(77)
-  open(77,file=trim(input_dir)//"/irrmainsec_noelec_grand.txt",status="old",action="read")
-  read(77,*)irrsup_grand;close(77)
   open(77,file=trim(input_dir)//"/fldmainsec_grand.txt",status="old",action="read")
   read(77,*)fld_grand;close(77)
   write(fld_thres,'(I2.2)')fac_fld
@@ -161,35 +158,23 @@ subroutine res_init(input_dir,nall,nc,minCatch,maxCatch,use_res,active_res,type_
   fld_res=fld_all(minCatch:maxCatch)
   deallocate(buff_global)
 
-  ! Assign reservoir type 7 (Other use) to the largest reservoir in a catchment
+  ! Assign reservoir type 6 (Other use) to the largest reservoir in a catchment
   do i = 1, nres
     if(flag_grand(i) == 1) then
       cid = catid_grand(i)
       if(other_grand(i) == 1 .and. area_grand(i) >= area_max_res(cid)) then
-        type_res_all(cid) = 7             ! Type 7 for other uses
+        type_res_all(cid) = 6             
         cat2res_all(cid) = i              ! Map the catchment to the reservoir
         area_max_res(cid) = area_grand(i) ! Update the maximum area for the catchment
       endif
     endif
   enddo
 
-  ! Assign reservoir type 6 (Recreational use) to the largest reservoir in a catchment
+  ! Assign reservoir type 5 (Recreational use) to the largest reservoir in a catchment
   do i = 1, nres
     if(flag_grand(i) == 1) then
       cid = catid_grand(i)
       if(rec_grand(i) == 1 .and. area_grand(i) >= area_max_res(cid)) then
-        type_res_all(cid) = 6
-        cat2res_all(cid) = i
-        area_max_res(cid) = area_grand(i)
-      endif
-    endif
-  enddo
-
-  ! Assign reservoir type 5 (Navigational use) to the largest reservoir in a catchment
-  do i = 1, nres
-    if(flag_grand(i) == 1) then
-      cid = catid_grand(i)
-      if(nav_grand(i) == 1 .and. area_grand(i) >= area_max_res(cid)) then
         type_res_all(cid) = 5
         cat2res_all(cid) = i
         area_max_res(cid) = area_grand(i)
@@ -197,11 +182,11 @@ subroutine res_init(input_dir,nall,nc,minCatch,maxCatch,use_res,active_res,type_
     endif
   enddo
 
-  ! Assign reservoir type 4 (Water supply) to the largest reservoir in a catchment
+  ! Assign reservoir type 4 (Navigational use) to the largest reservoir in a catchment
   do i = 1, nres
     if(flag_grand(i) == 1) then
       cid = catid_grand(i)
-      if(supply_grand(i) == 1 .and. area_grand(i) >= area_max_res(cid)) then
+      if(nav_grand(i) == 1 .and. area_grand(i) >= area_max_res(cid)) then
         type_res_all(cid) = 4
         cat2res_all(cid) = i
         area_max_res(cid) = area_grand(i)
@@ -209,11 +194,11 @@ subroutine res_init(input_dir,nall,nc,minCatch,maxCatch,use_res,active_res,type_
     endif
   enddo
 
-  ! Assign reservoir type 3 (Irrigation) to the largest reservoir in a catchment
+  ! Assign reservoir type 3 (Water supply) to the largest reservoir in a catchment
   do i = 1, nres
     if(flag_grand(i) == 1) then
       cid = catid_grand(i)
-      if(irr_grand(i) == 1 .and. area_grand(i) >= area_max_res(cid)) then
+      if(supply_grand(i) == 1 .and. area_grand(i) >= area_max_res(cid)) then
         type_res_all(cid) = 3
         cat2res_all(cid) = i
         area_max_res(cid) = area_grand(i)
@@ -233,12 +218,12 @@ subroutine res_init(input_dir,nall,nc,minCatch,maxCatch,use_res,active_res,type_
     endif
   enddo
 
-  ! Assign reservoir type 1 (Irrigation supply) with specific conditions
+  ! Assign reservoir type 1 (Irrigation) to the largest reservoir in a catchment
   do i = 1, nres
     if(flag_grand(i) == 1) then
       cid = catid_grand(i)
-      if(irrsup_grand(i) == 1 .and. area_grand(i) >= area_max_res(cid)) then
-        type_res_all(cid) = 1            ! Assign type 1 for irrigation supply
+      if(irr_grand(i) == 1 .and. area_grand(i) >= area_max_res(cid)) then
+        type_res_all(cid) = 1
         cat2res_all(cid) = i
         area_max_res(cid) = area_grand(i)
       endif
@@ -274,7 +259,7 @@ subroutine res_init(input_dir,nall,nc,minCatch,maxCatch,use_res,active_res,type_
   if(use_res == .False.) active_res = 0
 
   deallocate(flag_grand,catid_grand,elec_grand,type_res_all,cap_grand,area_grand)
-  deallocate(area_res,area_max_res,irrsup_grand,fld_grand,supply_grand,irr_grand)
+  deallocate(area_res,area_max_res,fld_grand,supply_grand,irr_grand)
   deallocate(cat2res_all,nav_grand,rec_grand,other_grand,realuse_grand)
   deallocate(flag_lake,catid_lake,area_lake,area_all,fld_all)
 
@@ -298,7 +283,7 @@ subroutine res_cal(active_res,Qout,type_res,cat2res,Q_res,wid_res,fld_res,Wr_res
     Qin_res = Qout  ! Inflow from river
 
     ! Irrigation reservoir 
-    if (type_res == 1 .or. type_res == 3) then 
+    if (type_res == 1) then 
       alp_res = fac_irr_a * ((1.0 / (wid_res / 1.e3)) ** fac_irr_b) / 3600.0   ! irrigation coefficient
 
     ! Hydropower reservoir
@@ -306,11 +291,11 @@ subroutine res_cal(active_res,Qout,type_res,cat2res,Q_res,wid_res,fld_res,Wr_res
       alp_res = fac_elec_a * ((1.0 / (wid_res / 1.e3)) ** fac_elec_b) / 3600.0  ! Hydropower coefficient
 
     ! Water supply reservoir
-    else if (type_res == 4) then 
+    else if (type_res == 3) then 
       alp_res = fac_sup_a * ((1.0 / (wid_res / 1.e3)) ** fac_sup_b) / 3600.0  ! Supply coefficient
 
     ! Other reservoir types
-    else if (type_res == 5 .or. type_res == 6 .or. type_res == 7 .or. type_res == 0) then 
+    else if (type_res == 4 .or. type_res == 5 .or. type_res == 6 .or. type_res == 0) then 
       alp_res = fac_other_a * ((1.0 / (wid_res / 1.e3)) ** fac_other_b) / 3600.0  ! Generic reservoir coefficient
 
     ! Natural lake 
